@@ -23,6 +23,8 @@ The following is a detailed description of these three methods and their paramet
 ### `run_tpot_bo_alt`:
 This method uses TPOT to generate the initial pipelines for use as control data for comparison, and to save the other methods time generating pipelines.
 
+#### Parameters:
+
 The table below gives all parameter arguments, their type and default values:
 
 | Parameter          | Type     | Default                   | 
@@ -32,7 +34,7 @@ The table below gives all parameter arguments, their type and default values:
 |`stop_gen`         | int      | 80                        |
 |`n_runs`           | int      | 1                         |
 |`start_seed`       | int      | 42                        |
-|`prob_list`        | list     | `[]`                        |
+|`prob_list`        | list     | `[]`                     |
 |`data_dir`         | string   |`'Data'`                  |
 |`results_dir`      | string   |`'Results'`               |
 |`tpot_config_dict` | dict     |`default_tpot_config_dict`|
@@ -40,7 +42,8 @@ The table below gives all parameter arguments, their type and default values:
 |`vprint`           | `Vprint`|`u.Vprint(1)`             |
 |`pipe_eval_timeout`| int      | 5                         |
 
-
+#### Operation:
+The parameter `prob_list` allows the user to specify a list of problems
 
 ## Running BO-TPOT
 
