@@ -84,8 +84,11 @@ would represent the tree
 TPOT operator parameters can be real-valued, integer, categorical or boolean and the naming convention is `<operator name>__<parameter name>`.
 
 The evaluated individuals dictionary is written in its entirety to the file:
+
 `./<data_dir>/<problem>/<run_dir>/tpot/tpot_pipes.out` 
+
 in the format:
+
 `<TPOT pipe string>;<generation of pipe>;<CV value of pipe>`
 
 The best pipeline at `stop_gen` is extracted and a `PipelinePopOpt` object (more info below) is created in order to use its `get_matching_structures` method to find all pipelines in the dictionary that have the same structure as this interrim best pipeline, and all matching pipelines (if they exist) are written to the file:
