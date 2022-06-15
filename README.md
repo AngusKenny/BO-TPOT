@@ -43,7 +43,10 @@ The table below gives all parameter arguments, their type and default values:
 |`pipe_eval_timeout`| int      | 5                         |
 
 #### Operation:
-The parameter `prob_list` allows the user to specify a list of problems
+The parameter `prob_list` allows the user to specify a set of problems for batch processing as a list of strings. A problem is specified by the file name (without extension) for its data file, within the `data_dir` directory. For example, if the data for the two required problems are held in `./Data/prob1.data` and `./Data/prob2.data` then `data_dir` would be `'Data'` and `prob_list` would be `['prob1', 'prob2']`. If `prob_list` is supplied as the empty list `[]`, then `data_dir` is searched for all files with the extension `.data` and will process all of them.
+
+
+
 
 ## Running BO-TPOT
 
