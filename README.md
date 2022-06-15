@@ -96,6 +96,7 @@ The best pipeline at `stop_gen` is extracted and a `PipelinePopOpt` object (more
 in the same format as above.
 
 Finally, the details of the run, including relevant parameters, times taken and the best pipelines at `stop_gen` and `tot_gens-1` is output to the file:
+
 `./<data_dir>/<problem>/<run_dir>/tpot/tpot_progress.out` 
 
 ## Running BO-TPOT
