@@ -75,11 +75,13 @@ would represent the tree
     +-- OpB
     |   |-- input_matrix
     |   +-- OpC
-    |   |   |-- input_matrix
-    |   |    `-- paramC1
-    |    `-- paramB1
-     `-- paramA1
+    |   |    |-- input_matrix
+    |   |     `- paramC1
+    |    `- paramB1
+    |-- paramA1
+     `- paramA2
 ```
+
 
 ## Running BO-TPOT
 
