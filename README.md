@@ -1,4 +1,4 @@
-# Bayesian optimisation for TPOT (BO-TPOT)
+# Bayesian Optimisation for TPOT (BO-TPOT)
 An add-on for the Tree-based Pipeline Optimisation Tool (TPOT), a Python library for automated machine learning. By employing the Optuna hyperparameter optimisation Python library, Bayesian optimisation can be applied to an existing TPOT pipeline in an attempt to improve its quality by intelligently searching real-valued hyperparameter spaces.
 
 ## Introduction
@@ -7,7 +7,7 @@ An add-on for the Tree-based Pipeline Optimisation Tool (TPOT), a Python library
 - tpot uses grid search on a discrete parameter space, even for real-valued params
 - once a pipeline is found, can use bayesian optimisation to improve in a real parameter space
 
-## Description of operation 
+## Description of Operation 
 The operation of BO-TPOT can be separated into three main methods:
 
 1. `get_tpot_data` which generates the initial TPOT pipelines from the problem data;
@@ -67,4 +67,4 @@ Here, we use `tot_gens-1` because the
 ## Running BO-TPOT
 
 
-## Processing results
+## Processing Results
