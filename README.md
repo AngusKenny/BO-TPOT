@@ -76,10 +76,10 @@ would represent the tree
     |   |-- input_matrix
     |   +-- OpC
     |   |    |-- input_matrix
-    |   |     `- paramC1
-    |    `- paramB1
-    |-- paramA1
-     `- paramA2
+    |   |     `- paramC1=0.5
+    |    `- paramB1=catX
+    |-- paramA1=True
+     `- paramA2=2
 ```
 TPOT operator parameters can be real-valued, integer, categorical or boolean and the naming convention is `<operator name>__<parameter name>`.
 
@@ -162,7 +162,18 @@ Having constructed the search space and suggested values for each hyperparameter
 
 TPOT is built on top of the [Distributed Evolutionary Algorithms in Python (DEAP)](https://github.com/deap) library, and uses many of its data structures and methods in its operation. When the `warm_start` flag is set to `True`, the most recent population is accessible via the attribute `tpot._pop` which is a list of `deap.creator.Individual` objects. As there are so many different types of evolutionary algorithms, all requring different types of "individual" to function, DEAP allows the `Individual` class to be completely customisable through the use of its `Toolbox` class. In the case of TPOT, the `Individual` class maintains a `deap.gp.PrimitiveTree` and a `deap.creator.FitnessMulti` object.
 
-A `PrimitiveTree` is a tree-based data structure made up of two data types: `deap.gp.Primitive` and `deap.gp.Terminal`. The `Primitive`s are analogous to the internal nodes of the tree, representing the pipeline's operators, and the `Terminal`s are analogous to the leaf nodes of the tree, representing the pipeline's inputs and hyperparameters. 
+A `PrimitiveTree` is a tree-based data structure made up of two data types: `deap.gp.Primitive` and `deap.gp.Terminal`. The `Primitive` objects are analogous to the internal nodes of the tree, representing the pipeline's operators, and the `Terminal` objects are analogous to the leaf nodes of the tree, representing the pipeline's inputs and hyperparameters. Within the `PrimitiveTree` object, the `Primitive` and `Terminal` objects are organised into an indexable list, using a _preorder_-type tree-traversal. Taking the example from the previous section, the list representing its `PrimitiveTree` would look like:
+```text
+[ Primitive(OpA),
+  Primitive(OpB),
+  Terminal(input_matrix),
+  Primitive(OpC),
+  Terminal(input_matrix),
+  Terminal(OpC__paramC1=0.5),
+  Terminal(OpB__paramB1=catX),
+  Terminal(OpA__paramA1=True),
+  Terminal(OpA__paramA2=2) ]
+```
 
 The `FitnessMulti` object contains a tuple 
 
