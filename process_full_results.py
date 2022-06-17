@@ -27,6 +27,7 @@ RUN_LIST = []
 SAVE_PLOTS = True
 RESULTS_DIR = 'Results'
 SKIP_PLOT_INIT = 100
+PLOT_MIN_MAX = True
 USE_ALT_SCALE = False
 SHOW_BOX_GRID = True
 PLOT_ALT = True
@@ -499,22 +500,23 @@ for problem in prob_list:
             ylim_min = min(ylim_min,alt_ylim_min)
             ylim_max = alt_ylim_max
     
-    # plot TPOT only data (min/max)
-    fig1, ax_end_y = plt.subplots()
-    ax_end_y.fill_between(range(len(full_tpot_y_mu)), 
-                          full_tpot_y_w, full_tpot_y_b, alpha=.5, linewidth=0)
-    ax_end_y.plot(range(len(full_tpot_y_mu)), full_tpot_y_mu, 
-                  linewidth=2, label='TPOT evaluation'+mean_text)
-    ax_end_y.legend()
-    title_text = (f"{problem} - TPOT step only (min/max)\n" 
-                  + f"μ: {round(init_tpot_y_mu[-1],4)}, "
-                  + f"min: {round(init_tpot_y_b[-1],4)}, "
-                  + f"max: {round(init_tpot_y_w[-1],4)}")
-    ax_end_y.set_title(title_text)
-    ax_end_y.set_ylim([ylim_min, ylim_max])
-    ax_end_y.set_xlabel("Evaluations")
-    ax_end_y.set_ylabel("CV")
-    plt.show()
+    if PLOT_MIN_MAX:
+        # plot TPOT only data (min/max)
+        fig1, ax_end_y = plt.subplots()
+        ax_end_y.fill_between(range(len(full_tpot_y_mu)), 
+                              full_tpot_y_w, full_tpot_y_b, alpha=.5, linewidth=0)
+        ax_end_y.plot(range(len(full_tpot_y_mu)), full_tpot_y_mu, 
+                      linewidth=2, label='TPOT evaluation'+mean_text)
+        ax_end_y.legend()
+        title_text = (f"{problem} - TPOT step only (min/max)\n" 
+                      + f"μ: {round(init_tpot_y_mu[-1],4)}, "
+                      + f"min: {round(init_tpot_y_b[-1],4)}, "
+                      + f"max: {round(init_tpot_y_w[-1],4)}")
+        ax_end_y.set_title(title_text)
+        ax_end_y.set_ylim([ylim_min, ylim_max])
+        ax_end_y.set_xlabel("Evaluations")
+        ax_end_y.set_ylabel("CV")
+        plt.show()
     
     # plot TPOT only data (mu/sigma)
     fig2, ax_end_y_s = plt.subplots()
@@ -536,33 +538,34 @@ for problem in prob_list:
     plt.show()
     
     
-    # plot TPOT and BO data (min/max)
-    fig3, ax_tpot_bo_y = plt.subplots()
-    ax_tpot_bo_y.fill_between(range(1,len(init_tpot_y_mu)+1), 
-                              init_tpot_y_w, init_tpot_y_b, 
-                              alpha=.5, linewidth=0)
-    ax_tpot_bo_y.plot(range(1,len(init_tpot_y_mu)+1), 
-                      init_tpot_y_mu, linewidth=2,
-                      label='TPOT evaluation'+mean_text)
-    ax_tpot_bo_y.fill_between(range(len(init_tpot_y_mu),
-                                    len(init_tpot_y_mu) + len(bo_y_mu)), 
-                              bo_y_w, bo_y_b, alpha=.5, 
-                              linewidth=0, color='red')
-    ax_tpot_bo_y.plot(range(len(init_tpot_y_mu), 
-                            len(init_tpot_y_mu) + len(bo_y_mu)), 
-                      bo_y_mu, linewidth=2,
-                      label='Bayesian optimisation'+mean_text,color='red')
-    ax_tpot_bo_y.legend()
-    title_text = (f"{problem} - TPOT and BO steps (min/max)\n"
-                  + f"TPOT μ:{round(init_tpot_y_mu[-1],4)}, "
-                  + f"BO μ: {round(bo_y_mu[-1],4)}, "
-                  + f"min: {round(bo_y_b[-1],4)}, "
-                  + f"max: {round(bo_y_w[-1],4)}")
-    ax_tpot_bo_y.set_title(title_text)
-    ax_tpot_bo_y.set_ylim([ylim_min,ylim_max])
-    ax_tpot_bo_y.set_xlabel("Evaluations")
-    ax_tpot_bo_y.set_ylabel("CV")
-    plt.show()
+    if PLOT_MIN_MAX:
+        # plot TPOT and BO data (min/max)
+        fig3, ax_tpot_bo_y = plt.subplots()
+        ax_tpot_bo_y.fill_between(range(1,len(init_tpot_y_mu)+1), 
+                                  init_tpot_y_w, init_tpot_y_b, 
+                                  alpha=.5, linewidth=0)
+        ax_tpot_bo_y.plot(range(1,len(init_tpot_y_mu)+1), 
+                          init_tpot_y_mu, linewidth=2,
+                          label='TPOT evaluation'+mean_text)
+        ax_tpot_bo_y.fill_between(range(len(init_tpot_y_mu),
+                                        len(init_tpot_y_mu) + len(bo_y_mu)), 
+                                  bo_y_w, bo_y_b, alpha=.5, 
+                                  linewidth=0, color='red')
+        ax_tpot_bo_y.plot(range(len(init_tpot_y_mu), 
+                                len(init_tpot_y_mu) + len(bo_y_mu)), 
+                          bo_y_mu, linewidth=2,
+                          label='Bayesian optimisation'+mean_text,color='red')
+        ax_tpot_bo_y.legend()
+        title_text = (f"{problem} - TPOT and BO steps (min/max)\n"
+                      + f"TPOT μ:{round(init_tpot_y_mu[-1],4)}, "
+                      + f"BO μ: {round(bo_y_mu[-1],4)}, "
+                      + f"min: {round(bo_y_b[-1],4)}, "
+                      + f"max: {round(bo_y_w[-1],4)}")
+        ax_tpot_bo_y.set_title(title_text)
+        ax_tpot_bo_y.set_ylim([ylim_min,ylim_max])
+        ax_tpot_bo_y.set_xlabel("Evaluations")
+        ax_tpot_bo_y.set_ylabel("CV")
+        plt.show()
     
     # plot TPOT and BO data (mu/sigma)
     fig4, ax_tpot_bo_y_s = plt.subplots()
@@ -652,39 +655,40 @@ for problem in prob_list:
     # take max from the worst of the first bo iteration (excludes initial tpot)
     
     if PLOT_ALT:
-        # plot alt results (min/max)
-        fig9, ax_alt_tpot_bo = plt.subplots()
-        alt_tpot_lines = {}
-        alt_bo_lines = {}
-        for i in range(len(data[run_idxs[-1]]['alt_bo_y'])):
-            alt_tpot_start = i * pop_size * alt_tpot_gens + i * alt_bo_trials
-            alt_bo_start = ((i+1) * pop_size * alt_tpot_gens 
-                            + ((i>0) * (i)) * alt_bo_trials)
-            ax_alt_tpot_bo.fill_between(
-                range(alt_tpot_start, alt_tpot_start + len(alt_tpot_y_mu[i])), 
-                alt_tpot_y_w[i], alt_tpot_y_b[i], alpha=.5, linewidth=0,color='C0')
-            alt_tpot_lines[i], = ax_alt_tpot_bo.plot(
-                range(alt_tpot_start, alt_tpot_start + len(alt_tpot_y_mu[i])), 
-                alt_tpot_y_mu[i], linewidth=2,
-                label='TPOT evaluation'+mean_text,color='C0')
-            ax_alt_tpot_bo.fill_between(range(alt_bo_start, 
-                                              alt_bo_start + len(alt_bo_y_mu[i])), 
-                                        alt_bo_y_w[i], alt_bo_y_b[i], 
-                                        alpha=.5, linewidth=0,color='r')
-            alt_bo_lines[i], = ax_alt_tpot_bo.plot(
-                range(alt_bo_start, alt_bo_start + len(alt_bo_y_mu[i])), 
-                alt_bo_y_mu[i], linewidth=2,
-                label='BO evaluation'+mean_text,color='r')
-        ax_alt_tpot_bo.legend(handles=[alt_tpot_lines[0], alt_bo_lines[0]])
-            
-        alt_title_text = (f"{problem} - TPOT + BO alternating (min/max)\n"
-                        + f"μ: {round(alt_bo_y_mu[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}, "
-                        + f"min: {round(alt_bo_y_b[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}, "
-                        + f"max: {round(alt_bo_y_w[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}")
-        ax_alt_tpot_bo.set_title(alt_title_text)
-        ax_alt_tpot_bo.set_ylim([ylim_min, ylim_max])
-        ax_alt_tpot_bo.set_xlabel("Evaluations")
-        ax_alt_tpot_bo.set_ylabel("CV")
+        if PLOT_MIN_MAX:
+            # plot alt results (min/max)
+            fig9, ax_alt_tpot_bo = plt.subplots()
+            alt_tpot_lines = {}
+            alt_bo_lines = {}
+            for i in range(len(data[run_idxs[-1]]['alt_bo_y'])):
+                alt_tpot_start = i * pop_size * alt_tpot_gens + i * alt_bo_trials
+                alt_bo_start = ((i+1) * pop_size * alt_tpot_gens 
+                                + ((i>0) * (i)) * alt_bo_trials)
+                ax_alt_tpot_bo.fill_between(
+                    range(alt_tpot_start, alt_tpot_start + len(alt_tpot_y_mu[i])), 
+                    alt_tpot_y_w[i], alt_tpot_y_b[i], alpha=.5, linewidth=0,color='C0')
+                alt_tpot_lines[i], = ax_alt_tpot_bo.plot(
+                    range(alt_tpot_start, alt_tpot_start + len(alt_tpot_y_mu[i])), 
+                    alt_tpot_y_mu[i], linewidth=2,
+                    label='TPOT evaluation'+mean_text,color='C0')
+                ax_alt_tpot_bo.fill_between(range(alt_bo_start, 
+                                                  alt_bo_start + len(alt_bo_y_mu[i])), 
+                                            alt_bo_y_w[i], alt_bo_y_b[i], 
+                                            alpha=.5, linewidth=0,color='r')
+                alt_bo_lines[i], = ax_alt_tpot_bo.plot(
+                    range(alt_bo_start, alt_bo_start + len(alt_bo_y_mu[i])), 
+                    alt_bo_y_mu[i], linewidth=2,
+                    label='BO evaluation'+mean_text,color='r')
+            ax_alt_tpot_bo.legend(handles=[alt_tpot_lines[0], alt_bo_lines[0]])
+                
+            alt_title_text = (f"{problem} - TPOT + BO alternating (min/max)\n"
+                            + f"μ: {round(alt_bo_y_mu[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}, "
+                            + f"min: {round(alt_bo_y_b[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}, "
+                            + f"max: {round(alt_bo_y_w[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}")
+            ax_alt_tpot_bo.set_title(alt_title_text)
+            ax_alt_tpot_bo.set_ylim([ylim_min, ylim_max])
+            ax_alt_tpot_bo.set_xlabel("Evaluations")
+            ax_alt_tpot_bo.set_ylabel("CV")
         
         
         # plot alt results (mu/sigma)

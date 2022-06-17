@@ -5,9 +5,10 @@ Created on Wed Apr 13 18:29:51 2022
 
 @author: gus
 """
+import sys
 import warnings
 from tpot_tools import TestHandler
-from tpot_config import default_tpot_config_dict
+from tpot_config import reduced_tpot_config_dict, default_tpot_config_dict
 
 ''' General Parameters
 
@@ -18,10 +19,14 @@ Verbosity settings:
     3 = show everything, including warnings
 '''
 params = {
-            'RUN_TPOT' : False,
+            'RUN_TPOT' : True,
             'RUN_BO' : True,
-            'RUN_ALT' : True,
-            'VERBOSITY' : 1,
+            'RUN_ALT' : False,
+            'VERBOSITY' : 3,
+            'DATA_DIR' : 'Data',
+            'RESULTS_DIR' : 'Results',
+            # if not generating TPOT data, RUNS can be a list of runs
+            'RUNS' : 5,
             'PROBLEMS' : [
                         # 'abalone',
                         'quake',
@@ -30,29 +35,26 @@ params = {
             #             'diamonds','elevators',
             #             'black_friday'
                          ],
-            'RESULTS_DIR' : 'Results',
-            'DATA_DIR' : 'Data',
-            'START_SEED' : 42,
             'TPOT_CONFIG_DICT' : default_tpot_config_dict,
             'nJOBS' : -1,
             # toggle between real and discrete parameter spaces
             'REAL_VALS' : True,
-            # stop optuna running forever if it cannot find enough new pipelines
-            'OPTUNA_TIMEOUT_TRIALS' : 100,
             # maximum time allowed for a single pipeline evaluation (mins)
             'PIPE_EVAL_TIMEOUT' : 5,
             #
             # TPOT data generation parameters
             #
-            'nRUNS' : 1,
+            'START_SEED' : 42,
             'POP_SIZE' : 100,
             'nTOTAL_GENS' : 100,
             'STOP_GEN' : 80,
             #
-            # TPOT + BO alternating parameters
+            # BO and TPOT + BO alternating parameters
             #
+            # stop optuna running forever if it cannot find enough new pipelines
+            'OPTUNA_TIMEOUT_TRIALS' : 100,
             'nALT_ITERS' : 10,
-            }
+        }
 
 # suppress experimental warnings, etc if verbosity below 4
 if params['VERBOSITY'] < 3:
@@ -62,14 +64,19 @@ tpot_handler = TestHandler(params)
 
 for problem in params['PROBLEMS']:
     tpot_handler.write_problem(problem)
-    for run in range(params['nRUNS']):
-        # write run information to progress file
-        tpot_handler.write_run(run)
         
-        # generate TPOT data if this fails, skip entire run
+    for run_idx in range(len(tpot_handler.run_list)):
+        # generate TPOT data - this creates a new run folder, so we need
+        # to get the run number to pass to the other processes
         if params['RUN_TPOT']:
-            if not tpot_handler.generate_tpot_data(run, problem): continue
-        
+            run = tpot_handler.generate_tpot_data(run_idx, problem)
+            if not run:
+                continue
+        else:
+            run = tpot_handler.run_list[run_idx]
+            # write run information to progress file
+            tpot_handler.write_run(run)
+            
         # run BO optimiser
         if params['RUN_BO']:
             tpot_handler.run_BO(run, problem)

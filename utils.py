@@ -36,6 +36,10 @@ class Vprint(object):
     def v2(self, *args, **kwargs):
         if self.verbosity >= 2:
             print(*args, **kwargs)
+    
+    def v3(self, *args, **kwargs):
+        if self.verbosity >= 3:
+            print(*args, **kwargs)
             
     def verr(self, *args, **kwargs):
         print(f"{RED}Error:{OFF}",*args, **kwargs)
@@ -50,8 +54,8 @@ def is_number(string):
     except ValueError:
         return False
 
-def get_trial_data(fname_prog):
-    seed = n_tot_gens = tpot_stop_gen = n_hp_trials = pop_size = None
+def get_run_data(fname_prog):
+    seed = n_tot_gens = tpot_stop_gen = pop_size = None
     
     # read trial data in
     with open(fname_prog, 'r') as f:
@@ -60,8 +64,6 @@ def get_trial_data(fname_prog):
                 seed = int(line.split(":")[-1])
             if 'SIZE' in line:
                 pop_size = int(line.split(":")[-1])
-            if 'TRIALS' in line:    
-                n_hp_trials = int(line.split(":")[-1])
             if 'STOP' in line:
                 tpot_stop_gen = int(line.split(":")[-1])
             if 'TOTAL' in line:
@@ -69,7 +71,7 @@ def get_trial_data(fname_prog):
             if '*' in line:
                 break
     
-    return seed, n_tot_gens, tpot_stop_gen, n_hp_trials, pop_size
+    return seed, n_tot_gens, tpot_stop_gen, pop_size
 
 def get_progress_pop(fname_pipes, stop_gen):
     pop = {}

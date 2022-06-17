@@ -1,5 +1,10 @@
 import numpy as np
 
+'''
+Copied from https://github.com/EpistasisLab/tpot/blob/master/tpot/config/regressor.py
+Cannot use this dictionary directly from the TPOT library, as any changes made
+to it by the BO or TPOT+BO alternating processes will persist across runs.
+'''
 default_tpot_config_dict = {
 
     'sklearn.linear_model.ElasticNetCV': {

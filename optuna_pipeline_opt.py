@@ -13,8 +13,8 @@ from optuna_hp_spaces import (make_hp_space_real,
 import numpy as np
 
 class RequiredTrialsCallback(object):
-    def __init__(self, n_trials, eval_dict, timeout_trials,vprint=u.Vprint(1)):
-        self.n_trials = n_trials
+    def __init__(self, n_evals, eval_dict, timeout_trials,vprint=u.Vprint(1)):
+        self.n_evals = n_evals
         self.eval_dict = eval_dict
         self.timeout_trials = timeout_trials
         self.timeout_count=0
@@ -23,8 +23,8 @@ class RequiredTrialsCallback(object):
 
     def __call__(self, study: optuna.study.Study, 
                  trial: optuna.trial.FrozenTrial) -> None:
-        if len(self.eval_dict) >= self.n_trials:
-            self.vprint.v2(f"{self.n_trials} unique solutions evaluated, "
+        if len(self.eval_dict) >= self.n_evals:
+            self.vprint.v2(f"{self.n_evals} unique solutions evaluated, "
                       + "stopping optimisation process..\n")
             study.stop()
         
@@ -45,7 +45,7 @@ class RequiredTrialsCallback(object):
 class Objective(object):
     ''' Class for optuna optimisation objective function
     '''
-    def __init__(self, po, ind_idx, X, y, n_trials, real_vals=True, 
+    def __init__(self, po, ind_idx, X, y, n_evals, real_vals=True, 
                  seed_samples=[], vprint=u.Vprint(1)):
         ''' Constructor for Objective class
 
@@ -150,6 +150,7 @@ class PipelinePopOpt(object):
     def evaluate(self, ind_idx, X, y):
         ''' Use TPOT to evaluate a given individual
         '''
+                
         # clear fitness values
         del(self.tpot._pop[ind_idx].fitness.values)
         
@@ -165,7 +166,7 @@ class PipelinePopOpt(object):
         if new value then add to operator value list and update pset
         the operator values list gets reset with every call to fit()
         so we must add it to the operator values list, even if the
-        value already exists in the pset from previous trials
+        value already exists in the pset from previous evaluations
         '''
         if u.is_number(p_val):
             for op in self.tpot.operators:
@@ -314,7 +315,7 @@ class PipelinePopOpt(object):
                         
         return matching_strs
     
-    def optimise(self, ind_idx, X_train, y_train, n_trials, seed_samples=[], timeout_trials=1e20):
+    def optimise(self, ind_idx, X_train, y_train, n_evals, seed_samples=[], timeout_trials=1e20):
         ''' Run optuna optimisation        
 
         Parameters
@@ -325,8 +326,8 @@ class PipelinePopOpt(object):
             X training data.
         y_train : Dataset
             y training data.
-        n_trials : INT
-            Number of trials to perform.
+        n_evals : INT
+            Number of evaluations to perform.
         seed_samples : LIST, optional
             List of dictionaries containing initial seed samples. 
             The default is empty.
@@ -359,10 +360,10 @@ class PipelinePopOpt(object):
             study.add_trial(trial)
         
         # account for initial seed trials
-        n_trials_adj = n_trials + len(self.tpot.evaluated_individuals_)
+        n_evals_adj = n_evals + len(self.tpot.evaluated_individuals_)
         
         # set up callback object to stop when required number of solutions evalutated
-        stop_callback = RequiredTrialsCallback(n_trials_adj, self.tpot.evaluated_individuals_, timeout_trials, vprint=self.vprint)
+        stop_callback = RequiredTrialsCallback(n_evals_adj, self.tpot.evaluated_individuals_, timeout_trials, vprint=self.vprint)
         
         # run optimise method
-        study.optimize(Objective(self, ind_idx, X_train, y_train,n_trials_adj,vprint=self.vprint),callbacks=[stop_callback])
+        study.optimize(Objective(self, ind_idx, X_train, y_train,n_evals_adj,vprint=self.vprint),callbacks=[stop_callback])
