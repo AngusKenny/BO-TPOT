@@ -312,6 +312,7 @@ There are four levels of verbosity that can be set:
 | 1     | progress information                    |
 | 2     | debug information                       |
 | 3     | show everything, including all warnings |
+
 (\* some warnings from the scikit-learn library may still appear)
 
 The verbosity output is controlled by the `Vprint` object from `utils.py`. For example, to restrict a particular output to verbosity level 2 or above, instead of using the `print` command, `Vprint.v2` would be used with the same syntax as `print`.
