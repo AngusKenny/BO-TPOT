@@ -21,7 +21,7 @@ Verbosity settings:
 params = {
             'RUN_TPOT' : True,
             'RUN_BO' : True,
-            'RUN_ALT' : False,
+            'RUN_ALT' : True,
             'VERBOSITY' : 3,
             'DATA_DIR' : 'Data',
             'RESULTS_DIR' : 'Results',

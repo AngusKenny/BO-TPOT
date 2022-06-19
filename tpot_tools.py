@@ -818,7 +818,7 @@ class TestHandler(object):
         
         self.t_start = time.time()
         
-        if params['RUN_TPOT'] and type(params['RUNS']) is list:
+        if params['RUN_TPOT'] and type(params['RUNS']) is not int:
             sys.exit('Cannot specify list of runs when generating new TPOT data')
         
         self.run_list = range(params['RUNS']) if type(params['RUNS']) is int else params['RUNS']
