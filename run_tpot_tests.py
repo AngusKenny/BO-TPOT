@@ -22,11 +22,11 @@ params = {
     'RUN_TPOT' : True,
     'RUN_BO' : True,
     'RUN_ALT' : True,
-    'VERBOSITY' : 3,
+    'VERBOSITY' : 1,
     'DATA_DIR' : 'Data',
     'RESULTS_DIR' : 'Results',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : 5,
+    'RUNS' : 21,
     'PROBLEMS' : [
                 # 'abalone',
                 'quake',
@@ -38,7 +38,7 @@ params = {
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
     'nJOBS' : -1,
     # toggle between real and discrete parameter spaces
-    'REAL_VALS' : True,
+    'REAL_VALS' : False,
     # maximum time allowed for a single pipeline evaluation (mins)
     'PIPE_EVAL_TIMEOUT' : 5,
     #
