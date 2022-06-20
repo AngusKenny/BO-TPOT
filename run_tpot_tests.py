@@ -36,7 +36,7 @@ params = {
     #             'black_friday'
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
-    'nJOBS' : -1,
+    'nJOBS' : 16,
     # toggle between real and discrete parameter spaces
     'REAL_VALS' : False,
     # maximum time allowed for a single pipeline evaluation (mins)

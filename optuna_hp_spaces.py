@@ -611,6 +611,11 @@ def make_optuna_trial_discrete(trial_params, value):
     distributions = {}
     
     for (name,val) in trial_params:
+        
+        # to avoid TPOT precision issues, round number values to 6 decimals
+        if u.is_number(val):
+            val = np.round(val,decimals=6)
+        
         # ***** REGRESSOR HYPERPARAMETERS *****
         # ElasticNetCV hyperparameters
         if name == 'ElasticNetCV__l1_ratio':
