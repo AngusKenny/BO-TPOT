@@ -23,22 +23,14 @@ SAVE_PLOTS:     Save generated plots to file in ./<RESULTS_DIR>/Plots/
 '''
 
 params = {
+    'RESULTS_DIR'   : 'Results',
     'PROBLEMS'      : ['quake'],
     'RUN_LIST'      : [],
-    'RESULTS_DIR'   : 'Results',
     'SAVE_PLOTS'    : True,
     'PLOT_ALT'      : True,
     'PLOT_MIN_MAX'  : False,
     'SKIP_PLOT_INIT': 10
     }
-
-# PROBLEMS = ['quake']
-# RUN_LIST = []
-# RESULTS_DIR = 'Results'
-# SAVE_PLOTS = True
-# PLOT_ALT = True
-# PLOT_MIN_MAX = False
-# SKIP_PLOT_INIT = 10
 
 cwd = os.getcwd()
 results_path = os.path.join(cwd,params['RESULTS_DIR'])
