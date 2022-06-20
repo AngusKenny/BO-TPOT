@@ -27,7 +27,7 @@ RUN_LIST = []
 SAVE_PLOTS = True
 RESULTS_DIR = 'Results'
 SKIP_PLOT_INIT = 100
-PLOT_MIN_MAX = True
+PLOT_MIN_MAX = False
 USE_ALT_SCALE = False
 SHOW_BOX_GRID = True
 PLOT_ALT = True
@@ -201,7 +201,7 @@ for problem in prob_list:
                                       + f"!= {alt_tpot_gens}) - skipping run..")
                                 skipped_runs.append(run)
                                 break
-                    if "BO TRIALS" in line:
+                    if "BO TRIALS" in line or "EVALS" in line:
                         r_alt_bo_trials = int(line.split(":")[-1])
                         if alt_bo_trials == None:
                             alt_bo_trials = r_alt_bo_trials
@@ -717,7 +717,7 @@ for problem in prob_list:
                 range(alt_bo_start, alt_bo_start + len(alt_bo_y_mu[i])), 
                 alt_bo_y_mu[i], linewidth=2,
                 label='BO evaluation'+mean_text,color='r')
-        ax_alt_tpot_bo_s.legend(handles=[alt_tpot_lines[0], alt_bo_lines[0]])
+        ax_alt_tpot_bo_s.legend(handles=[alt_tpot_lines_s[0], alt_bo_lines_s[0]])
             
         alt_title_text_s = (f"{problem} - TPOT + BO alternating (mu/sigma)\n"
                         + f"μ: {round(alt_bo_y_mu[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}, "
@@ -756,17 +756,19 @@ for problem in prob_list:
             fname_alt_plot_s = os.path.join(
                 plot_dir, problem + "_alt_mu_sigma.png")
         
-        fig1.savefig(fname_tpot_plot,bbox_inches='tight')
+        if PLOT_MIN_MAX:
+            fig1.savefig(fname_tpot_plot,bbox_inches='tight')
+            fig3.savefig(fname_tpot_bo_plot,bbox_inches='tight')
         fig2.savefig(fname_tpot_plot_s,bbox_inches='tight')
-        fig3.savefig(fname_tpot_bo_plot,bbox_inches='tight')
         fig4.savefig(fname_tpot_bo_plot_s,bbox_inches='tight')
         # fig5.savefig(fname_matching_plot)
         # fig6.savefig(fname_matching_plot_zoom)
         fig7.savefig(fname_box_plot,bbox_inches='tight')
         fig8.savefig(fname_box_plot2,bbox_inches='tight')
         if PLOT_ALT:
-            fig9.savefig(fname_alt_plot,bbox_inches='tight')
             fig10.savefig(fname_alt_plot_s,bbox_inches='tight')
+            if PLOT_MIN_MAX:
+                fig9.savefig(fname_alt_plot,bbox_inches='tight')
         
 
 fname_stats = os.path.join(results_path, "stats.out")
