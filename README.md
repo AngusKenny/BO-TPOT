@@ -1,11 +1,21 @@
 # Bayesian Optimisation for TPOT (BO-TPOT)
-An add-on for the Tree-based Pipeline Optimisation Tool (TPOT), a Python library for automated machine learning. By employing the Optuna hyperparameter optimisation Python library, Bayesian optimisation can be applied to an existing TPOT pipeline in an attempt to improve its quality by intelligently searching real-valued hyperparameter spaces.
+An add-on for the [Tree-based Pipeline Optimisation Tool (TPOT)](http://epistasislab.github.io/tpot/), a Python library for automated machine learning. By employing [Optuna](https://optuna.org/), a hyperparameter optimisation Python library, Bayesian optimisation can be applied to an existing TPOT pipeline in an attempt to improve its quality by intelligently searching real-valued hyperparameter spaces.
 
 ## Introduction
-[notes to fill in later]
-- description of tpot
-- tpot uses grid search on a discrete parameter space, even for real-valued params
-- once a pipeline is found, can use bayesian optimisation to improve in a real parameter space
+There are many different types of machine learning models, each of which has its own unique set of hyperparameters. These hyperparameters can be real values, integers or even categories, and control various aspects of the model like learning rate, different thresholds, etc. Machine learning models can be employed singularly, or combined; using the output of one model as the input to the next, harnessing the different strengths of multiple models simultaneously. When combined in this manner, the models are collectively known as a _pipeline_.
+
+Three main decisions to consider when designing machine learning pipelines are:
+- which models to select; 
+- what order to apply them in; and, 
+- what the values of their respective hyperparameters should be. 
+
+TPOT is a Python libarary, built on top of the [Distributed Evolutionary Algorithms in Python (DEAP)](https://github.com/deap) library, which is designed to automate this machine learning pipeline development process. It represents pipelines as tree-based data structures and constructs them using the genetic programming (GP) methods provided by DEAP. 
+
+One significant limitation of TPOT is that for all its GP bells-and-whistles, it is still essentially a grid-search method, and as such cannot handle continuous hyperparameter spaces. Many hyperparameters are real-valued however, but TPOT circumvents this issue by descretising the continuous search space with a certain granularity. Although this is an effective method of handling this issue, the fact still remains that unless the global optimum value for a given hyperparameter lies on the exact point of descretisation, TPOT will never find it.
+
+[Optuna](https://optuna.org/) is a hyperparameter optimisation library for Python which uses Bayesian optimisation to tune hyperparameter values. It uses a Tree-based Parzen Estimator (TPE)-based surrogate model, built on historical information, to estimate and suggest hyperparameter values, which are then evaluated and the model subsequently updated. In contrast to TPOT,  Optuna has no limitations on the type of values the hyperparameters can take, however it is not as effective at selecting models and constructing pipelines as TPOT. 
+
+We can think of TPOT as an effective tool for pipeline _exploration_ and Optuna as effective for pipeline _exploitation_. By using Optuna to _fine-tune_ the coarser results produced by TPOT, the BO-TPOT algorithm is able to harness the strengths of both of these powerful tools.
 
 ## Description of Operation 
 The operation of BO-TPOT can be separated into three main processes:
@@ -31,18 +41,18 @@ The table below gives all parameter arguments, their type and default values:
 
 | Parameter          | Type     | Default                   | 
 |:-------------------|:--------:|--------------------------:|
-|`tot_gens`         | int      | 100                       |
-|`pop_size`         | int      | 100                       |
-|`stop_gen`         | int      | 80                        |
-|`n_runs`           | int      | 1                         |
-|`start_seed`       | int      | 42                        |
-|`prob_list`        | list     | `[]`                     |
-|`data_dir`         | string   |`'Data'`                  |
-|`results_dir`      | string   |`'Results'`               |
-|`tpot_config_dict` | dict     |`default_tpot_config_dict`|
-|`n_jobs`           | int      | -1                        |
-|`vprint`           | `Vprint`|`u.Vprint(1)`             |
-|`pipe_eval_timeout`| int      | 5                         |
+|`tot_gens`          | int      | 100                       |
+|`pop_size`          | int      | 100                       |
+|`stop_gen`          | int      | 80                        |
+|`n_runs`            | int      | 1                         |
+|`start_seed`        | int      | 42                        |
+|`prob_list`         | list     | `[]`                      |
+|`data_dir`          | string   |`'Data'`                   |
+|`results_dir`       | string   |`'Results'`                |
+|`tpot_config_dict`  | dict     |`default_tpot_config_dict` |
+|`n_jobs`            | int      | -1                        |
+|`vprint`            | `Vprint` |`u.Vprint(1)`              |
+|`pipe_eval_timeout` | int      | 5                         |
 
 #### Operation:
 The parameter `prob_list` allows the user to specify a set of problems for batch processing as a list of strings. A problem is specified by the file name (without extension) for its data file, within the `data_dir` directory. For example, if the data for the two required problems are held in `./Data/prob1.data` and `./Data/prob2.data` then `data_dir` would be `'Data'` and `prob_list` would be `['prob1', 'prob2']`. If `prob_list` is supplied as the empty list `[]`, then `data_dir` is searched for all files with the extension `.data` and will process all of them.
@@ -120,18 +130,18 @@ The table below gives all parameter arguments, their type and default values:
 
 | Parameter              | Type     | Default                   | 
 |:-----------------------|:--------:|--------------------------:|
-|`run_list`             | list     | `[]`                     |
-|`optuna_timeout_trials`| int      | 100                       |
-|`force_bo_evals`       | int      | `None`                   |
-|`ignore_results`       | boolean  | True                      |
-|`prob_list`            | list     | `[]`                     |
-|`data_dir`             | string   |`'Data'`                  |
-|`results_dir`          | string   |`'Results'`               |
-|`tpot_config_dict`     | dict     |`default_tpot_config_dict`|
-|`n_jobs`               | int      | -1                        |
-|`vprint`               | `Vprint`|`u.Vprint(1)`             |
-|`real_vals`            | boolean  | True                      |
-|`pipe_eval_timeout`    | int      | 5                         |
+|`run_list`              | list     | `[]`                      |
+|`optuna_timeout_trials` | int      | 100                       |
+|`force_bo_evals`        | int      | `None`                    |
+|`ignore_results`        | boolean  | True                      |
+|`prob_list`             | list     | `[]`                      |
+|`data_dir`              | string   |`'Data'`                   |
+|`results_dir`           | string   |`'Results'`                |
+|`tpot_config_dict`      | dict     |`default_tpot_config_dict` |
+|`n_jobs`                | int      | -1                        |
+|`vprint`                | `Vprint` |`u.Vprint(1)`              |
+|`real_vals`             | boolean  | True                      |
+|`pipe_eval_timeout`     | int      | 5                         |
 
 ### Operation
 As with above, the problems to be processed are specified using `prob_list`. However, unlike with `get_tpot_data`, new directories are not created for runs, rather existing run directories are searched for in the path `./<results_dir>/<problem>/`. If a particular set of runs is required, then this can be specified using the `run_list` parameter, e.g., `run_list=[0,4,7]` would process runs 0, 4 and 7 only.
@@ -210,19 +220,19 @@ The table below gives all parameter arguments, their type and default values:
 
 | Parameter              | Type     | Default                   | 
 |:-----------------------|:--------:|--------------------------:|
-|`n_iters`              | int      | 10                        |
-|`run_list`             | list     | `[]`                     |
-|`optuna_timeout_trials`| int      | 100                       |
-|`force_bo_evals`       | int      | `None`                   |
-|`ignore_results`       | boolean  | True                      |
-|`prob_list`            | list     | `[]`                     |
-|`data_dir`             | string   |`'Data'`                  |
-|`results_dir`          | string   |`'Results'`               |
-|`tpot_config_dict`     | dict     |`default_tpot_config_dict`|
-|`n_jobs`               | int      | -1                        |
-|`vprint`               | `Vprint`|`u.Vprint(1)`             |
-|`real_vals`            | boolean  | True                      |
-|`pipe_eval_timeout`    | int      | 5                         |
+|`n_iters`               | int      | 10                        |
+|`run_list`              | list     | `[]`                      |
+|`optuna_timeout_trials` | int      | 100                       |
+|`force_bo_evals`        | int      | `None`                    |
+|`ignore_results`        | boolean  | True                      |
+|`prob_list`             | list     | `[]`                      |
+|`data_dir`              | string   |`'Data'`                   |
+|`results_dir`           | string   |`'Results'`                |
+|`tpot_config_dict`      | dict     |`default_tpot_config_dict` |
+|`n_jobs`                | int      | -1                        |
+|`vprint`                | `Vprint` |`u.Vprint(1)`              |
+|`real_vals`             | boolean  | True                      |
+|`pipe_eval_timeout`     | int      | 5                         |
 
 ### Operation
 The initialisation and specification of problems, runs, etc. for `run_tpot_bo_alt` is very similar to `run_bo`, except it does not load the previous TPOT data all the way up until the original stopping generation. Instead, it uses the input variable `n_iters` to split the available computing budget into `n_iters` "chunks". For example, if the initial TPOT run had a population size of 100, went for 100 generations and had an initial stopping generation of 80, this would mean that `run_bo` would have had pipeline 2000 evaluations to carry out its optimisation on the single best pipeline after TPOT generation 80. If `n_iters` is set at 10, this would mean that `run_tpot_bo_alt` would run for 10 iterations, each iteration consisting of 8 TPOT generations (`n_tpot_gens`) and 200 BO evaluations (`n_bo_evals`).
@@ -282,24 +292,24 @@ The table below gives the parameters in this dictionary and their type, followed
 
 | Parameter              | Type       |
 |:-----------------------|:----------:|
-|`RUN_TPOT`             | boolean    |
-|`RUN_BO`               | boolean    |
-|`RUN_ALT`              | boolean    |
-|`VERBOSITY`            | int        |
-|`DATA_DIR`             | string     |
-|`RESULTS_DIR`          | string     |
-|`RUNS`                 | int / list | 
-|`PROBLEMS`             | list       |
-|`TPOT_CONFIG_DICT`     | dict       |
-|`nJOBS`                | int        |
-|`REAL_VALS`            | boolean    |
-|`PIPE_EVAL_TIMEOUT`    | int        | 
-|`START_SEED`           | int        | 
-|`POP_SIZE`             | int        | 
-|`nTOTAL_GENS`          | int        | 
-|`STOP_GEN`             | int        | 
-|`OPTUNA_TIMEOUT_TRIALS`| int        |
-|`nALT_ITERS`           | int        |
+|`RUN_TPOT`              | boolean    |
+|`RUN_BO`                | boolean    |
+|`RUN_ALT`               | boolean    |
+|`VERBOSITY`             | int        |
+|`DATA_DIR`              | string     |
+|`RESULTS_DIR`           | string     |
+|`RUNS`                  | int / list | 
+|`PROBLEMS`              | list       |
+|`TPOT_CONFIG_DICT`      | dict       |
+|`nJOBS`                 | int        |
+|`REAL_VALS`             | boolean    |
+|`PIPE_EVAL_TIMEOUT`     | int        | 
+|`START_SEED`            | int        | 
+|`POP_SIZE`              | int        | 
+|`nTOTAL_GENS`           | int        | 
+|`STOP_GEN`              | int        | 
+|`OPTUNA_TIMEOUT_TRIALS` | int        |
+|`nALT_ITERS`            | int        |
 
 ### `RUN_TPOT`/`RUN_BO`/`RUN_ALT`:
 Boolean flag to control which of `get_tpot_data`, `run_bo` and `run_tpot_bo_alt` are executed. Set to `False` to skip any of the processes, however keep in mind that both `run_bo` and `run_tpot_bo_alt` require that `get_tpot_data` has been run _at some stage_.
@@ -380,13 +390,13 @@ At the top of the script is a dictionary of parameters that can be set; the tabl
 
 | Parameter              | Type       |
 |:-----------------------|:----------:|
-|`RESULTS_DIR`          | string     |
-|`PROBLEMS`             | list       |
-|`RUN_LIST`             | list       |
-|`SAVE_PLOTS`           | boolean    |
-|`PLOT_ALT`             | boolean    |
-|`PLOT_MIN_MAX`         | boolean    |
-|`SKIP_PLOT_INIT`       | int        |
+|`RESULTS_DIR`           | string     |
+|`PROBLEMS`              | list       |
+|`RUN_LIST`              | list       |
+|`SAVE_PLOTS`            | boolean    |
+|`PLOT_ALT`              | boolean    |
+|`PLOT_MIN_MAX`          | boolean    |
+|`SKIP_PLOT_INIT`        | int        |
 
 ### `RESULTS_DIR`:
 String to specify the the name of the directory that results data should be drawn from.
