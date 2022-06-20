@@ -21,23 +21,31 @@ PROBLEM:        String with problem name defined by its filename, and also
 RUN_LIST:           List of runs to plot. Set to [] to plot using all data.
 SAVE_PLOTS:     Save generated plots to file in ./<RESULTS_DIR>/Plots/
 '''
-# PROBLEMS = ['socmob','quake','abalone','brazilian_houses']
-PROBLEMS = ['quake']
-RUN_LIST = []
-SAVE_PLOTS = True
-RESULTS_DIR = 'Results'
-SKIP_PLOT_INIT = 100
-PLOT_MIN_MAX = False
-USE_ALT_SCALE = False
-SHOW_BOX_GRID = True
-PLOT_ALT = True
+
+params = {
+    'PROBLEMS'      : ['quake'],
+    'RUN_LIST'      : [],
+    'RESULTS_DIR'   : 'Results',
+    'SAVE_PLOTS'    : True,
+    'PLOT_ALT'      : True,
+    'PLOT_MIN_MAX'  : False,
+    'SKIP_PLOT_INIT': 10
+    }
+
+# PROBLEMS = ['quake']
+# RUN_LIST = []
+# RESULTS_DIR = 'Results'
+# SAVE_PLOTS = True
+# PLOT_ALT = True
+# PLOT_MIN_MAX = False
+# SKIP_PLOT_INIT = 10
 
 cwd = os.getcwd()
-results_path = os.path.join(cwd,RESULTS_DIR)
+results_path = os.path.join(cwd,params['RESULTS_DIR'])
 if not os.path.exists(results_path):
     sys.exit(f"Cannot find results directory {results_path}")
 
-prob_list = PROBLEMS
+prob_list = params['PROBLEMS']
 # if problem list is empty, search problem directory for problems
 if len(prob_list) == 0:
     prob_list = [os.path.basename(d) 
@@ -52,13 +60,13 @@ for problem in prob_list:
 
     print(f"Processing results from {prob_dir}")
     
-    if len(RUN_LIST) == 0:
+    if len(params['RUN_LIST']) == 0:
         run_idxs = [int(d.path.split("_")[-1]) 
                     for d in os.scandir(prob_dir) 
                     if d.is_dir() and "Plots" not in d.path]
         run_idxs.sort()
     else:
-        run_idxs = RUN_LIST
+        run_idxs = params['RUN_LIST']
     
     pop_size = stop_gen = tot_gens = bo_trials = None
     alt_tpot_gens = alt_bo_trials = n_iters = None
@@ -91,7 +99,7 @@ for problem in prob_list:
         check_files = [fname_tpot_prog, fname_tpot_pipes, 
                       fname_bo_pipes, fname_matching_pipes]
         
-        if PLOT_ALT:
+        if params['PLOT_ALT']:
             check_files = check_files + [fname_alt_prog, 
                                          fname_alt_tpot_pipes, 
                                          fname_alt_bo_pipes]
@@ -169,7 +177,7 @@ for problem in prob_list:
         
         r_max_iter = -1
         
-        if PLOT_ALT:
+        if params['PLOT_ALT']:
             with open(fname_alt_prog, 'r') as f:
                 for line in f:
                     if "ITERATION" in line:
@@ -228,8 +236,8 @@ for problem in prob_list:
         data[run]['seed'] = r_seed            
             
         # get best TPOT CV values and best TPOT
-        max_val = -1e20
-        max_val_stop = -1e20
+        max_val = -1e40
+        max_val_stop = -1e40
         init_tpot_y = np.array([])
         full_tpot_y = np.array([])
         with open(fname_tpot_pipes, 'r') as f:
@@ -282,11 +290,11 @@ for problem in prob_list:
                     data[run]['matching'] = np.append(
                         data[run]['matching'], -val)        
     
-        if PLOT_ALT:
+        if params['PLOT_ALT']:
             # get best TPOT CV values and best TPOT from alt version
-            best_alt_cv = -1e20
+            best_alt_cv = -1e40
             # for BO starting positions
-            best_alt_bo_cvs = [-1e20 for i in range(n_iters)] 
+            best_alt_bo_cvs = [-1e40 for i in range(n_iters)] 
             alt_tpot_y = {i:np.array([]) for i in range(n_iters)}
             with open(fname_alt_tpot_pipes, 'r') as f:
                 for line in f:
@@ -349,6 +357,8 @@ for problem in prob_list:
         [np.max([data[run]['init_tpot_y'][i] for run in run_idxs]) 
          for i in range(pop_size * stop_gen)])
     
+    # print([data[run]['full_tpot_y'][0] for run in run_idxs])
+    
     # get full tpot y data
     full_tpot_y_mu = np.array(
         [np.mean([data[run]['full_tpot_y'][i] for run in run_idxs]) 
@@ -388,7 +398,7 @@ for problem in prob_list:
             matching_data = np.vstack(
                 (matching_data,[run, data[run]['matching'][i]]))
     
-    if PLOT_ALT:
+    if params['PLOT_ALT']:
     
         # get y data for alt version
         alt_tpot_y_mu = {k:np.array(
@@ -458,7 +468,7 @@ for problem in prob_list:
     stats[problem]['sigma']['tpot'] = full_tpot_y_sigma[-1]
     stats[problem]['sigma']['bo'] = bo_y_sigma[-1]
     
-    if PLOT_ALT:
+    if params['PLOT_ALT']:
         stats[problem]['best']['alt'] = (
             alt_bo_y_b[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1])
         stats[problem]['worst']['alt'] = (
@@ -471,36 +481,15 @@ for problem in prob_list:
             [data[run]['alt_bo_y'][len(data[run_idxs[-1]])-1][-1] 
              for run in run_idxs])
     
-    # # compute plot limits
-    # # y_max taken from halfway (where it is assumed to have started to flatten)
-    # y_max = full_tpot_y_w[int(len(full_tpot_y_w)/2)]
-    # y_min = full_tpot_y_b[-1]
-    
-    # y_diff = y_max-y_min
-        
-    # ylim_max = y_max + y_diff*2
-    # ylim_min = y_min - y_diff/4
     
     # compute plot limits
-    # take max from the worst of the first bo iteration (excludes initial tpot)
-    y_mu_start = full_tpot_y_mu[SKIP_PLOT_INIT]
+    y_mu_start = full_tpot_y_mu[params['SKIP_PLOT_INIT']]
     y_mu_end = bo_y_mu[-1]
     
     ylim_max = y_mu_start
     ylim_min = y_mu_end - 1.1*bo_y_sigma[-1]
     
-    if PLOT_ALT:
-        alt_y_mu_start = alt_bo_y_mu[0][0]
-        alt_y_mu_end = alt_bo_y_mu[len(alt_bo_y_b)-1][-1]
-        
-        alt_ylim_max = alt_y_mu_start
-        alt_ylim_min = alt_y_mu_end - 1.1*alt_bo_y_sigma[len(alt_bo_y_b)-1][-1]
-    
-        if USE_ALT_SCALE:
-            ylim_min = min(ylim_min,alt_ylim_min)
-            ylim_max = alt_ylim_max
-    
-    if PLOT_MIN_MAX:
+    if params['PLOT_MIN_MAX']:
         # plot TPOT only data (min/max)
         fig1, ax_end_y = plt.subplots()
         ax_end_y.fill_between(range(len(full_tpot_y_mu)), 
@@ -538,7 +527,7 @@ for problem in prob_list:
     plt.show()
     
     
-    if PLOT_MIN_MAX:
+    if params['PLOT_MIN_MAX']:
         # plot TPOT and BO data (min/max)
         fig3, ax_tpot_bo_y = plt.subplots()
         ax_tpot_bo_y.fill_between(range(1,len(init_tpot_y_mu)+1), 
@@ -613,8 +602,7 @@ for problem in prob_list:
                 for i in range(1,len(run_idxs)+1)]
     
     fig7, ax_box = plt.subplots()
-    if SHOW_BOX_GRID:
-        ax_box.grid()
+    ax_box.grid()
     boxplot_data = ax_box.boxplot(box_data,patch_artist=True)
     ax_box.set_xlim([0.25,max(matching_idx)+.75])
     ax_box.set_xlabel("Run")
@@ -624,8 +612,7 @@ for problem in prob_list:
     
     # box plot of matching without outliers
     fig8, ax_box2 = plt.subplots()
-    if SHOW_BOX_GRID:
-        ax_box2.grid()
+    ax_box2.grid()
     boxplot2_data = ax_box2.boxplot(box_data, showfliers=False,patch_artist=True)
     
     label_y_max = max([max(boxplot2_data['whiskers'][run*2+1].get_ydata()) for run in range(len(run_idxs))])
@@ -654,8 +641,8 @@ for problem in prob_list:
     # compute plot limits
     # take max from the worst of the first bo iteration (excludes initial tpot)
     
-    if PLOT_ALT:
-        if PLOT_MIN_MAX:
+    if params['PLOT_ALT']:
+        if params['PLOT_MIN_MAX']:
             # plot alt results (min/max)
             fig9, ax_alt_tpot_bo = plt.subplots()
             alt_tpot_lines = {}
@@ -729,7 +716,7 @@ for problem in prob_list:
     
     plt.show()
     
-    if SAVE_PLOTS:
+    if params['SAVE_PLOTS']:
         plot_dir = os.path.join(prob_dir, "Plots")
         
         if not os.path.exists(plot_dir):
@@ -750,13 +737,13 @@ for problem in prob_list:
             plot_dir, problem + "_box_plot.png")
         fname_box_plot2 = os.path.join(
             plot_dir, problem + "_box_plot_no_outliers.png")
-        if PLOT_ALT:
+        if params['PLOT_ALT']:
             fname_alt_plot = os.path.join(
                 plot_dir, problem + "_alt_min_max.png")
             fname_alt_plot_s = os.path.join(
                 plot_dir, problem + "_alt_mu_sigma.png")
         
-        if PLOT_MIN_MAX:
+        if params['PLOT_MIN_MAX']:
             fig1.savefig(fname_tpot_plot,bbox_inches='tight')
             fig3.savefig(fname_tpot_bo_plot,bbox_inches='tight')
         fig2.savefig(fname_tpot_plot_s,bbox_inches='tight')
@@ -765,9 +752,9 @@ for problem in prob_list:
         # fig6.savefig(fname_matching_plot_zoom)
         fig7.savefig(fname_box_plot,bbox_inches='tight')
         fig8.savefig(fname_box_plot2,bbox_inches='tight')
-        if PLOT_ALT:
+        if params['PLOT_ALT']:
             fig10.savefig(fname_alt_plot_s,bbox_inches='tight')
-            if PLOT_MIN_MAX:
+            if params['PLOT_MIN_MAX']:
                 fig9.savefig(fname_alt_plot,bbox_inches='tight')
         
 

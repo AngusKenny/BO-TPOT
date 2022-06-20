@@ -368,11 +368,29 @@ Along with simplifying the process of running tests with the three aspects of BO
 Each time this script is executed, a file in `./<RESULTS_DIR>/` called `progress.out` is created with the date and time the execution was started, the values of the parameters in the `params` dictionary (if the default TPOT configuration dictionary is used, then it will just say `default_tpot_config_dict`, otherwise it will give the full dictionary). As well as this general execution information, for each problem and run, the seed is given, and the outcome of any processes run, along with the time taken (if successful). If any process fails or crashes, then the error message and stack traceback will be written to this file, but the execution itself will contine with the next process or run. This helps to diagnose any minor or incidental bugs, without having to cancel the entire set of runs.
 
 ## Processing Results
-The file `process_full_results.py` provides a script that 
+The file `process_full_results.py` provides a script that automatically processes the results produced by BO-TPOT, computes the statistics and generates plots for the data. By default, the script searches each problem sub-directory in the results directory to find runs which have valid results. It performs a check on each run to ensure that the parameters used to generate the results are the same as those used in the first valid run, if there is a mis-match in parameter values, or if the results themselves are invalid, it will skip the run and not include it in the final statistics or plots.
 
+Plots are generated and saved as `.PNG ` files to `./<RESULTS_DIR>/<problem>/Plots/`. The plots track the mean value across all 
 
+A the top of the script is a set of parameters that can be set; the table below gives the parameters in this dictionary and their type, followed by a description of their functions:
+
+| Parameter              | Type       |
+|:-----------------------|:----------:|
+|`PROBLEMS`             | list       |
+|`RUN_LIST`             | list       |
+|`RESULTS_DIR`          | string     |
+|`SAVE_PLOTS`           | boolean    |
+|`PLOT_ALT`             | boolean    |
+|`PLOT_MIN_MAX`         | boolean    |
+|`SKIP_PLOT_INIT`       | int        |
+
+### `PROBLEMS`:
+This is a list which specifies the problems to be batch-processed, in exactly the same way as it is described above. If this is set to the empty list `[]`, then `RESULTS_DIR` is searched for existing results, and all results found are processed.
+
+### `RUN_LIST`:
+This parameters allows the user to specify the runs to be processed 
 
 ## Footnotes
 [^1]: In a previous version of the code, the Optuna study was set up as a minimisation problem, which negated the CV values returned by the TPOT pipeline evaluation. However, this created some confusion and, as a result, a bug was found where the CV of the initial samples given to Optuna was not negated when the study was set up. This meant that Optuna could never find a solution with a CV value better than its initial samples, because they were input as negative values, and any subsequent CV score from the TPOT pipeline evaluations were negated and stored as positive ones in the model. This did not mean that no improvement on the pipeline was possible with BO-TPOT, as any evaluated pipeline was stored in the TPOT evaluated individuals dictionary, along with its CV value, so if there was a better pipeline that was found, it would still be there - it just meant that, in an expected improvement sense, the "bar" was being set too high and Optuna did not know whether the new pipeline was actually an improvement or not. In order to remove this confusion and avoid any further problems, the entire process was converted to a maximisation problem for both TPOT and BO.
 
-[^2]: To save a little bit of computational effort in the first iteration, some of the original TPOT data is used, but as the population for subsequent iterations is potentially changed by the BO step, all other TPOT data must be generated in real-time.
+[^2]: To save a little bit of computational effort in the first iteration, some of the original TPOT data is used, but as the population for subsequent iterations is potentially changed by each BO step, all other TPOT data must be generated in real-time.

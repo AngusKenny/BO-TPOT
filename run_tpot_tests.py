@@ -19,42 +19,42 @@ Verbosity settings:
     3 = show everything, including warnings
 '''
 params = {
-            'RUN_TPOT' : True,
-            'RUN_BO' : True,
-            'RUN_ALT' : True,
-            'VERBOSITY' : 3,
-            'DATA_DIR' : 'Data',
-            'RESULTS_DIR' : 'Results',
-            # if not generating TPOT data, RUNS can be a list of runs
-            'RUNS' : 5,
-            'PROBLEMS' : [
-                        # 'abalone',
-                        'quake',
-            #             'house_16h',
-            #             'brazilian_houses',
-            #             'diamonds','elevators',
-            #             'black_friday'
-                         ],
-            'TPOT_CONFIG_DICT' : default_tpot_config_dict,
-            'nJOBS' : -1,
-            # toggle between real and discrete parameter spaces
-            'REAL_VALS' : True,
-            # maximum time allowed for a single pipeline evaluation (mins)
-            'PIPE_EVAL_TIMEOUT' : 5,
-            #
-            # TPOT data generation parameters
-            #
-            'START_SEED' : 42,
-            'POP_SIZE' : 100,
-            'nTOTAL_GENS' : 100,
-            'STOP_GEN' : 80,
-            #
-            # BO and TPOT + BO alternating parameters
-            #
-            # stop optuna running forever if it cannot find enough new pipelines
-            'OPTUNA_TIMEOUT_TRIALS' : 100,
-            'nALT_ITERS' : 10,
-        }
+    'RUN_TPOT' : True,
+    'RUN_BO' : True,
+    'RUN_ALT' : True,
+    'VERBOSITY' : 3,
+    'DATA_DIR' : 'Data',
+    'RESULTS_DIR' : 'Results',
+    # if not generating TPOT data, RUNS can be a list of runs
+    'RUNS' : 5,
+    'PROBLEMS' : [
+                # 'abalone',
+                'quake',
+    #             'house_16h',
+    #             'brazilian_houses',
+    #             'diamonds','elevators',
+    #             'black_friday'
+                 ],
+    'TPOT_CONFIG_DICT' : default_tpot_config_dict,
+    'nJOBS' : -1,
+    # toggle between real and discrete parameter spaces
+    'REAL_VALS' : True,
+    # maximum time allowed for a single pipeline evaluation (mins)
+    'PIPE_EVAL_TIMEOUT' : 5,
+    #
+    # TPOT data generation parameters
+    #
+    'START_SEED' : 42,
+    'POP_SIZE' : 100,
+    'nTOTAL_GENS' : 100,
+    'STOP_GEN' : 80,
+    #
+    # BO and TPOT + BO alternating parameters
+    #
+    # stop optuna running forever if it cannot find enough new pipelines
+    'OPTUNA_TIMEOUT_TRIALS' : 100,
+    'nALT_ITERS' : 10,
+    }
 
 # suppress experimental warnings, etc if verbosity below 4
 if params['VERBOSITY'] < 3:
