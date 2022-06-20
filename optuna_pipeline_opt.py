@@ -9,7 +9,8 @@ from optuna._experimental import experimental
 from deap.gp import Primitive, Terminal
 from optuna_hp_spaces import (make_hp_space_real, 
                               make_hp_space_discrete, 
-                              make_optuna_trial)
+                              make_optuna_trial_real,
+                              make_optuna_trial_discrete)
 import numpy as np
 
 class RequiredTrialsCallback(object):
@@ -349,7 +350,7 @@ class PipelinePopOpt(object):
         
         # create NGSAII sampler
         # sampler = optuna.samplers.NSGAIISampler(population_size=100)     
-        sampler = optuna.samplers.TPESampler(multivariate=True)     
+        sampler = optuna.samplers.TPESampler(multivariate=True, warn_independent_sampling=False)     
         
         # create optuna study - we have to maximise because TPOT 
         # returns negative CV value
@@ -357,7 +358,10 @@ class PipelinePopOpt(object):
 
         # create trial based on seed data and insert to model without evaluation
         for seed_sample in seed_samples:
-            trial = make_optuna_trial(seed_sample[0], seed_sample[1])
+            if real_vals:
+                trial = make_optuna_trial_real(seed_sample[0], seed_sample[1])
+            else:
+                trial = make_optuna_trial_discrete(seed_sample[0], seed_sample[1])
             study.add_trial(trial)
         
         # account for initial seed trials

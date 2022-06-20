@@ -12,7 +12,8 @@ from optuna.trial import create_trial
 from optuna.distributions import (CategoricalDistribution, 
                                   UniformDistribution, 
                                   IntUniformDistribution,
-                                  LogUniformDistribution)
+                                  LogUniformDistribution,
+                                  DiscreteUniformDistribution)
 
 def make_hp_space_discrete(trial, param_names):
             
@@ -35,6 +36,7 @@ def make_hp_space_discrete(trial, param_names):
         elif name == 'ExtraTreesRegressor__max_features':
             trial_params.append((name, trial.suggest_discrete_uniform(
                 'ExtraTreesRegressor__max_features', 0.05, 1.0, 0.05)))
+            # trial_params.append((name,'skip'))
         elif name == 'ExtraTreesRegressor__min_samples_split':
             trial_params.append((name, trial.suggest_int(
                'ExtraTreesRegressor__min_samples_split', 2, 20)))
@@ -299,8 +301,8 @@ def make_hp_space_discrete(trial, param_names):
         elif name == 'SelectFromModel__ExtraTreesRegressor__n_estimators':
             trial_params.append((name, 'skip'))
         elif name == 'SelectFromModel__ExtraTreesRegressor__max_features':
-            trial_params.append((name, trial.suggest_float(
-                'SelectFromModel__ExtraTreesRegressor__max_features', 0.05, 1.0)))
+            trial_params.append((name, trial.suggest_discrete_uniform(
+                'SelectFromModel__ExtraTreesRegressor__max_features', 0.05, 1.0, 0.05)))
         else:
             print("Unable to parse parameter name: " 
                   + name + ", skipping..")
@@ -603,7 +605,321 @@ def make_hp_space_real(trial, param_names):
     return trial_params
 
 
-def make_optuna_trial(trial_params, value):
+def make_optuna_trial_discrete(trial_params, value):
+        
+    params = {}
+    distributions = {}
+    
+    for (name,val) in trial_params:
+        # ***** REGRESSOR HYPERPARAMETERS *****
+        # ElasticNetCV hyperparameters
+        if name == 'ElasticNetCV__l1_ratio':
+            distributions[name] = DiscreteUniformDistribution(0.0, 1.0, 0.5)
+            params[name] = val
+        elif name == 'ElasticNetCV__tol':
+            distributions[name] = CategoricalDistribution([1e-5, 1e-4, 1e-3, 1e-2, 1e-1])
+            params[name] = val
+        # ExtraTreesRegressor hyperparameters
+        elif name == 'ExtraTreesRegressor__n_estimators':
+            continue
+            # trial_params.append(trial.suggest_int(
+            #     'ExtraTreesRegressor__n_estimators', 100, 100))
+            # trial_params.append((name,'skip'))
+        elif name == 'ExtraTreesRegressor__max_features':
+            distributions[name] = DiscreteUniformDistribution(0.05, 1.0, 0.05)
+            params[name] = val
+        elif name == 'ExtraTreesRegressor__min_samples_split':
+            distributions[name] = IntUniformDistribution(2, 20)
+            params[name] = val
+        elif name == 'ExtraTreesRegressor__min_samples_leaf':
+            distributions[name] = IntUniformDistribution(1, 20)
+            params[name] = val
+        elif name == 'ExtraTreesRegressor__bootstrap':
+            distributions[name] = CategoricalDistribution(['True', 'False'])
+            params[name] = val
+        # GradientBoostingRegressor hyperparameters
+        elif name == 'GradientBoostingRegressor__n_estimators':
+            continue
+            # trial_params.append(trial.suggest_int(
+            #    'GradientBoostingRegressor__n_estimators', 100, 100))
+            # trial_params.append((name, 'skip'))
+        elif name == 'GradientBoostingRegressor__loss':
+            distributions[name] = CategoricalDistribution(
+                ['ls', 'lad', 'huber', 'quantile'])
+            params[name] = val
+        elif name == 'GradientBoostingRegressor__learning_rate':
+            distributions[name] = CategoricalDistribution([1e-3, 1e-2, 1e-1, 0.5, 1.])
+            params[name] = val
+        elif name == 'GradientBoostingRegressor__max_depth':
+            distributions[name] = IntUniformDistribution(1, 10)
+            params[name] = val
+        elif name == 'GradientBoostingRegressor__min_samples_split':
+            distributions[name] = IntUniformDistribution(2, 20)
+            params[name] = val
+        elif name == 'GradientBoostingRegressor__min_samples_leaf':
+            distributions[name] = IntUniformDistribution(1, 20)
+            params[name] = val
+        elif name == 'GradientBoostingRegressor__subsample':
+            distributions[name] = DiscreteUniformDistribution(0.05, 1.0, 0.05)
+            params[name] = val
+        elif name == 'GradientBoostingRegressor__max_features':
+            distributions[name] = DiscreteUniformDistribution(0.05, 1.0, 0.05)
+            params[name] = val
+        elif name == 'GradientBoostingRegressor__alpha':
+            distributions[name] = CategoricalDistribution([0.75, 0.8, 0.85, 0.9, 0.95, 0.99])
+            params[name] = val
+        # AdaBoostRegressor hyperparameters
+        elif name == 'AdaBoostRegressor__n_estimators':
+            continue
+            # trial_params.append(trial.suggest_int(
+            #     'AdaBoostRegressor__n_estimators', 100, 100))
+            # trial_params.append((name, 'skip'))
+        elif name == 'AdaBoostRegressor__learning_rate':
+            distributions[name] = CategoricalDistribution([1e-3, 1e-2, 1e-1, 0.5, 1.])
+            params[name] = val
+        elif name == 'AdaBoostRegressor__loss':
+            distributions[name] = CategoricalDistribution(
+                ["linear", "square", "exponential"])
+            params[name] = val
+        # DecisionTreeRegressor hyperparameters
+        elif name == 'DecisionTreeRegressor__max_depth':
+            distributions[name] = IntUniformDistribution(1, 10)
+            params[name] = val
+        elif name == 'DecisionTreeRegressor__min_samples_split':
+            distributions[name] = IntUniformDistribution(2, 20)
+            params[name] = val
+        elif name == 'DecisionTreeRegressor__min_samples_leaf':
+            distributions[name] = IntUniformDistribution(1, 20)
+            params[name] = val
+        # KNeighborsRegressor hyperparameters
+        elif name == 'KNeighborsRegressor__n_neighbors':
+            distributions[name] = IntUniformDistribution(1, 100)
+            params[name] = val
+        elif name == 'KNeighborsRegressor__weights':
+            distributions[name] = CategoricalDistribution(
+                ["uniform", "distance"])
+            params[name] = val
+        elif name == 'KNeighborsRegressor__p':
+            distributions[name] = IntUniformDistribution(1, 2)
+            params[name] = val
+        # LassoLarsCV hyperparameters
+        elif name == 'LassoLarsCV__normalize':
+            distributions[name] = CategoricalDistribution(['True','False'])
+            params[name] = val
+        # LinearSVR hyperparameters
+        elif name == 'LinearSVR__loss':
+            distributions[name] = CategoricalDistribution(
+                ["epsilon_insensitive", "squared_epsilon_insensitive"])
+            params[name] = val
+        elif name == 'LinearSVR__dual':
+            distributions[name] = CategoricalDistribution(['True', 'False'])
+            params[name] = val
+        elif name == 'LinearSVR__tol':
+            distributions[name] = CategoricalDistribution([1e-5, 1e-4, 1e-3, 1e-2, 1e-1])
+            params[name] = val
+        elif name == 'LinearSVR__C':
+            distributions[name] = CategoricalDistribution([1e-4, 1e-3, 1e-2, 1e-1, 0.5, 1., 5., 10., 15., 20., 25.])
+            params[name] = val
+        elif name == 'LinearSVR__epsilon':
+            distributions[name] = CategoricalDistribution([1e-4, 1e-3, 1e-2, 1e-1, 1.])
+            params[name] = val
+        # RandomForestRegressor hyperparameters
+        elif name == 'RandomForestRegressor__bootstrap':
+            distributions[name] = CategoricalDistribution(['True','False'])
+            params[name] = val
+        elif name == 'RandomForestRegressor__max_features':
+            distributions[name] = DiscreteUniformDistribution(0.05, 1.0, 0.05)
+            params[name] = val
+        elif name == 'RandomForestRegressor__min_samples_leaf':
+            distributions[name] = IntUniformDistribution(1, 20)
+            params[name] = val
+        elif name == 'RandomForestRegressor__min_samples_split':
+            distributions[name] = IntUniformDistribution(2, 20)
+            params[name] = val
+        elif name == 'RandomForestRegressor__n_estimators':
+            continue
+            # trial_params.append((name, trial.suggest_int(
+            #     'RandomForestRegressor__n_estimators', 100, 100))
+            # trial_params.append((name, 'skip'))
+        # XGBRegressor hyperparameters
+        elif name == 'XGBRegressor__learning_rate':
+            distributions[name] = CategoricalDistribution([1e-3, 1e-2, 1e-1, 0.5, 1.])
+            params[name] = val
+        elif name == 'XGBRegressor__max_depth':
+            distributions[name] = IntUniformDistribution(1, 10)
+            params[name] = val
+        elif name == 'XGBRegressor__min_child_weight':
+            distributions[name] = IntUniformDistribution(1, 20)
+            params[name] = val
+        elif name == 'XGBRegressor__n_estimators':
+            continue
+            # trial_params.append((name, trial.suggest_int(
+            #     'XGBRegressor__n_estimators', 100, 100))
+            # trial_params.append((name, 'skip'))
+        elif name == 'XGBRegressor__n_jobs':
+            continue
+            # trial_params.append((name, trial.suggest_int(
+            #     'XGBRegressor__n_jobs', 1, 1)))
+            # trial_params.append((name, 'skip'))
+        elif name == 'XGBRegressor__objective':
+            continue
+            # trial_params.append((name, trial.suggest_categorical(
+            #     'XGBRegressor__objective', ['reg:squarederror'])))
+            # trial_params.append((name, 'skip'))
+        elif name == 'XGBRegressor__subsample':
+            distributions[name] = DiscreteUniformDistribution(0.05, 1.0, 0.05)
+            params[name] = val
+        elif name == 'XGBRegressor__verbosity':
+            continue
+            # trial_params.append((name, trial.suggest_int(
+            #     'XGBRegressor__verbosity', 0, 0)))
+            # trial_params.append((name, 'skip'))
+        # SGDRegressor hyperparameters
+        elif name == 'SGDRegressor__loss':
+            distributions[name] = CategoricalDistribution(
+                ['squared_loss', 'huber', 'epsilon_insensitive'])
+            params[name] = val
+        elif name == 'SGDRegressor__penalty':
+            continue
+            # trial_params.append((name, trial.suggest_categorical(
+            #     'SGDRegressor__penalty', ['elasticnet'])))
+            # trial_params.append((name, 'skip'))
+        elif name == 'SGDRegressor__alpha':
+            # trial_params.append((name, trial.suggest_float(
+            #     'SGDRegressor__alpha', 1e-5, 0.01, log=True)))
+            distributions[name] = CategoricalDistribution([0.0, 0.01, 0.001])
+            params[name] = val
+        elif name == 'SGDRegressor__learning_rate':
+            distributions[name] = CategoricalDistribution(
+                ['invscaling', 'constant'])
+            params[name] = val
+        elif name == 'SGDRegressor__fit_intercept':
+            distributions[name] = CategoricalDistribution(['True', 'False'])
+            params[name] = val
+        elif name == 'SGDRegressor__l1_ratio':
+            distributions[name] = DiscreteUniformDistribution(0.0, 1.0, 0.25)
+            params[name] = val
+        elif name == 'SGDRegressor__eta0':
+            distributions[name] = CategoricalDistribution([0.1, 1.0, 0.01])
+            params[name] = val
+        elif name == 'SGDRegressor__power_t':
+            # trial_params.append((name, trial.suggest_float(
+            #     'SGDRegressor__power_t', 1e-5, 100.0, log=True)))
+            distributions[name] = CategoricalDistribution([0.5, 0.0, 1.0, 0.1, 100.0, 10.0, 50.0])
+            params[name] = val
+        # ***** PREPROCESSOR HYPERPARAMETERS *****
+        # Binarizer hyperparameters
+        elif name == 'Binarizer__threshold':
+            distributions[name] = DiscreteUniformDistribution(0.0, 1.0, 0.05)
+            params[name] = val
+        # FastICA hyperparameters
+        elif name == 'FastICA__tol':
+            distributions[name] = DiscreteUniformDistribution(0.0, 1.0, 0.05)
+            params[name] = val
+        # FeatureAgglomeration hyperparameters
+        elif name == 'FeatureAgglomeration__linkage':
+            distributions[name] = CategoricalDistribution(
+                ['ward', 'complete', 'average'])
+            params[name] = val
+        elif name == 'FeatureAgglomeration__affinity':
+            distributions[name] = CategoricalDistribution(
+                ['euclidean', 'l1', 'l2', 'manhattan', 'cosine'])
+            params[name] = val
+        # Normalizer hyperparameters
+        elif name == 'Normalizer__norm':
+            distributions[name] = CategoricalDistribution(['l1', 'l2', 'max'])
+            params[name] = val
+        # Nystroem hyperparameters
+        elif name == 'Nystroem__kernel':
+            distributions[name] = CategoricalDistribution(
+                ['rbf', 'cosine', 'chi2', 'laplacian', 'polynomial', 
+                 'poly', 'linear', 'additive_chi2', 'sigmoid'])
+            params[name] = val
+        elif name == 'Nystroem__gamma':
+            distributions[name] = DiscreteUniformDistribution(0.0, 1.0, 0.05)
+            params[name] = val
+        elif name == 'Nystroem__n_components':
+            distributions[name] = IntUniformDistribution(1, 10)
+            params[name] = val
+        # PCA hyperparameters
+        elif name == 'PCA__svd_solver':
+            continue
+            # trial_params.append((name, trial.suggest_categorical(
+            #     'PCA__svd_solver', ['randomized'])))
+            # trial_params.append((name, 'skip'))
+        elif name == 'PCA__iterated_power':
+            distributions[name] = IntUniformDistribution(1, 10)
+            params[name] = val
+        # PolynomialFeatures hyperparameters
+        elif name == 'PolynomialFeatures__degree':
+            continue
+            # trial_params.append((name, trial.suggest_int(
+            #     'PolynomialFeatures__degree', 2, 2)))
+            # trial_params.append((name, 'skip'))
+        elif name == 'PolynomialFeatures__include_bias':
+            continue
+            # trial_params.append((name, trial.suggest_categorical(
+            #     'PolynomialFeatures__include_bias', ['False'])))
+            # trial_params.append((name, 'skip'))
+        elif name == 'PolynomialFeatures__interaction_only':
+            continue
+            # trial_params.append((name, trial.suggest_categorical(
+            #     'PolynomialFeatures__interaction_only', ['False'])))
+            # trial_params.append((name, 'skip'))
+        # RBFSampler hyperparameters
+        elif name == 'RBFSampler__gamma':
+            distributions[name] = DiscreteUniformDistribution(0.0, 1.0, 0.05)
+            params[name] = val
+        # OneHotEncoder hyperparameters
+        elif name == 'OneHotEncoder__minimum_fraction':
+            distributions[name] = CategoricalDistribution([0.05, 0.1, 0.15, 0.2, 0.25])
+            params[name] = val
+        elif name == 'OneHotEncoder__sparse':
+            continue
+            # trial_params.append((name, trial.suggest_categorical(
+            #     'OneHotEncoder__sparse', ['False'])))
+            # trial_params.append((name, 'skip'))
+        elif name == 'OneHotEncoder__threshold':
+            continue
+            # trial_params.append((name, trial.suggest_int(
+            #     'OneHotEncoder__threshold', 10, 10)))
+            # trial_params.append((name, 'skip'))
+        # ***** SELECTOR HYPERPARAMETERS *****
+        # SelectFwe hyperparameters
+        elif name == 'SelectFwe__alpha':
+            distributions[name] = DiscreteUniformDistribution(0, 0.05, 0.001)
+            params[name] = val
+        # SelectPercentile hyperparameters
+        elif name == 'SelectPercentile__percentile':
+            distributions[name] = IntUniformDistribution(1, 99)
+            params[name] = val
+        # VarianceThreshold hyperparameters
+        elif name == 'VarianceThreshold__threshold':
+            distributions[name] = CategoricalDistribution([0.0001, 0.0005, 0.001, 0.005, 0.01, 0.05, 0.1, 0.2])
+            params[name] = val
+        # SelectFwe hyperparameters
+        elif name == 'SelectFromModel__threshold':
+            # continue
+            distributions[name] = DiscreteUniformDistribution(0.0, 1.0, 0.05)
+            params[name] = val            
+        elif name == 'SelectFromModel__ExtraTreesRegressor__n_estimators':
+            continue
+        elif name == 'SelectFromModel__ExtraTreesRegressor__max_features':
+            distributions[name] = DiscreteUniformDistribution(0.05, 1.01, 0.05)
+            params[name] = val
+            # continue
+        else:
+            print("Unable to parse parameter name: " 
+                  + name + ", skipping..")
+            trial_params.append((name, 'skip'))
+        
+    trial = create_trial(params=params, 
+                         distributions=distributions, 
+                         value=value)
+    
+    return trial
+
+def make_optuna_trial_real(trial_params, value):
     
     params = {}
     distributions = {}
