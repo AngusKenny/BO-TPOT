@@ -315,7 +315,7 @@ class PipelinePopOpt(object):
                         
         return matching_strs
     
-    def optimise(self, ind_idx, X_train, y_train, n_evals, seed_samples=[], timeout_trials=1e20):
+    def optimise(self, ind_idx, X_train, y_train, n_evals, real_vals=True, seed_samples=[], timeout_trials=1e20):
         ''' Run optuna optimisation        
 
         Parameters
@@ -348,7 +348,8 @@ class PipelinePopOpt(object):
         optuna.logging.set_verbosity(verbosity=optuna_verb)
         
         # create NGSAII sampler
-        sampler = optuna.samplers.NSGAIISampler(population_size=100)     
+        # sampler = optuna.samplers.NSGAIISampler(population_size=100)     
+        sampler = optuna.samplers.TPESampler(multivariate=True)     
         
         # create optuna study - we have to maximise because TPOT 
         # returns negative CV value
@@ -366,4 +367,4 @@ class PipelinePopOpt(object):
         stop_callback = RequiredTrialsCallback(n_evals_adj, self.tpot.evaluated_individuals_, timeout_trials, vprint=self.vprint)
         
         # run optimise method
-        study.optimize(Objective(self, ind_idx, X_train, y_train,n_evals_adj,vprint=self.vprint),callbacks=[stop_callback])
+        study.optimize(Objective(self, ind_idx, X_train, y_train,n_evals_adj,real_vals=real_vals,vprint=self.vprint),callbacks=[stop_callback])

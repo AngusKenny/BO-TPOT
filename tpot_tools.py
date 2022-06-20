@@ -376,7 +376,7 @@ def run_bo(run_list=[],
               
             # run bayesian optimisation with seed_dicts as initial samples
             po.optimise(0, X_train, y_train, n_evals=n_bo_evals,
-                        seed_samples=seed_samples, 
+                        seed_samples=seed_samples,real_vals=real_vals, 
                         timeout_trials=optuna_timeout_trials)
     
             # record time        
@@ -727,7 +727,7 @@ def run_tpot_bo_alt(n_iters=10,
                 
                 # run bayesian optimisation with seed_dicts as initial samples
                 bo_po.optimise(0, X_train, y_train, n_evals=n_bo_evals,
-                                   seed_samples=seed_samples, 
+                                   seed_samples=seed_samples,real_vals=real_vals, 
                                    timeout_trials=optuna_timeout_trials)
             
                 best_bo_pipe = ""
