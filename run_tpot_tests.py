@@ -19,7 +19,7 @@ Verbosity settings:
     3 = show everything, including warnings
 '''
 params = {
-    'RUN_TPOT' : True,
+    'RUN_TPOT' : False,
     'RUN_BO' : True,
     'RUN_ALT' : True,
     'VERBOSITY' : 1,
