@@ -619,7 +619,7 @@ def make_optuna_trial_discrete(trial_params, value):
         # ***** REGRESSOR HYPERPARAMETERS *****
         # ElasticNetCV hyperparameters
         if name == 'ElasticNetCV__l1_ratio':
-            distributions[name] = DiscreteUniformDistribution(0.0, 1.0, 0.5)
+            distributions[name] = DiscreteUniformDistribution(0.0, 1.0, 0.05)
             params[name] = val
         elif name == 'ElasticNetCV__tol':
             distributions[name] = CategoricalDistribution([1e-5, 1e-4, 1e-3, 1e-2, 1e-1])
