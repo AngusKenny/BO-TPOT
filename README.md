@@ -93,7 +93,7 @@ would represent the tree
     |-- paramA1=True
      `- paramA2=2
 ```
-TPOT operator parameters can be real-valued, integer, categorical or boolean and the naming convention is `<operator name>__<parameter name>`.
+TPOT operator parameters can be real-valued, integer, categorical or boolean and the naming convention is `<operator name>__<parameter name>=<parameter value>`.
 
 The evaluated individuals dictionary is written in its entirety to the file:
 
