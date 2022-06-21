@@ -12,6 +12,7 @@ import sys
 import copy
 import traceback
 import utils as u
+from shutil import rmtree
 from optuna_pipeline_opt import PipelinePopOpt
 from tpot import TPOTRegressor
 from deap import creator
@@ -113,7 +114,7 @@ def get_tpot_data(tot_gens=100,
                    + f"..\n{u.WHITE}")
             
             tpot.fit(X_train, y_train)
-             
+                
             vprint.v1("")
             
             # record fitting time
@@ -819,18 +820,47 @@ class TestHandler(object):
         self.t_start = time.time()
         
         if params['RUN_TPOT'] and type(params['RUNS']) is not int:
-            sys.exit('Cannot specify list of runs when generating new TPOT data')
+            sys.exit('Cannot specify list of runs when generating new TPOT data')       
         
         self.run_list = range(params['RUNS']) if type(params['RUNS']) is int else params['RUNS']
         
         # set up verbosity printer
         self.vprint = u.Vprint(params['VERBOSITY'])
         
-        cwd = os.getcwd()
+        cwd = os.getcwd()        
+        
+        self.data_path = os.path.join(cwd,params['DATA_DIR'])
+        if not os.path.exists(self.data_path):
+            sys.exit(f"Cannot find data directory {self.data_path}") 
+            
+        # if problem list is empty, search data directory for .data files
+        if len(params['PROBLEMS']) == 0:
+            self.prob_list = [f.split(".")[0] 
+                              for f in os.listdir(self.data_path) 
+                              if f.endswith(".data")]
+        else:
+            self.prob_list = params['PROBLEMS']
+        
         self.results_path = os.path.join(cwd, params['RESULTS_DIR'])
         if not os.path.exists(self.results_path):
             os.makedirs(self.results_path)
-        self.fname_prog = os.path.join(self.results_path,"progress.out")
+                    
+        # if CLEAN_DATA flag is set, confirm and delete data
+        if params['CLEAN_DATA'] and not params['RUN_TPOT']:
+            rmv_txt = ("BO and alt" if params['RUN_BO'] and params['RUN_ALT'] 
+                       else "BO" if params['RUN_BO'] 
+                       else "alt" if params['RUN_ALT'] 
+                       else "nothing (check 'CLEAN_DATA' flag)")
+            self.vprint.vwarn(f"about to remove {rmv_txt} data from runs:\n"
+                              + f"{self.run_list}\n"
+                              +f"of problem(s):\n{self.prob_list}\n")
+            rmv_conf = input("Are you sure you want to do this? [y/N] ")
+            if rmv_conf in "yY":
+                self.clean_data()
+            else:
+                sys.exit(f"Exiting.. Make sure to check CLEAN_DATA flag!")
+            
+        self.fname_prog = os.path.join(self.results_path,"progress.out")          
 
         with open(self.fname_prog, 'w') as f:
             f.write(f"TIME STARTED:{time.asctime()}\n")
@@ -840,7 +870,22 @@ class TestHandler(object):
                     f.write(f"{k}:default_tpot_config_dict\n")
                 else:
                     f.write(f"{k}:{v}\n")
-
+            
+    def clean_data(self):
+        self.vprint.vwarn("Cleaning data..")
+        for prob in self.prob_list:
+            for run in self.run_list:
+                run_str = str(run) if run > 9 else f"0{run}"
+                run_path = prob_dir = os.path.join(self.results_path, prob, f"Run_{run_str}")
+                if self.params['RUN_BO']: 
+                    rmtree(os.path.join(run_path,"bo"),ignore_errors=True)
+                if self.params['RUN_ALT']: 
+                    rmtree(os.path.join(run_path,"alt"),ignore_errors=True)
+        self.vprint.v0("Done!\n")
+        cont_conf = input("Do you want to continue executing the script? [Y/n] ")
+        if cont_conf in "nN":
+            sys.exit(f"Exiting..")
+            
     def write_problem(self, problem):
         with open(self.fname_prog, 'a') as f:
             f.write(f"\n****** {problem} ******\n")
@@ -880,7 +925,7 @@ class TestHandler(object):
             self.vprint.verr(f"FAILED:\n{trace}")
             with open(self.fname_prog, 'a') as f:
                 f.write(f"Generate TPOT data: Failed..\n{trace}\n\n")
-            return False
+            return None
         
         return new_run
     

@@ -29,6 +29,9 @@ class Vprint(object):
     def __init__(self, verbosity):
         self.verbosity = verbosity
     
+    def v0(self, *args, **kwargs):
+        print(*args, **kwargs)
+    
     def v1(self, *args, **kwargs):
         if self.verbosity >= 1:
             print(*args, **kwargs)
@@ -43,6 +46,9 @@ class Vprint(object):
             
     def verr(self, *args, **kwargs):
         print(f"{RED}Error:{OFF}",*args, **kwargs)
+        
+    def vwarn(self, *args, **kwargs):
+        print(f"{RED}Warning:{OFF}",*args, **kwargs)
 
 
 def is_number(string):

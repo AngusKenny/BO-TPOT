@@ -19,6 +19,9 @@ Verbosity settings:
     3 = show everything, including warnings
 '''
 params = {
+    # clear BO and alt data from directories to be written to 
+    # (will ask for confirmation)
+    'CLEAN_DATA' : False,
     'RUN_TPOT' : False,
     'RUN_BO' : True,
     'RUN_ALT' : True,
@@ -36,7 +39,7 @@ params = {
     #             'black_friday'
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
-    'nJOBS' : 4,
+    'nJOBS' : 16,
     # toggle between real and discrete parameter spaces
     'REAL_VALS' : False,
     # maximum time allowed for a single pipeline evaluation (mins)
@@ -62,7 +65,7 @@ if params['VERBOSITY'] < 3:
 
 tpot_handler = TestHandler(params)
 
-for problem in params['PROBLEMS']:
+for problem in tpot_handler.prob_list:
     tpot_handler.write_problem(problem)
         
     for run_idx in range(len(tpot_handler.run_list)):
@@ -70,7 +73,8 @@ for problem in params['PROBLEMS']:
         # to get the run number to pass to the other processes
         if params['RUN_TPOT']:
             run = tpot_handler.generate_tpot_data(run_idx, problem)
-            if not run:
+            if run is None:
+                tpot_handler.vprint.verr("TPOT data not generated, skipping run..\n\n")
                 continue
         else:
             run = tpot_handler.run_list[run_idx]

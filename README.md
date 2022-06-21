@@ -294,6 +294,7 @@ The table below gives the parameters in this dictionary and their type, followed
 
 | Parameter              | Type       |
 |:-----------------------|:----------:|
+|`CLEAN_DATA`            | boolean    |
 |`RUN_TPOT`              | boolean    |
 |`RUN_BO`                | boolean    |
 |`RUN_ALT`               | boolean    |
@@ -312,6 +313,9 @@ The table below gives the parameters in this dictionary and their type, followed
 |`STOP_GEN`              | int        | 
 |`OPTUNA_TIMEOUT_TRIALS` | int        |
 |`nALT_ITERS`            | int        |
+
+### `CLEAN_DATA`:
+This parameter allows the user to clear **all** data in run directories that are to be written to, when starting an execution. This parameter depends on the values of `RUN_TPOT`, `RUN_BO`, `RUN_ALT`, `RUNS` and `PROBLEMS`, and will only delete data from whatever is flagged to execute in the current instance. When set to `True`, it will display the list of runs and problems it is about to clear, and whether the `run_bo` or `run_tpot_bo_alt` (or both) data will be removed, and will ask for confirmation[^3]. Confirming with `y` will remove the specified data directories and continue with the execution; cancelling with `n` (or any other input) will exit the script. Once the data has been cleared it will ask for a second confirmation to ensure the user wants to continue executing the script. Selecting `y` (or any other input) here will continue as normal, selecting `n` here will exit without processing anything else, meaning this parameter can be used as an easy way to clean the `RESULTS_DIR` directory back to the initial TPOT data if needed. If this parameter is set to `False`, any existing data will still be overwritten, but only as-and-when new data is produced. If `RUN_TPOT` is set to `True` then this step is ignored, as generated TPOT data is never affected.
 
 ### `RUN_TPOT`/`RUN_BO`/`RUN_ALT`:
 Boolean flag to control which of `get_tpot_data`, `run_bo` and `run_tpot_bo_alt` are executed. Set to `False` to skip any of the processes, however keep in mind that both `run_bo` and `run_tpot_bo_alt` require that `get_tpot_data` has been run _at some stage_.
@@ -425,3 +429,5 @@ If there is a very large gap between the CV scores of the initial solutions and 
 [^1]: In a previous version of the code, the Optuna study was set up as a minimisation problem, which negated the CV values returned by the TPOT pipeline evaluation. However, this created some confusion and, as a result, a bug was found where the CV of the initial samples given to Optuna was not negated when the study was set up. This meant that Optuna could never find a solution with a CV value better than its initial samples, because they were input as negative values, and any subsequent CV score from the TPOT pipeline evaluations were negated and stored as positive ones in the model. This did not mean that no improvement on the pipeline was possible with BO-TPOT, as any evaluated pipeline was stored in the TPOT evaluated individuals dictionary, along with its CV value, so if there was a better pipeline that was found, it would still be there - it just meant that, in an expected improvement sense, the "bar" was being set too high and Optuna did not know whether the new pipeline was actually an improvement or not. In order to remove this confusion and avoid any further problems, the entire process was converted to a maximisation problem for both TPOT and BO.
 
 [^2]: To save a little bit of computational effort in the first iteration, some of the original TPOT data is used, but as the population for subsequent iterations is potentially changed by each BO step, all other TPOT data must be generated in real-time.
+
+[^3]: Somer older versions of the Spyder IDE for the Anaconda distribution cannot handle user input from the keyboard. If you are using the Spyder IDE and it keeps crashing when asking for confirmation, ensure this parameter is set to `False` or run the main script from a terminal console or other IDE.
