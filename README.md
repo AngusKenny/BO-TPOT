@@ -2,7 +2,7 @@
 An add-on for the [Tree-based Pipeline Optimisation Tool (TPOT)](http://epistasislab.github.io/tpot/), a Python library for automated machine learning. By employing [Optuna](https://optuna.org/), a hyperparameter optimisation Python library, Bayesian optimisation can be applied to an existing TPOT pipeline in an attempt to improve its quality by intelligently searching real-valued hyperparameter spaces.
 
 ## Dependencies
-[TPOT](http://epistasislab.github.io/tpot/), [PyTorch](http://pytorch.org), [Optuna](https://optuna.org/)
+[TPOT](http://epistasislab.github.io/tpot/), [PyTorch](http://pytorch.org), [Optuna](https://optuna.org/) - and various packages from [Anaconda Distribution](http://anaconda.org).
 
 ## Introduction
 There are many different types of machine learning models, each of which has its own unique set of hyperparameters. These hyperparameters can be real values, integers or even categories, and control various aspects of the model like learning rate, different thresholds, etc. Machine learning models can be employed singularly, or combined; using the output of one model as the input to the next, harnessing the different strengths of multiple models simultaneously. When combined in this manner, the models are collectively known as a _pipeline_.
