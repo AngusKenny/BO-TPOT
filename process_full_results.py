@@ -24,12 +24,13 @@ SAVE_PLOTS:     Save generated plots to file in ./<RESULTS_DIR>/Plots/
 
 params = {
     'RESULTS_DIR'   : 'Results',
-    'PROBLEMS'      : ['quake'],
+    'PROBLEMS'      : ['abalone'],
     'RUN_LIST'      : [],
     'SAVE_PLOTS'    : True,
     'PLOT_ALT'      : True,
     'PLOT_MIN_MAX'  : False,
-    'SKIP_PLOT_INIT': 10
+    'SKIP_PLOT_INIT': 200,
+    'ADD_TITLE_TEXT': '(discrete)'
     }
 
 cwd = os.getcwd()
@@ -44,6 +45,9 @@ if len(prob_list) == 0:
                  for d in os.scandir(results_path) if d.is_dir()]
 
 stats = {}
+
+# in case ADD_TITLE_TEXT is not defined
+add_text = params['ADD_TITLE_TEXT'] if 'ADD_TITLE_TEXT' in params else ""
 
 # iterate over problem list
 for problem in prob_list:
@@ -489,7 +493,7 @@ for problem in prob_list:
         ax_end_y.plot(range(len(full_tpot_y_mu)), full_tpot_y_mu, 
                       linewidth=2, label='TPOT evaluation'+mean_text)
         ax_end_y.legend()
-        title_text = (f"{problem} - TPOT step only (min/max)\n" 
+        title_text = (f"{problem} - TPOT only [min/max]\n" 
                       + f"μ: {round(init_tpot_y_mu[-1],4)}, "
                       + f"min: {round(init_tpot_y_b[-1],4)}, "
                       + f"max: {round(init_tpot_y_w[-1],4)}")
@@ -509,7 +513,7 @@ for problem in prob_list:
                     full_tpot_y_mu, linewidth=2,
                     label='TPOT evaluation'+mean_text)
     ax_end_y_s.legend()
-    title_text = (f"{problem} - TPOT step only (mu/sigma)\n" 
+    title_text = (f"{problem} - TPOT only\n" 
                   + f"μ: {round(init_tpot_y_mu[-1],4)}, "
                   + f"σ: {init_tpot_y_sigma[-1]:.3e}")
     ax_end_y_s.set_title(title_text)
@@ -537,7 +541,7 @@ for problem in prob_list:
                           bo_y_mu, linewidth=2,
                           label='Bayesian optimisation'+mean_text,color='red')
         ax_tpot_bo_y.legend()
-        title_text = (f"{problem} - TPOT and BO steps (min/max)\n"
+        title_text = (f"{problem} - TPOT-BO-D [min/max] {add_text}\n"
                       + f"TPOT μ:{round(init_tpot_y_mu[-1],4)}, "
                       + f"BO μ: {round(bo_y_mu[-1],4)}, "
                       + f"min: {round(bo_y_b[-1],4)}, "
@@ -566,7 +570,7 @@ for problem in prob_list:
                         bo_y_mu, linewidth=2,
                         label='Bayesian optimisation'+mean_text,color='red')
     ax_tpot_bo_y_s.legend()
-    title_text = (f"{problem} - TPOT and BO steps (mu/sigma)\n"
+    title_text = (f"{problem} - TPOT-BO-D {add_text}\n"
                   + f"TPOT: μ: {round(init_tpot_y_mu[-1],4)}, "
                   + f"σ: {init_tpot_y_sigma[-1]:.3e}, "
                   + f"BO μ: {round(bo_y_mu[-1],4)}, "
@@ -577,58 +581,7 @@ for problem in prob_list:
     ax_tpot_bo_y_s.set_ylabel("CV")
     plt.show()
     
-    matching_idx = matching_data[:,0]
-    
-    r = 1
-    r_old = 1
-    for i in range(len(matching_idx)-1):
-        r_old = matching_idx[i]
-        matching_idx[i] = r
-        if r_old != matching_idx[i+1]:
-            r = r + 1
-        
-    matching_idx[-1] = r
-       
-    # box plot of matching
-    box_data = [matching_data[np.where(matching_data[:,0]==i),1][0] 
-                for i in range(1,len(run_idxs)+1)]
-    
-    fig7, ax_box = plt.subplots()
-    ax_box.grid()
-    boxplot_data = ax_box.boxplot(box_data,patch_artist=True)
-    ax_box.set_xlim([0.25,max(matching_idx)+.75])
-    ax_box.set_xlabel("Run")
-    ax_box.set_ylabel("CV")
-    ax_box.set_title(f"{problem} - TPOT "
-                            + f"matching best @ gen {stop_gen}")
-    
-    # box plot of matching without outliers
-    fig8, ax_box2 = plt.subplots()
-    ax_box2.grid()
-    boxplot2_data = ax_box2.boxplot(box_data, showfliers=False,patch_artist=True)
-    
-    label_y_max = max([max(boxplot2_data['whiskers'][run*2+1].get_ydata()) for run in range(len(run_idxs))])
-    label_y_min = min([min(boxplot2_data['whiskers'][run*2].get_ydata()) for run in range(len(run_idxs))])
-    label_diff = label_y_max - label_y_min    
-    for run in range(1,len(run_idxs)+1):
-        label_y = label_y_max
-        label_offset = 10
-        if run % 2 == 1:
-            label_y = label_y_min
-            label_offset = -10
-        
-        ax_box2.annotate(f"[{len(np.where(matching_idx==run)[0])}]",
-                        (run, label_y),
-                        textcoords="offset points",
-                        xytext=(0,label_offset),
-                        ha='center')
-    ax_box2.set_xlim([0.25,max(matching_idx)+.75])
-    ax_box2.set_ylim([label_y_min-label_diff/8,label_y_max+label_diff/8])
-    ax_box2.set_xlabel("Run [number of pipelines]")
-    ax_box2.set_ylabel("CV")
-    ax_box2.set_title(f"{problem} - TPOT "
-                            + f"matching best @ gen {stop_gen} (no outliers)")
-    
+
     # plot alt results
     # compute plot limits
     # take max from the worst of the first bo iteration (excludes initial tpot)
@@ -660,7 +613,7 @@ for problem in prob_list:
                     label='BO evaluation'+mean_text,color='r')
             ax_alt_tpot_bo.legend(handles=[alt_tpot_lines[0], alt_bo_lines[0]])
                 
-            alt_title_text = (f"{problem} - TPOT + BO alternating (min/max)\n"
+            alt_title_text = (f"{problem} - Alt TPOT-BO-D [min/max] {add_text}\n"
                             + f"μ: {round(alt_bo_y_mu[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}, "
                             + f"min: {round(alt_bo_y_b[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}, "
                             + f"max: {round(alt_bo_y_w[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}")
@@ -698,13 +651,67 @@ for problem in prob_list:
                 label='BO evaluation'+mean_text,color='r')
         ax_alt_tpot_bo_s.legend(handles=[alt_tpot_lines_s[0], alt_bo_lines_s[0]])
             
-        alt_title_text_s = (f"{problem} - TPOT + BO alternating (mu/sigma)\n"
+        alt_title_text_s = (f"{problem} - Alt TPOT-BO-D {add_text}\n"
                         + f"μ: {round(alt_bo_y_mu[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}, "
                         + f"σ: {alt_bo_y_sigma[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1]:.3e}")
         ax_alt_tpot_bo_s.set_title(alt_title_text_s)
         ax_alt_tpot_bo_s.set_ylim([ylim_min, ylim_max])
         ax_alt_tpot_bo_s.set_xlabel("Evaluations")
         ax_alt_tpot_bo_s.set_ylabel("CV")
+    
+    plt.show()
+    
+    matching_idx = matching_data[:,0]
+    
+    r = 1
+    r_old = 1
+    for i in range(len(matching_idx)-1):
+        r_old = matching_idx[i]
+        matching_idx[i] = r
+        if r_old != matching_idx[i+1]:
+            r = r + 1
+        
+    matching_idx[-1] = r
+       
+    # box plot of matching
+    box_data = [matching_data[np.where(matching_data[:,0]==i),1][0] 
+                for i in range(1,len(run_idxs)+1)]
+    
+    fig7, ax_box = plt.subplots()
+    ax_box.grid()
+    boxplot_data = ax_box.boxplot(box_data,patch_artist=True)
+    ax_box.set_xlim([0.25,max(matching_idx)+.75])
+    ax_box.set_xlabel("Run")
+    ax_box.set_ylabel("CV")
+    ax_box.set_title(f"{problem} - TPOT "
+                            + f"matching best @ gen {stop_gen} {add_text}")
+    
+    # box plot of matching without outliers
+    fig8, ax_box2 = plt.subplots()
+    ax_box2.grid()
+    boxplot2_data = ax_box2.boxplot(box_data, showfliers=False,patch_artist=True)
+    
+    label_y_max = max([max(boxplot2_data['whiskers'][run*2+1].get_ydata()) for run in range(len(run_idxs))])
+    label_y_min = min([min(boxplot2_data['whiskers'][run*2].get_ydata()) for run in range(len(run_idxs))])
+    label_diff = label_y_max - label_y_min    
+    for run in range(1,len(run_idxs)+1):
+        label_y = label_y_max
+        label_offset = 10
+        if run % 2 == 1:
+            label_y = label_y_min
+            label_offset = -10
+        
+        ax_box2.annotate(f"[{len(np.where(matching_idx==run)[0])}]",
+                        (run, label_y),
+                        textcoords="offset points",
+                        xytext=(0,label_offset),
+                        ha='center')
+    ax_box2.set_xlim([0.25,max(matching_idx)+.75])
+    ax_box2.set_ylim([label_y_min-label_diff/8,label_y_max+label_diff/8])
+    ax_box2.set_xlabel("Run [number of pipelines]")
+    ax_box2.set_ylabel("CV")
+    ax_box2.set_title(f"{problem} - TPOT "
+                            + f"matching best @ gen {stop_gen} [no outliers] {add_text}")
     
     plt.show()
     

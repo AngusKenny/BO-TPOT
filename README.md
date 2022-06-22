@@ -406,6 +406,7 @@ At the top of the script is a dictionary of parameters that can be set; the tabl
 |`PLOT_ALT`              | boolean    |
 |`PLOT_MIN_MAX`          | boolean    |
 |`SKIP_PLOT_INIT`        | int        |
+|`ADD_TITLE_TEXT`        | string     |
 
 ### `RESULTS_DIR`:
 String to specify the the name of the directory that results data should be drawn from.
@@ -427,6 +428,10 @@ As well as the plots tracking the mean with shaded +/- standard deviation, setti
 
 ### `SKIP_PLOT_INIT`:
 If there is a very large gap between the CV scores of the initial solutions and later ones, plotting the entire set of results can mean it is hard to see any small changes after it starts converging. This parameter allows the user to specify a number of initial solutions to skip, making the plot much easier to read.
+
+### `ADD_TITLE_TEXT`:
+This parameter allows the user to add a custom string to the end of the first line of each plot. If no additional text is required, set as empty string `""` or remove from `params` dictionary.
+
 
 ## Footnotes
 [^1]: In a previous version of the code, the Optuna study was set up as a minimisation problem, which negated the CV values returned by the TPOT pipeline evaluation. However, this created some confusion and, as a result, a bug was found where the CV of the initial samples given to Optuna was not negated when the study was set up. This meant that Optuna could never find a solution with a CV value better than its initial samples, because they were input as negative values, and any subsequent CV score from the TPOT pipeline evaluations were negated and stored as positive ones in the model. This did not mean that no improvement on the pipeline was possible with BO-TPOT, as any evaluated pipeline was stored in the TPOT evaluated individuals dictionary, along with its CV value, so if there was a better pipeline that was found, it would still be there - it just meant that, in an expected improvement sense, the "bar" was being set too high and Optuna did not know whether the new pipeline was actually an improvement or not. In order to remove this confusion and avoid any further problems, the entire process was converted to a maximisation problem for both TPOT and BO.
