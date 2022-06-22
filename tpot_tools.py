@@ -919,12 +919,12 @@ class TestHandler(object):
             t_tpot_end = time.time()
             self.write_run(new_run)
             with open(self.fname_prog, 'a') as f:
-                f.write(f"Generate TPOT data: Successful ({round(t_tpot_end-t_tpot_start,2)}s)\n")
+                f.write(f"Generate TPOT data (run {run}): Successful ({round(t_tpot_end-t_tpot_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
             with open(self.fname_prog, 'a') as f:
-                f.write(f"Generate TPOT data: Failed..\n{trace}\n\n")
+                f.write(f"Generate TPOT data (run {run}): Failed..\n{trace}\n\n")
             return None
         
         return new_run
@@ -946,12 +946,12 @@ class TestHandler(object):
                         pipe_eval_timeout=self.params['PIPE_EVAL_TIMEOUT'])
             t_bo_end = time.time()
             with open(self.fname_prog, 'a') as f:
-                f.write(f"Run BO: Successful ({round(t_bo_end-t_bo_start,2)}s)\n")
+                f.write(f"Run {run} (BO): Successful ({round(t_bo_end-t_bo_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
             with open(self.fname_prog, 'a') as f:
-                f.write(f"Run BO: Failed..\n{trace}\n\n")
+                f.write(f"Run {run} (BO): Failed..\n{trace}\n\n")
 
     
     def run_alt(self, run, problem):
@@ -972,9 +972,9 @@ class TestHandler(object):
                             pipe_eval_timeout=self.params['PIPE_EVAL_TIMEOUT'])
             t_alt_end = time.time()
             with open(self.fname_prog, 'a') as f:
-                f.write(f"Run alt: Successful ({round(t_alt_end-t_alt_start,2)}s)\n")
+                f.write(f"Run {run} (alt): Successful ({round(t_alt_end-t_alt_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
             with open(self.fname_prog, 'a') as f:
-                f.write(f"Run BO: Failed..\n{trace}\n\n")
+                f.write(f"Run {run} (BO): Failed..\n{trace}\n\n")
