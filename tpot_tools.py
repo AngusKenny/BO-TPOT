@@ -919,12 +919,12 @@ class TestHandler(object):
             t_tpot_end = time.time()
             self.write_run(new_run)
             with open(self.fname_prog, 'a') as f:
-                f.write(f"Generate TPOT data (run {run}): Successful ({round(t_tpot_end-t_tpot_start,2)}s)\n")
+                f.write(f"Generate TPOT data (run {new_run}): Successful ({round(t_tpot_end-t_tpot_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
             with open(self.fname_prog, 'a') as f:
-                f.write(f"Generate TPOT data (run {run}): Failed..\n{trace}\n\n")
+                f.write(f"Generate TPOT data (run {run_idx}): Failed..\n{trace}\n\n")
             return None
         
         return new_run
