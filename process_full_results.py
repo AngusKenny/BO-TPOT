@@ -24,13 +24,13 @@ SAVE_PLOTS:     Save generated plots to file in ./<RESULTS_DIR>/Plots/
 
 params = {
     'RESULTS_DIR'   : 'Results',
-    'PROBLEMS'      : ['abalone'],
+    'PROBLEMS'      : ['quake'],
     'RUN_LIST'      : [],
     'SAVE_PLOTS'    : True,
     'PLOT_ALT'      : True,
     'PLOT_MIN_MAX'  : False,
     'SKIP_PLOT_INIT': 200,
-    'ADD_TITLE_TEXT': '(discrete)'
+    'ADD_TITLE_TEXT': '(continuous)'
     }
 
 cwd = os.getcwd()

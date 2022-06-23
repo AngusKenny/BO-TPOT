@@ -9,12 +9,12 @@ There are many different types of machine learning models, each of which has its
 
 Three main decisions to consider when designing machine learning pipelines are:
 - which models to select; 
-- what order to apply them in; and, 
+- how they are organised, relative to each other; and, 
 - what the values of their respective hyperparameters should be. 
 
 TPOT is a Python libarary, built on top of the [Distributed Evolutionary Algorithms in Python (DEAP)](https://github.com/deap) library, which is designed to automate this machine learning pipeline development process. It represents pipelines as tree-based data structures and constructs them using the genetic programming (GP) methods provided by DEAP. 
 
-One significant limitation of TPOT is that for all its GP bells-and-whistles, it is still essentially a grid-search method, and as such cannot handle continuous hyperparameter spaces. Many hyperparameters are real-valued however, but TPOT circumvents this issue by descretising the continuous search space with a certain granularity. Although this is an effective method of handling this issue, the fact still remains that unless the global optimum value for a given hyperparameter lies on the exact point of descretisation, TPOT will never find it.
+One significant limitation of TPOT is that for all its GP bells-and-whistles, it is still essentially a grid-search method, and as such cannot operate on continuous hyperparameter spaces. Many hyperparameters are real-valued however, but TPOT circumvents this issue by descretising the continuous search space with a certain granularity. Although this is an effective method of handling this issue, the fact still remains that unless the global optimum value for a given hyperparameter lies on the exact point of descretisation, TPOT will never find it.
 
 [Optuna](https://optuna.org/) is a hyperparameter optimisation library for Python which uses Bayesian optimisation to tune hyperparameter values. It uses a Tree-based Parzen Estimator (TPE)-based surrogate model, built on historical information, to estimate and suggest hyperparameter values, which are then evaluated and the model subsequently updated. In contrast to TPOT,  Optuna has no limitations on the type of values the hyperparameters can take, however it is not as effective at selecting models and constructing pipelines as TPOT. 
 
