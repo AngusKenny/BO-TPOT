@@ -898,7 +898,7 @@ class TestHandler(object):
     def write_end(self):
         t_end = time.time()
         with open(self.fname_prog, 'a') as f:
-            f.write(f"\nTests complete!\nTotal time elapsed: {round(t_end-self.t_start,2)}s")
+            f.write(f"\nTests complete!\nTotal time elapsed: {round(t_end-self.t_start,2)}s\n")
 
     def generate_tpot_data(self, run_idx, problem):
         try:
