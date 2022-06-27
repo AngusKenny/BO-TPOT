@@ -24,7 +24,7 @@ SAVE_PLOTS:     Save generated plots to file in ./<RESULTS_DIR>/Plots/
 
 params = {
     'RESULTS_DIR'   : 'Results',
-    'PROBLEMS'      : ['quake'],
+    'PROBLEMS'      : ['abalone'],
     'RUN_LIST'      : [],
     'SAVE_PLOTS'    : True,
     'PLOT_ALT'      : True,
@@ -541,7 +541,7 @@ for problem in prob_list:
                           bo_y_mu, linewidth=2,
                           label='Bayesian optimisation'+mean_text,color='red')
         ax_tpot_bo_y.legend()
-        title_text = (f"{problem} - TPOT-BO-D [min/max] {add_text}\n"
+        title_text = (f"{problem} - TPOT-BO-C [min/max] {add_text}\n"
                       + f"TPOT μ:{round(init_tpot_y_mu[-1],4)}, "
                       + f"BO μ: {round(bo_y_mu[-1],4)}, "
                       + f"min: {round(bo_y_b[-1],4)}, "
@@ -570,7 +570,7 @@ for problem in prob_list:
                         bo_y_mu, linewidth=2,
                         label='Bayesian optimisation'+mean_text,color='red')
     ax_tpot_bo_y_s.legend()
-    title_text = (f"{problem} - TPOT-BO-D {add_text}\n"
+    title_text = (f"{problem} - TPOT-BO-C {add_text}\n"
                   + f"TPOT: μ: {round(init_tpot_y_mu[-1],4)}, "
                   + f"σ: {init_tpot_y_sigma[-1]:.3e}, "
                   + f"BO μ: {round(bo_y_mu[-1],4)}, "
@@ -613,7 +613,7 @@ for problem in prob_list:
                     label='BO evaluation'+mean_text,color='r')
             ax_alt_tpot_bo.legend(handles=[alt_tpot_lines[0], alt_bo_lines[0]])
                 
-            alt_title_text = (f"{problem} - Alt TPOT-BO-D [min/max] {add_text}\n"
+            alt_title_text = (f"{problem} - Alt TPOT-BO-C [min/max] {add_text}\n"
                             + f"μ: {round(alt_bo_y_mu[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}, "
                             + f"min: {round(alt_bo_y_b[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}, "
                             + f"max: {round(alt_bo_y_w[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}")
@@ -651,7 +651,7 @@ for problem in prob_list:
                 label='BO evaluation'+mean_text,color='r')
         ax_alt_tpot_bo_s.legend(handles=[alt_tpot_lines_s[0], alt_bo_lines_s[0]])
             
-        alt_title_text_s = (f"{problem} - Alt TPOT-BO-D {add_text}\n"
+        alt_title_text_s = (f"{problem} - Alt TPOT-BO-C {add_text}\n"
                         + f"μ: {round(alt_bo_y_mu[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}, "
                         + f"σ: {alt_bo_y_sigma[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1]:.3e}")
         ax_alt_tpot_bo_s.set_title(alt_title_text_s)

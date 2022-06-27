@@ -29,7 +29,7 @@ params = {
     'DATA_DIR' : 'Data',
     'RESULTS_DIR' : 'Results',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : [10,6,5],
+    'RUNS' : [1,2,3],
     'PROBLEMS' : [
                 'abalone',
                 # 'quake',
