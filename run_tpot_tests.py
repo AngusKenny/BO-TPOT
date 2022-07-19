@@ -27,7 +27,7 @@ params = {
     'RUN_ALT' : False,
     'VERBOSITY' : 2,
     'DATA_DIR' : 'Data',
-    'RESULTS_DIR' : 'Elevators_Results',
+    'RESULTS_DIR' : 'Results',
     # if not generating TPOT data, RUNS can be a list of runs
     'RUNS' : 5,
     'PROBLEMS' : [
