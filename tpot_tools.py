@@ -889,11 +889,6 @@ class TestHandler(object):
     def write_problem(self, problem):
         with open(self.fname_prog, 'a') as f:
             f.write(f"\n****** {problem} ******\n")
-    
-    def write_run(self, run):
-        with open(self.fname_prog, 'a') as f:
-            f.write(f"\nRun {run}\n============\n")
-            f.write(f"Seed: {self.params['START_SEED'] + run}\n")
 
     def write_end(self):
         t_end = time.time()

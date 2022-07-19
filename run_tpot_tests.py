@@ -22,20 +22,21 @@ params = {
     # clear BO and alt data from directories to be written to 
     # (will ask for confirmation)
     'CLEAN_DATA' : False,
-    'RUN_TPOT' : False,
-    'RUN_BO' : True,
-    'RUN_ALT' : True,
-    'VERBOSITY' : 1,
+    'RUN_TPOT' : True,
+    'RUN_BO' : False,
+    'RUN_ALT' : False,
+    'VERBOSITY' : 2,
     'DATA_DIR' : 'Data',
-    'RESULTS_DIR' : 'Results',
+    'RESULTS_DIR' : 'Elevators_Results',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : [1,2,3],
+    'RUNS' : 5,
     'PROBLEMS' : [
-                'abalone',
+                # 'abalone',
                 # 'quake',
     #             'house_16h',
     #             'brazilian_houses',
-    #             'diamonds','elevators',
+    #             'diamonds',
+                 'elevators',
     #             'black_friday'
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
@@ -43,11 +44,11 @@ params = {
     # toggle between real and discrete parameter spaces
     'REAL_VALS' : True,
     # maximum time allowed for a single pipeline evaluation (mins)
-    'PIPE_EVAL_TIMEOUT' : 5,
+    'PIPE_EVAL_TIMEOUT' : 1,
     #
     # TPOT data generation parameters
     #
-    'START_SEED' : 42,
+    'START_SEED' : 442,
     'POP_SIZE' : 100,
     'nTOTAL_GENS' : 100,
     'STOP_GEN' : 80,
@@ -78,8 +79,6 @@ for problem in tpot_handler.prob_list:
                 continue
         else:
             run = tpot_handler.run_list[run_idx]
-            # write run information to progress file
-            tpot_handler.write_run(run)
             
         # run BO optimiser
         if params['RUN_BO']:

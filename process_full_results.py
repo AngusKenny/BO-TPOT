@@ -23,8 +23,8 @@ SAVE_PLOTS:     Save generated plots to file in ./<RESULTS_DIR>/Plots/
 '''
 
 params = {
-    'RESULTS_DIR'   : 'Results',
-    'PROBLEMS'      : ['abalone'],
+    'RESULTS_DIR'   : 'BH_1min_Results_C',
+    'PROBLEMS'      : ['brazilian_houses'],
     'RUN_LIST'      : [],
     'SAVE_PLOTS'    : True,
     'PLOT_ALT'      : True,
@@ -37,6 +37,8 @@ cwd = os.getcwd()
 results_path = os.path.join(cwd,params['RESULTS_DIR'])
 if not os.path.exists(results_path):
     sys.exit(f"Cannot find results directory {results_path}")
+
+params['RUN_LIST'] = list(params['RUN_LIST'])
 
 prob_list = params['PROBLEMS']
 # if problem list is empty, search problem directory for problems
@@ -481,9 +483,12 @@ for problem in prob_list:
     # compute plot limits
     y_mu_start = full_tpot_y_mu[params['SKIP_PLOT_INIT']]
     y_mu_end = bo_y_mu[-1]
-    
-    ylim_max = y_mu_start
     ylim_min = y_mu_end - 1.1*bo_y_sigma[-1]
+    ylim_max = y_mu_start
+    
+    if params['PLOT_ALT']:
+        y_mu_end = stats[problem]['mu']['alt']      
+        ylim_min = y_mu_end - 1.1*stats[problem]['sigma']['alt']
     
     if params['PLOT_MIN_MAX']:
         # plot TPOT only data (min/max)
@@ -494,9 +499,9 @@ for problem in prob_list:
                       linewidth=2, label='TPOT evaluation'+mean_text)
         ax_end_y.legend()
         title_text = (f"{problem} - TPOT only [min/max]\n" 
-                      + f"μ: {round(init_tpot_y_mu[-1],4)}, "
-                      + f"min: {round(init_tpot_y_b[-1],4)}, "
-                      + f"max: {round(init_tpot_y_w[-1],4)}")
+                      + f"μ: {round(full_tpot_y_mu[-1],4)}, "
+                      + f"min: {round(full_tpot_y_b[-1],4)}, "
+                      + f"max: {round(full_tpot_y_w[-1],4)}")
         ax_end_y.set_title(title_text)
         ax_end_y.set_ylim([ylim_min, ylim_max])
         ax_end_y.set_xlabel("Evaluations")
@@ -514,8 +519,8 @@ for problem in prob_list:
                     label='TPOT evaluation'+mean_text)
     ax_end_y_s.legend()
     title_text = (f"{problem} - TPOT only\n" 
-                  + f"μ: {round(init_tpot_y_mu[-1],4)}, "
-                  + f"σ: {init_tpot_y_sigma[-1]:.3e}")
+                  + f"μ: {round(full_tpot_y_mu[-1],4)}, "
+                  + f"σ: {full_tpot_y_sigma[-1]:.3e}")
     ax_end_y_s.set_title(title_text)
     ax_end_y_s.set_ylim([ylim_min,ylim_max])
     ax_end_y_s.set_xlabel("Evaluations")
@@ -541,7 +546,7 @@ for problem in prob_list:
                           bo_y_mu, linewidth=2,
                           label='Bayesian optimisation'+mean_text,color='red')
         ax_tpot_bo_y.legend()
-        title_text = (f"{problem} - TPOT-BO-C [min/max] {add_text}\n"
+        title_text = (f"{problem} - TPOT-BO [min/max] {add_text}\n"
                       + f"TPOT μ:{round(init_tpot_y_mu[-1],4)}, "
                       + f"BO μ: {round(bo_y_mu[-1],4)}, "
                       + f"min: {round(bo_y_b[-1],4)}, "
@@ -570,7 +575,7 @@ for problem in prob_list:
                         bo_y_mu, linewidth=2,
                         label='Bayesian optimisation'+mean_text,color='red')
     ax_tpot_bo_y_s.legend()
-    title_text = (f"{problem} - TPOT-BO-C {add_text}\n"
+    title_text = (f"{problem} - TPOT-BO {add_text}\n"
                   + f"TPOT: μ: {round(init_tpot_y_mu[-1],4)}, "
                   + f"σ: {init_tpot_y_sigma[-1]:.3e}, "
                   + f"BO μ: {round(bo_y_mu[-1],4)}, "
@@ -613,7 +618,7 @@ for problem in prob_list:
                     label='BO evaluation'+mean_text,color='r')
             ax_alt_tpot_bo.legend(handles=[alt_tpot_lines[0], alt_bo_lines[0]])
                 
-            alt_title_text = (f"{problem} - Alt TPOT-BO-C [min/max] {add_text}\n"
+            alt_title_text = (f"{problem} - Alt TPOT-BO [min/max] {add_text}\n"
                             + f"μ: {round(alt_bo_y_mu[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}, "
                             + f"min: {round(alt_bo_y_b[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}, "
                             + f"max: {round(alt_bo_y_w[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}")
@@ -651,7 +656,7 @@ for problem in prob_list:
                 label='BO evaluation'+mean_text,color='r')
         ax_alt_tpot_bo_s.legend(handles=[alt_tpot_lines_s[0], alt_bo_lines_s[0]])
             
-        alt_title_text_s = (f"{problem} - Alt TPOT-BO-C {add_text}\n"
+        alt_title_text_s = (f"{problem} - Alt TPOT-BO {add_text}\n"
                         + f"μ: {round(alt_bo_y_mu[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1],4)}, "
                         + f"σ: {alt_bo_y_sigma[len(data[run_idxs[-1]]['alt_bo_y'])-1][-1]:.3e}")
         ax_alt_tpot_bo_s.set_title(alt_title_text_s)
