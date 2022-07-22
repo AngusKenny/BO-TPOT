@@ -713,7 +713,9 @@ def run_tpot_bo_alt(n_iters=10,
                 bo_tpot._pop = [creator.Individual.from_string(best_iter_pipe, bo_tpot._pset)]
                 
                 # fit for 0 gens to load into model
-                vprint.v2(f"{u.CYAN}\nfitting temporary bo tpot model with "  
+                vprint.v2(f"{u.CYAN}\n"
+                          + f"({time.strftime('%d %b, %H:%M', time.localtime())})" 
+                          + " fitting temporary bo tpot model with "  
                           + f"{bo_tpot.generations} generations..\n{u.WHITE}")
                 
                 bo_tpot.fit(X_train, y_train)
@@ -785,6 +787,7 @@ def run_tpot_bo_alt(n_iters=10,
                 t_iter = time.time()
                 
                 with open(fname_alt_prog, 'a') as f:
+                    f.write(f"{time.strftime('%d %b, %H:%M', time.localtime())}\n")
                     f.write(f"****** ITERATION {i} ******\n")
                     f.write(f"Best TPOT pipe:\n{best_iter_pipe}\n")
                     f.write(f"Best TPOT CV:{best_iter_cv}\n\n")
@@ -914,7 +917,7 @@ class TestHandler(object):
             t_tpot_end = time.time()
             self.write_run(new_run)
             with open(self.fname_prog, 'a') as f:
-                f.write(f"Generate TPOT data (run {new_run}): Successful ({round(t_tpot_end-t_tpot_start,2)}s)\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Generate TPOT data (run {new_run}): Successful ({round(t_tpot_end-t_tpot_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
@@ -941,7 +944,7 @@ class TestHandler(object):
                         pipe_eval_timeout=self.params['PIPE_EVAL_TIMEOUT'])
             t_bo_end = time.time()
             with open(self.fname_prog, 'a') as f:
-                f.write(f"Run {run} (BO): Successful ({round(t_bo_end-t_bo_start,2)}s)\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} (BO): Successful ({round(t_bo_end-t_bo_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
@@ -967,7 +970,7 @@ class TestHandler(object):
                             pipe_eval_timeout=self.params['PIPE_EVAL_TIMEOUT'])
             t_alt_end = time.time()
             with open(self.fname_prog, 'a') as f:
-                f.write(f"Run {run} (alt): Successful ({round(t_alt_end-t_alt_start,2)}s)\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} (alt): Successful ({round(t_alt_end-t_alt_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
