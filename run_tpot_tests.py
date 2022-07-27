@@ -22,29 +22,30 @@ params = {
     # clear BO and alt data from directories to be written to 
     # (will ask for confirmation)
     'CLEAN_DATA' : False,
-    'RUN_TPOT' : True,
+    'RUN_TPOT' : False,
     'RUN_BO' : False,
     'RUN_ALT' : False,
+    'RUN_COMP' : True,
     'VERBOSITY' : 2,
     'DATA_DIR' : 'Data',
-    'RESULTS_DIR' : 'Results',
+    'RESULTS_DIR' : 'Results_discrete',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : 5,
+    'RUNS' : [15,16,17,18,19,20],
     'PROBLEMS' : [
-                # 'abalone',
+                'abalone',
                 # 'quake',
     #             'house_16h',
     #             'brazilian_houses',
     #             'diamonds',
-                 'elevators',
+                 # 'elevators',
     #             'black_friday'
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
     'nJOBS' : 4,
     # toggle between real and discrete parameter spaces
-    'REAL_VALS' : True,
+    'REAL_VALS' : False,
     # maximum time allowed for a single pipeline evaluation (mins)
-    'PIPE_EVAL_TIMEOUT' : 1,
+    'PIPE_EVAL_TIMEOUT' : 5,
     #
     # TPOT data generation parameters
     #
@@ -87,5 +88,9 @@ for problem in tpot_handler.prob_list:
         # run alternating TPOT + BO
         if params['RUN_ALT']:
             tpot_handler.run_alt(run, problem)
+            
+        # run alternating TPOT + BO
+        if params['RUN_COMP']:
+            tpot_handler.run_comp(run, problem)
         
 tpot_handler.write_end()
