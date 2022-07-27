@@ -816,6 +816,419 @@ def run_tpot_bo_alt(n_iters=10,
             vprint.v1(f"\nTotal time elapsed: {round(t_end-t_start,2)} sec\n")
             
             
+def run_tpot_bo_compete(run_list=[], 
+                        optuna_timeout_trials=100,
+                        ignore_results=True,
+                        prob_list=[], 
+                        data_dir='Data', 
+                        results_dir='Results',
+                        tpot_config_dict=default_tpot_config_dict,
+                        n_jobs=-1,
+                        vprint=u.Vprint(1),
+                        real_vals=True,
+                        pipe_eval_timeout=5):
+
+    # set tpot verbosity to vprint.verbosity + 1 to give more information
+    tpot_verb = vprint.verbosity + 1 if vprint.verbosity > 0 else 0
+    
+    cwd = os.getcwd()
+    data_path = os.path.join(cwd,data_dir)
+    if not os.path.exists(data_path):
+        sys.exit(f"Cannot find data directory {data_path}")
+        
+    # if problem list is empty, search data directory for .data files
+    if len(prob_list) == 0:
+        prob_list = [f.split(".")[0] 
+                     for f in os.listdir(data_path) if f.endswith(".data")]
+    
+    # iterate over problem list
+    for problem in prob_list:
+        # Reading the data file for the given problem
+        fln=problem + ".data"
+        fpath = os.path.join(cwd, data_dir, fln)
+        X_train, X_test, y_train, y_test = u.load_data(fpath)
+    
+        # find problem directory and skip if it doesn't exist
+        prob_dir = os.path.join(cwd, results_dir, problem)
+        if not os.path.exists(prob_dir):
+            if len(prob_list) == 1:
+                sys.exit(f"Cannot find problem directory {prob_dir} - " 
+                            + "skipping problem..")
+            else:
+                vprint.verr(f"Cannot find problem directory {prob_dir} - " 
+                            + "skipping problem..")
+                continue
+    
+        # get available run directories
+        if len(run_list) == 0:
+            run_idxs = [int(d.path.split("_")[-1]) 
+                        for d in os.scandir(prob_dir) if d.is_dir() 
+                        and "Plots" not in d.path]
+            run_idxs.sort()
+        else:
+            run_idxs = run_list
+            
+        for run_no in run_idxs:
+            # copy config dict so any changes arent permanent across runs
+            main_tpot_config_dict = copy.deepcopy(tpot_config_dict)
+            
+            run_str = str(run_no)
+            if run_no < 10:
+                run_str = "0" + str(run_no)
+            
+            run_dir = os.path.join(prob_dir, "Run_" + run_str)
+            
+            if not os.path.exists(run_dir):
+                if len(prob_list) == 1 and len(run_idxs) == 1:
+                    sys.exit(f"Cannot find run directory {run_dir}")
+                else:
+                    vprint.verr(f"Cannot find run directory {run_dir}")
+                    continue
+            
+            tpot_dir = os.path.join(run_dir, 'tpot')
+            comp_dir = os.path.join(run_dir, 'comp')
+            
+            if not os.path.exists(tpot_dir):
+                if len(prob_list) == 1 and len(run_idxs) == 1:
+                    sys.exit(f"Cannot find TPOT directory {tpot_dir}")
+                else:
+                    vprint.verr(f"Cannot find TPOT directory {tpot_dir}")
+                    continue
+            
+            if not os.path.exists(comp_dir):
+                os.makedirs(comp_dir)
+            
+            # establish filenames for data output
+            fname_tpot_prog = os.path.join(tpot_dir, "tpot_progress.out")
+            fname_tpot_pipes = os.path.join(tpot_dir, "tpot_pipes.out")
+            fname_comp_prog = os.path.join(comp_dir, "comp_progress.out")
+            fname_comp_pipes = os.path.join(comp_dir, "comp_pipes.out")
+            fname_comp_grads = os.path.join(comp_dir, "comp_grads.out")
+            # fname_comp_bo_pipes = os.path.join(comp_dir, "comp_bo_pipes.out")
+            
+            if os.path.exists(fname_comp_pipes) and not ignore_results:
+                if len(prob_list) == 1 and len(run_idxs) == 1:
+                    sys.exit(f"alt_bo_pipes.out already exists in {comp_dir} - " 
+                                + "skipping run..")
+                else:
+                    vprint.verr(f"alt_bo_pipes.out already exists in {comp_dir} - " 
+                                + "skipping run..")
+                    continue
+            else:
+                # delete alt_bo_pipes
+                f = open(fname_comp_pipes, 'w')
+                f.close()
+                # f = open(fname_comp_tpot_pipes, 'w')
+                # f.close()
+                vprint.v2(f"Processing {run_dir}")
+            
+            if not os.path.exists(fname_tpot_pipes):
+                if len(prob_list) == 1 and len(run_idxs) == 1:
+                    sys.exit("Cannot find original tpot pipes file " 
+                                + f"{fname_tpot_pipes} - skipping run..")
+                else:
+                    vprint.verr("Cannot find original tpot pipes file " 
+                                + f"{fname_tpot_pipes} - skipping run..")
+                    continue
+            
+            if not os.path.exists(fname_tpot_prog):
+                if len(prob_list) == 1 and len(run_idxs) == 1:
+                    sys.exit("Cannot find original progress file " 
+                                + f"{fname_tpot_prog}")
+                else:
+                    vprint.verr("Cannot find original progress file " 
+                                + f"{fname_tpot_prog}")
+                    continue
+            
+            # load data from existing progress file
+            (seed, 
+             orig_tot_gens, 
+             orig_stop_gen, 
+             pop_size) = u.get_run_data(fname_tpot_prog)
+            
+            # orig_bo_evals = (orig_tot_gens - orig_stop_gen) * pop_size
+            
+            # start timer
+            t_start = time.time() 
+            t_iter = t_start
+            
+            # # compute number of tpot generations and number of optuna evals
+            # # (-1 to account for initial evals)
+            # n_tpot_gens = int(orig_stop_gen/n_iters)
+            # n_bo_evals = int(orig_bo_evals/n_iters)
+            
+            vprint.v2("Loaded data, running tpot/bo alternating algorithm with -")
+            vprint.v2(f"seed: {seed}")
+            vprint.v2(f"pop size: {pop_size}")
+            
+            with open(fname_comp_prog, 'w') as f:
+                f.write(f"TIME:{time.asctime()}\n")
+                f.write(f"SEED:{seed}\n")
+                f.write(f"POP SIZE:{pop_size}\n")
+                f.write(f"REAL_VALS:{real_vals}\n")                
+                f.write("\n")
+            
+            # create TPOT object
+            tpot = TPOTRegressor(generations=0,
+                                  population_size=pop_size, 
+                                  mutation_rate=0.9, 
+                                  crossover_rate=0.1, 
+                                  cv=5,
+                                  verbosity=tpot_verb, 
+                                  config_dict=main_tpot_config_dict, 
+                                  random_state=seed, 
+                                  n_jobs=n_jobs,
+                                  warm_start=True,
+                                  max_eval_time_mins=pipe_eval_timeout)
+            
+            # run initialisation for tpot to make pset etc,                
+            tpot._fit_init()
+            
+            # load generation 0 tpot data
+            tpot.evaluated_individuals_ = u.get_progress_pop(
+                fname_tpot_pipes, 0)
+            
+            # # write initial population
+            # with open(fname_comp_pipes,'a') as f:
+            #     for k,v in tpot.evaluated_individuals_.items():
+            #         f.write(f"{k};0;{v['internal_cv_score']};init\n")
+            #         # # overall best tpot
+            #         # if v['internal_cv_score'] > best_tpot_cv:
+            #         #     best_tpot_pipe = k
+            #         #     best_tpot_cv = v['internal_cv_score']
+            
+            # initialise loaded population
+            tpot._pop = []       
+            for k,v in tpot.evaluated_individuals_.items():
+                tpot._pop.append(creator.Individual.from_string(k, tpot._pset))        
+            
+            # fit for 0 gens to load into model
+            vprint.v2(f"{u.CYAN}\nfitting tpot model with {tpot.generations}" 
+               + f" generations to initialise loaded population..\n{u.WHITE}")
+            
+            # fit tpot object
+            tpot.fit(X_train, y_train)
+            
+            vprint.v1("")
+            
+            # set tpot generations to 1
+            tpot.generations = 1
+            
+            # make main PipelinePopOpt object
+            po = PipelinePopOpt(tpot, vprint=vprint, real_vals=real_vals)
+            
+            old_eval_list = []
+            
+            # force tpot to be run once first, then bo
+            grads = {0: {'tpot':1e20, 'bo':1e10}}
+            
+            old_best_cv = -1e20
+            
+            do_tpot = True
+            chosen_method = 'tpot'
+            
+            # skip 0 for init pop
+            for g in range(1,orig_tot_gens):
+                
+                # writing previous generation pipes
+                best_pipe = ""
+                best_cv = -1e20
+                with open(fname_comp_pipes,'a') as f:
+                    for k,v in tpot.evaluated_individuals_.items():
+                        if k not in old_eval_list:
+                            f.write(f"{k};{g-1};"+ f"{v['internal_cv_score']};"
+                                    + f"{chosen_method}\n")
+                        # overall best tpot
+                        if v['internal_cv_score'] > best_cv:
+                            best_pipe = k
+                            best_cv = v['internal_cv_score']
+                
+                grads[g-1][chosen_method] = best_cv - old_best_cv
+                
+                vprint.v1(f"\n{u.YELLOW}best pipe found at generation "
+                          + f"{g-1} ({chosen_method}):{u.OFF}")
+                vprint.v2(f"{best_pipe}")
+                vprint.v1(f"{u.GREEN}* score: {u.OFF}{best_cv}")
+                vprint.v1(f"{u.GREEN}* slopes: {u.OFF}{grads[g-1]}\n")                
+                
+                vprint.v1(f"{u.CYAN_U}({time.strftime('%d %b, %H:%M', time.localtime())}, run {run_no}) Generation: {g}{u.OFF}")
+                
+                old_best_cv = best_cv
+                old_eval_list = list(tpot.evaluated_individuals_.keys())
+                
+                # if gradient is the same then toggle, otherwise take best
+                if grads[g-1]['bo'] == grads[g-1]['tpot']:
+                    do_tpot = not do_tpot
+                elif grads[g-1]['bo'] < grads[g-1]['tpot']:
+                    do_tpot = True
+                else:
+                    do_tpot = False
+                    
+                improve_success = False
+                
+                # check previous gradient to determine which to use
+                if do_tpot:
+                    chosen_method = 'tpot'
+                    grads[g] = {'bo':grads[g-1]['bo']}
+                    vprint.v2(f"{u.YELLOW}Running TPOT..{u.OFF}")
+                    tpot.fit(X_train, y_train)
+                    vprint.v1("")
+                    new_idx,new_cv = po.get_best_pipe_idx()
+                    improve_success = new_cv > best_cv
+                else:
+                    chosen_method = 'bo'
+                    grads[g] = {'tpot':grads[g-1]['tpot']}
+                    vprint.v2(f"{u.YELLOW}Running BO..{u.OFF}")
+
+                    # get all pipelines that match the structure of best pipe
+                    matching_strs = po.get_matching_structures(best_pipe)
+                    
+                    # reset tpot_config for new tpot object
+                    bo_tpot_config_dict = copy.deepcopy(default_tpot_config_dict)
+                    
+                    # create BO TPOT object 
+                    bo_tpot = TPOTRegressor(generations=0,
+                                          population_size=1, 
+                                          mutation_rate=0.9, 
+                                          crossover_rate=0.1, 
+                                          cv=5,
+                                          verbosity=tpot_verb, 
+                                          config_dict=bo_tpot_config_dict, 
+                                          random_state=seed, 
+                                          n_jobs=n_jobs,
+                                          warm_start=True,
+                                          max_eval_time_mins=pipe_eval_timeout)
+                    
+                    # initialise bo tpot object to generate pset
+                    bo_tpot._fit_init()
+                    
+                    # share evaluated individuals dict across methods
+                    bo_tpot.evaluated_individuals_ = tpot.evaluated_individuals_
+                    
+                    # convert matching pipe strings to parameter sets
+                    seed_samples = [(u.string_to_params(best_pipe),best_cv)]
+                    for pipe_str in matching_strs:
+                        seed_samples.append((u.string_to_params(pipe_str),
+                                            tpot.evaluated_individuals_[pipe_str]['internal_cv_score']))
+                
+                    # initialise bo pipe optimiser object
+                    bo_po = PipelinePopOpt(bo_tpot, vprint=vprint, real_vals=real_vals)
+                
+                    # update pset of BO tpot object
+                    for (p,v) in u.string_to_params(best_pipe):
+                        bo_po.add_param_to_pset(p, v)
+                
+                    # remove generated pipeline and transplant saved from before
+                    bo_tpot._pop = [creator.Individual.from_string(best_pipe, bo_tpot._pset)]
+                
+                    # fit for 0 gens to load into model
+                    vprint.v2(f"{u.CYAN}\n"
+                              + "fitting temporary bo tpot model with "  
+                              + f"0 generations..\n{u.WHITE}")
+                
+                    bo_tpot.fit(X_train, y_train)
+                
+                    vprint.v1("")
+                
+                    vprint.v2("Transplanting best pipe and optimising for " 
+                              + f"{pop_size} evaluations..\n")
+                
+                    # re-initialise bo pipe optimiser object with new values
+                    bo_po = PipelinePopOpt(bo_tpot, vprint=vprint, real_vals=real_vals)
+                
+                    # run bayesian optimisation with seed_dicts as initial samples
+                    bo_po.optimise(0, X_train, y_train, n_evals=pop_size, 
+                                   seed_samples=seed_samples, 
+                                   real_vals=real_vals, 
+                                   timeout_trials=optuna_timeout_trials)
+                    
+                    bo_best_cv = bo_po.best_score
+                    bo_best_pipe = bo_po.best_pipe
+                    
+                    improve_success = bo_best_cv > best_cv
+                                
+                    if improve_success:
+                        best_iter_idx = None
+                        for i in range(len(tpot._pop)):
+                            if str(tpot._pop[i]) == best_pipe:
+                                best_iter_idx = i
+                                break
+                        if not best_iter_idx:
+                            vprint.verr("Unable to replace pipeline!")
+                            
+                        vprint.v1(f"{u.GREEN}BO successful!{u.OFF}")
+                        # update main pset with new individual
+                        vprint.v2("updating main pset..")
+                        
+                        
+                        new_params = u.string_to_params(bo_best_pipe)
+                        for (p,v) in new_params:
+                            po.add_param_to_pset(p, v)
+                    
+                        # create new pipe object with best params
+                        new_pipe = creator.Individual.from_string(bo_best_pipe, tpot._pset)
+                    
+                        vprint.v2(f"replacing pipe {best_iter_idx} with best BO pipe and re-evaluating..\n")
+                    
+                        tpot._pop[best_iter_idx] = new_pipe
+                        
+                        # swap evaluated dict back
+                        tpot.evaluated_individuals_= bo_tpot.evaluated_individuals_
+                        
+                        # evaluate new pipe
+                        po.evaluate(best_iter_idx, X_train, y_train)
+                        
+                        vprint.v1(f"CV of new evaluated tpot pipe: {tpot._pop[best_iter_idx].fitness.values[1]}")
+                        
+                        best_pipe = bo_best_pipe
+                        best_cv = bo_best_cv
+                        
+                    else:
+                        vprint.v1(f"{u.RED}BO unsuccessful - reverting to original"
+                                  + f" TPOT population..{u.OFF}")
+                        
+                t_iter_old = t_iter
+                t_iter = time.time()
+                
+                with open(fname_comp_prog, 'a') as f:
+                    f.write(f"{time.strftime('%d %b %Y, %H:%M', time.localtime())}\n")
+                    f.write(f"****** GENERATION {g} ******\n")
+                    f.write(f"Best pipe:\n{best_pipe}\n")
+                    f.write(f"Best CV:{best_cv}\n\n")
+                    f.write(f"Chosen method:{chosen_method}\n")
+                    f.write(f"Improved:{improve_success}\n")
+                    f.write(f"Time elapsed:{round(t_iter-t_iter_old,2)}\n")
+                    f.write(f"Total time elapsed:{round(t_iter-t_start,2)}\n")
+                    f.write("\n")
+                    
+            t_end = time.time() 
+            
+            # write final pipes 
+            # writing previous generation pipes
+            best_pipe = ""
+            best_cv = -1e20
+            with open(fname_comp_pipes,'a') as f:
+                for k,v in tpot.evaluated_individuals_.items():
+                    if k not in old_eval_list:
+                        f.write(f"{k};{g};"+ f"{v['internal_cv_score']};"
+                                + f"{chosen_method}\n")
+                    # overall best tpot
+                    if v['internal_cv_score'] > best_cv:
+                        best_pipe = k
+                        best_cv = v['internal_cv_score']
+            
+            # write gradients
+            with open(fname_comp_grads, 'w') as f:
+                for g,v in grads.items():
+                    if 'tpot' in v and 'bo' in v:
+                        f.write(f"{g},{v['tpot']},{v['bo']}\n")
+            
+            vprint.v1(f"\n{u.YELLOW}* best pipe found:{u.OFF}")
+            vprint.v1(f"{best_pipe}")
+            vprint.v1(f"{u.GREEN} * score:{u.OFF} {best_cv}")
+            vprint.v1(f"\nTotal time elapsed: {round(t_end-t_start,2)} sec\n")
+            
+            
 class TestHandler(object):
     def __init__(self, params):
         self.params = params
@@ -915,7 +1328,7 @@ class TestHandler(object):
                           vprint=self.vprint,
                           pipe_eval_timeout=self.params['PIPE_EVAL_TIMEOUT'])
             t_tpot_end = time.time()
-            self.write_run(new_run)
+            # self.write_run(new_run)
             with open(self.fname_prog, 'a') as f:
                 f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Generate TPOT data (run {new_run}): Successful ({round(t_tpot_end-t_tpot_start,2)}s)\n")
         except:
@@ -971,6 +1384,31 @@ class TestHandler(object):
             t_alt_end = time.time()
             with open(self.fname_prog, 'a') as f:
                 f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} (alt): Successful ({round(t_alt_end-t_alt_start,2)}s)\n")
+        except:
+            trace = traceback.format_exc()
+            self.vprint.verr(f"FAILED:\n{trace}")
+            with open(self.fname_prog, 'a') as f:
+                f.write(f"Run {run} (BO): Failed..\n{trace}\n\n")
+                
+    def run_comp(self, run, problem):
+        try:
+            t_comp_start = time.time()
+            self.vprint.v1(f"{u.CYAN_U}****** Running TPOT + BO competing (run {run}) for problem '{problem}' ******{u.OFF}\n")
+            # run TPOT + BO competing
+            run_tpot_bo_compete(run_list=[run],
+                                optuna_timeout_trials=self.params['OPTUNA_TIMEOUT_TRIALS'],
+                                prob_list=[problem],
+                                data_dir=self.params['DATA_DIR'],
+                                results_dir=self.params['RESULTS_DIR'],
+                                tpot_config_dict=self.params['TPOT_CONFIG_DICT'],
+                                n_jobs=self.params['nJOBS'],
+                                vprint=self.vprint,
+                                real_vals=self.params['REAL_VALS'],
+                                pipe_eval_timeout=self.params['PIPE_EVAL_TIMEOUT'])
+            
+            t_comp_end = time.time()
+            with open(self.fname_prog, 'a') as f:
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} (alt): Successful ({round(t_comp_end-t_comp_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")

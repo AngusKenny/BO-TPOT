@@ -25,7 +25,7 @@ class RequiredTrialsCallback(object):
     def __call__(self, study: optuna.study.Study, 
                  trial: optuna.trial.FrozenTrial) -> None:
         if len(self.eval_dict) >= self.n_evals:
-            self.vprint.v2(f"{self.n_evals} unique solutions evaluated, "
+            self.vprint.v2(f"{self.n_evals} unique solutions evaluated in total, "
                       + "stopping optimisation process..\n")
             study.stop()
         
@@ -121,7 +121,12 @@ class Objective(object):
         # update best
         if score > self.po.best_scores[self.ind_idx]:
             self.po.best_scores[self.ind_idx] = score
-            self.po.best_params[self.ind_idx] = trial_params            
+            self.po.best_params[self.ind_idx] = trial_params
+        
+        # update overall best
+        if score > self.po.best_score:
+            self.po.best_score = score
+            self.po.best_pipe = str(self.po.tpot._pop[self.ind_idx])
         
         self.vprint.v1(f"{u.GREEN}* score: {u.OFF}{score}\n\t(best: {self.po.best_scores[self.ind_idx]})\n")
         
@@ -138,6 +143,8 @@ class PipelinePopOpt(object):
         self.real_vals = real_vals
         self.tpot = tpot
         self.size = len(tpot._pop)
+        self.best_score = -1e20
+        self.best_pipe = None
         self.best_params = []
         self.init_params = []
         self.eval_scores =[[] for i in range(self.size)]
@@ -363,6 +370,11 @@ class PipelinePopOpt(object):
             else:
                 trial = make_optuna_trial_discrete(seed_sample[0], seed_sample[1])
             study.add_trial(trial)
+            
+            self.best_scores[ind_idx] = max(self.best_scores[ind_idx],seed_sample[1])
+            self.best_score = max(self.best_score,seed_sample[1])
+        
+        
         
         # account for initial seed trials
         n_evals_adj = n_evals + len(self.tpot.evaluated_individuals_)
