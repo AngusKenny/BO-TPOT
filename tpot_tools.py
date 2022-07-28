@@ -1266,6 +1266,7 @@ class TestHandler(object):
             rmv_txt = ("BO and alt" if params['RUN_BO'] and params['RUN_ALT'] 
                        else "BO" if params['RUN_BO'] 
                        else "alt" if params['RUN_ALT'] 
+                       else "comp" if params['RUN_COMP']
                        else "nothing (check 'CLEAN_DATA' flag)")
             self.vprint.vwarn(f"about to remove {rmv_txt} data from runs:\n"
                               + f"{self.run_list}\n"
@@ -1297,6 +1298,8 @@ class TestHandler(object):
                     rmtree(os.path.join(run_path,"bo"),ignore_errors=True)
                 if self.params['RUN_ALT']: 
                     rmtree(os.path.join(run_path,"alt"),ignore_errors=True)
+                if self.params['RUN_COMP']: 
+                    rmtree(os.path.join(run_path,"comp"),ignore_errors=True)
         self.vprint.v0("Done!\n")
         cont_conf = input("Do you want to continue executing the script? [Y/n] ")
         if cont_conf in "nN":

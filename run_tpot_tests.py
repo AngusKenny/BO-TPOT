@@ -28,11 +28,12 @@ params = {
     'RUN_COMP' : True,
     'VERBOSITY' : 2,
     'DATA_DIR' : 'Data',
-    'RESULTS_DIR' : 'Results_discrete',
+    'RESULTS_DIR' : 'Results',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : [15,16,17,18,19,20],
+    'RUNS' : [16,17,18,19,20],
     'PROBLEMS' : [
-                'abalone',
+    #            'abalone',
+		'socmob',
                 # 'quake',
     #             'house_16h',
     #             'brazilian_houses',
@@ -41,7 +42,7 @@ params = {
     #             'black_friday'
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
-    'nJOBS' : 4,
+    'nJOBS' : 6,
     # toggle between real and discrete parameter spaces
     'REAL_VALS' : False,
     # maximum time allowed for a single pipeline evaluation (mins)
