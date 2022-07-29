@@ -25,7 +25,7 @@ params = {
     'RUN_TPOT' : False,
     'RUN_BO' : False,
     'RUN_ALT' : False,
-    'RUN_COMP' : True,
+    'RUN_AUTO' : True,
     'VERBOSITY' : 2,
     'DATA_DIR' : 'Data',
     'RESULTS_DIR' : 'Results',
@@ -91,7 +91,7 @@ for problem in tpot_handler.prob_list:
             tpot_handler.run_alt(run, problem)
             
         # run alternating TPOT + BO
-        if params['RUN_COMP']:
+        if params['RUN_AUTO']:
             tpot_handler.run_comp(run, problem)
         
 tpot_handler.write_end()

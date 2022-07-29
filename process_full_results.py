@@ -25,11 +25,11 @@ SAVE_PLOTS:     Save generated plots to file in ./<RESULTS_DIR>/Plots/
 
 params = {
     'RESULTS_DIR'   : 'Results_cont',
-    'PROBLEMS'      : ['abalone'],
-    'RUN_LIST'      : [],
+    'PROBLEMS'      : ['socmob'],
+    'RUN_LIST'      : range(21),
     'SAVE_PLOTS'    : True,
     'PLOT_ALT'      : True,
-    'PLOT_COMP'      : True,
+    'PLOT_AUTO'      : True,
     'PLOT_MIN_MAX'  : False,
     'SKIP_PLOT_INIT': 100,
     'ADD_TITLE_TEXT': '(continuous)',
@@ -71,7 +71,7 @@ for problem in prob_list:
     
     pop_size = stop_gen = tot_gens = bo_trials = None
     alt_tpot_gens = alt_bo_trials = n_iters = None
-    comp_pop_size = None
+    auto_pop_size = None
     
     data = {}
     skipped_runs = []
@@ -87,7 +87,7 @@ for problem in prob_list:
         tpot_dir = os.path.join(run_dir, 'tpot')
         bo_dir = os.path.join(run_dir, 'bo')
         alt_dir = os.path.join(run_dir, 'alt')
-        comp_dir = os.path.join(run_dir, 'comp')
+        auto_dir = os.path.join(run_dir, 'auto')
         
         fname_tpot_prog = os.path.join(tpot_dir, "tpot_progress.out")
         fname_tpot_pipes = os.path.join(tpot_dir, "tpot_pipes.out")
@@ -99,9 +99,9 @@ for problem in prob_list:
         fname_alt_tpot_pipes = os.path.join(alt_dir, "alt_tpot_pipes.out")
         fname_alt_bo_pipes = os.path.join(alt_dir, "alt_bo_pipes.out")
         
-        fname_comp_prog = os.path.join(comp_dir, "comp_progress.out")
-        fname_comp_pipes = os.path.join(comp_dir, "comp_pipes.out")
-        fname_comp_grads = os.path.join(comp_dir, "comp_grads.out")
+        fname_auto_prog = os.path.join(auto_dir, "auto_progress.out")
+        fname_auto_pipes = os.path.join(auto_dir, "auto_pipes.out")
+        fname_auto_grads = os.path.join(auto_dir, "auto_grads.out")
         
         
         check_files = [fname_tpot_prog, fname_tpot_pipes, 
@@ -112,10 +112,10 @@ for problem in prob_list:
                                          fname_alt_tpot_pipes, 
                                          fname_alt_bo_pipes]
             
-        if params['PLOT_COMP']:
-            check_files = check_files + [fname_comp_prog, 
-                                         fname_comp_pipes, 
-                                         fname_comp_grads]
+        if params['PLOT_AUTO']:
+            check_files = check_files + [fname_auto_prog, 
+                                         fname_auto_pipes, 
+                                         fname_auto_grads]
         
         # check if correct files exist if not then skip run
         for fpath in check_files:
@@ -241,26 +241,26 @@ for problem in prob_list:
                 skipped_runs.append(run)
                 continue
         
-        r_gen = r_alt_bo_trials = r_comp_pop_size = None
+        r_gen = r_alt_bo_trials = r_auto_pop_size = None
         r_max_gen = -1
         
-        if params['PLOT_COMP']:
-            with open(fname_comp_prog, 'r') as f:
+        if params['PLOT_AUTO']:
+            with open(fname_auto_prog, 'r') as f:
                 for line in f:
                     if "GENERATION" in line:
                         r_gen = int(line.split(" ")[-2])
                         if r_gen > r_max_gen:
                             r_max_gen = r_gen
                     if "POP SIZE" in line:
-                        r_comp_pop_size = int(line.split(":")[-1])
-                        if comp_pop_size == None:
-                            comp_pop_size = r_comp_pop_size
+                        r_auto_pop_size = int(line.split(":")[-1])
+                        if auto_pop_size == None:
+                            auto_pop_size = r_auto_pop_size
                         else:
-                            if r_comp_pop_size != comp_pop_size:
+                            if r_auto_pop_size != auto_pop_size:
                                 print(f"{u.RED}Pop size error:{u.OFF} Run {run} "
                                       + "has different pop size "
-                                      + f"to run {run_idxs[0]} ({r_comp_pop_size} "
-                                      + f"!= {comp_pop_size}) - skipping run..")
+                                      + f"to run {run_idxs[0]} ({r_auto_pop_size} "
+                                      + f"!= {auto_pop_size}) - skipping run..")
                                 skipped_runs.append(run)
                                 break
             
@@ -380,36 +380,36 @@ for problem in prob_list:
                         np.linspace(0, len(v), alt_bo_trials), range(len(v)), v)   
     
     #############
-        if params['PLOT_COMP']:
+        if params['PLOT_AUTO']:
             # get best TPOT CV values and best TPOT from alt version
-            best_comp_cv = -1e40
-            comp_y_raw = {i:np.array([]) for i in range(comp_pop_size)}
-            types = [None for _ in range(comp_pop_size)]
+            best_auto_cv = -1e40
+            auto_y_raw = {i:np.array([]) for i in range(auto_pop_size)}
+            types = [None for _ in range(auto_pop_size)]
 
-            with open(fname_comp_pipes, 'r') as f:
+            with open(fname_auto_pipes, 'r') as f:
                 for line in f:
                     split_line = line.split(";")
                     curr_gen = int(split_line[1])
                     val = float(split_line[2])
                     curr_type = split_line[3].strip()
 
-                    if val > best_comp_cv:
-                        best_comp_cv = val
+                    if val > best_auto_cv:
+                        best_auto_cv = val
 
-                    comp_y_raw[curr_gen] = np.append(comp_y_raw[curr_gen], -best_comp_cv)
+                    auto_y_raw[curr_gen] = np.append(auto_y_raw[curr_gen], -best_auto_cv)
                     types[curr_gen] = curr_type
 
-            data[run]['comp_y'] = np.empty((0,2))
+            data[run]['auto_y'] = np.empty((0,2))
         
             # interpolate generational data between 0 and pop_size
-            for k,v in comp_y_raw.items():
+            for k,v in auto_y_raw.items():
                 if len(v) == 0:
                     print(f"generation {k} of run {run} has no pipelines recorded")
-                    data[run]['comp_y'] = np.vstack((data[run]['comp_y'],np.ones((pop_size,2)) * data[run]['comp_y'][-1,:]))      
+                    data[run]['auto_y'] = np.vstack((data[run]['auto_y'],np.ones((pop_size,2)) * data[run]['auto_y'][-1,:]))      
                     continue
                 tmp = np.interp(np.linspace(0, len(v), pop_size), range(len(v)), v)
                 
-                data[run]['comp_y'] = np.vstack((data[run]['comp_y'],np.hstack((tmp.reshape(-1,1), (types[k] == 'tpot') * np.ones((pop_size,1))))))      
+                data[run]['auto_y'] = np.vstack((data[run]['auto_y'],np.hstack((tmp.reshape(-1,1), (types[k] == 'tpot') * np.ones((pop_size,1))))))      
                 
     ###################
     
@@ -523,10 +523,10 @@ for problem in prob_list:
             for k in range(len(data[run]['alt_bo_y']))}
     
     
-    if params['PLOT_COMP']:
+    if params['PLOT_AUTO']:
         # get mean data
-        comp_y_mu = np.mean(np.array([data[run]['comp_y'] for run in run_idxs]),axis=0)
-        comp_y_sigma = np.std(np.array([data[run]['comp_y'] for run in run_idxs]),axis=0)
+        auto_y_mu = np.mean(np.array([data[run]['auto_y'] for run in run_idxs]),axis=0)
+        auto_y_sigma = np.std(np.array([data[run]['auto_y'] for run in run_idxs]),axis=0)
     
     
     # max min mean median and std of TPOT and TPOT + BO
@@ -564,18 +564,18 @@ for problem in prob_list:
             [data[run]['alt_bo_y'][len(data[run_idxs[-1]])-1][-1] 
              for run in run_idxs])
     
-    if params['PLOT_COMP']:
-        obj_vals = np.array([data[run]['comp_y'][-1,0] for run in run_idxs])
-        best_comp_run = run_idxs[np.argmin(obj_vals)]
-        worst_comp_run = run_idxs[np.argmax(obj_vals)]
+    if params['PLOT_AUTO']:
+        obj_vals = np.array([data[run]['auto_y'][-1,0] for run in run_idxs])
+        best_auto_run = run_idxs[np.argmin(obj_vals)]
+        worst_auto_run = run_idxs[np.argmax(obj_vals)]
         # find median run index (closest to median value)
-        med_comp_run = run_idxs[np.abs(obj_vals - np.median(obj_vals)).argmin()]
+        med_auto_run = run_idxs[np.abs(obj_vals - np.median(obj_vals)).argmin()]
         
-        stats[problem]['best']['comp'] = obj_vals[best_comp_run]
-        stats[problem]['worst']['comp'] = obj_vals[worst_comp_run]
-        stats[problem]['mu']['comp'] = comp_y_mu[-1,0]
-        stats[problem]['sigma']['comp'] = comp_y_sigma[-1,0]
-        stats[problem]['median']['comp'] = obj_vals[med_comp_run]
+        stats[problem]['best']['auto'] = obj_vals[best_auto_run]
+        stats[problem]['worst']['auto'] = obj_vals[worst_auto_run]
+        stats[problem]['mu']['auto'] = auto_y_mu[-1,0]
+        stats[problem]['sigma']['auto'] = auto_y_sigma[-1,0]
+        stats[problem]['median']['auto'] = obj_vals[med_auto_run]
     
     # compute plot limits
     y_mu_start = full_tpot_y_mu[params['SKIP_PLOT_INIT']]
@@ -763,41 +763,41 @@ for problem in prob_list:
     
     plt.show()
     
-    if params['PLOT_COMP']:
+    if params['PLOT_AUTO']:
         # plot alt results (mu/sigma)
-        fig11, ax_comp_s = plt.subplots()
-        for i in range(200, comp_y_mu.shape[0], pop_size):
-            ax_comp_s.plot(range(i,i+pop_size),comp_y_mu[i:i+pop_size,0], c=params['COLOURMAP'](comp_y_mu[i,1]),lw=4)
+        fig11, ax_auto_s = plt.subplots()
+        for i in range(200, auto_y_mu.shape[0], pop_size):
+            ax_auto_s.plot(range(i,i+pop_size),auto_y_mu[i:i+pop_size,0], c=params['COLOURMAP'](auto_y_mu[i,1]),lw=4)
         
         tpot_line = Line2D([0], [0], label="TPOT evaluation", color='blue', linewidth=3)
         bo_line = Line2D([0], [0], label="BO evaluation", color='red', linewidth=3)
         labels = ['TPOT evaluation', 'BO evaluation']
-        ax_comp_s.legend(handles=[tpot_line, bo_line])
-        comp_title_text_s = (f"{problem} - Competing TPOT-BO {add_text} - mean\n"
-                        + f"μ: {round(comp_y_mu[-1,0],4)}, "
-                        + f"σ: {comp_y_sigma[-1,0]:.3e}")
-        ax_comp_s.set_title(comp_title_text_s)
-        # ax_comp_s.set_ylim([ylim_min, ylim_max])
-        ax_comp_s.set_xlabel("Evaluations")
-        ax_comp_s.set_ylabel("CV")
+        ax_auto_s.legend(handles=[tpot_line, bo_line])
+        auto_title_text_s = (f"{problem} - Competing TPOT-BO {add_text} - mean\n"
+                        + f"μ: {round(auto_y_mu[-1,0],4)}, "
+                        + f"σ: {auto_y_sigma[-1,0]:.3e}")
+        ax_auto_s.set_title(auto_title_text_s)
+        # ax_auto_s.set_ylim([ylim_min, ylim_max])
+        ax_auto_s.set_xlabel("Evaluations")
+        ax_auto_s.set_ylabel("CV")
                 
-        data[med_comp_run]['comp_y'][-1,0]
+        data[med_auto_run]['auto_y'][-1,0]
         # plot alt results (median)
-        fig12, ax_comp_m = plt.subplots()
-        for i in range(200, data[med_comp_run]['comp_y'].shape[0], pop_size):
-            ax_comp_m.plot(range(i,i+pop_size),data[med_comp_run]['comp_y'][i:i+pop_size,0], c=params['COLOURMAP'](data[med_comp_run]['comp_y'][i,1]),lw=4)
+        fig12, ax_auto_m = plt.subplots()
+        for i in range(200, data[med_auto_run]['auto_y'].shape[0], pop_size):
+            ax_auto_m.plot(range(i,i+pop_size),data[med_auto_run]['auto_y'][i:i+pop_size,0], c=params['COLOURMAP'](data[med_auto_run]['auto_y'][i,1]),lw=4)
         tpot_line = Line2D([0], [0], label="TPOT evaluation", color='blue', linewidth=3)
         bo_line = Line2D([0], [0], label="BO evaluation", color='red', linewidth=3)
         labels = ['TPOT evaluation', 'BO evaluation']
-        ax_comp_m.legend(handles=[tpot_line, bo_line])
+        ax_auto_m.legend(handles=[tpot_line, bo_line])
         
-        comp_title_text_m = (f"{problem} - Competing TPOT-BO {add_text}\n"
-                        + f"median run: {med_comp_run}, "
-                        +f"obj: {round(data[med_comp_run]['comp_y'][-1,0],4)}")
-        ax_comp_m.set_title(comp_title_text_m)
-        # ax_comp_s.set_ylim([ylim_min, ylim_max])
-        ax_comp_m.set_xlabel("Evaluations")
-        ax_comp_m.set_ylabel("CV")
+        auto_title_text_m = (f"{problem} - TPOT-BO AUTO {add_text}\n"
+                        + f"median run: {med_auto_run}, "
+                        +f"obj: {round(data[med_auto_run]['auto_y'][-1,0],4)}")
+        ax_auto_m.set_title(auto_title_text_m)
+        # ax_auto_s.set_ylim([ylim_min, ylim_max])
+        ax_auto_m.set_xlabel("Evaluations")
+        ax_auto_m.set_ylabel("CV")
         
         
     plt.show()        
@@ -942,8 +942,8 @@ with open(fname_stats, 'w') as f:
         f.write(f"***** {problem} *****\n")
         f.write(f"!RUN LIST:{stats[problem]['runs']}\n")
         print(f"\n{u.CYAN}{problem} statistics:{u.OFF}")
-        print(f"{str(''):>{PRINT_COL}}{str('TPOT only'):>{PRINT_COL}}{str('TPOT + BO'):>{PRINT_COL}}{str('TPOT + BO (alt)'):>{PRINT_COL}}{str('TPOT + BO (comp)'):>{PRINT_COL}}")
-        f.write(f"{str('#'):<{PRINT_COL}};{str('TPOT only'):>{PRINT_COL}};{str('TPOT + BO'):>{PRINT_COL}};{str('TPOT + BO (alt)'):>{PRINT_COL}};{str('TPOT + BO (comp)'):>{PRINT_COL}};\n")
+        print(f"{str(''):>{PRINT_COL}}{str('TPOT only'):>{PRINT_COL}}{str('TPOT + BO'):>{PRINT_COL}}{str('TPOT + BO (alt)'):>{PRINT_COL}}{str('TPOT + BO (auto)'):>{PRINT_COL}}")
+        f.write(f"{str('#'):<{PRINT_COL}};{str('TPOT only'):>{PRINT_COL}};{str('TPOT + BO'):>{PRINT_COL}};{str('TPOT + BO (alt)'):>{PRINT_COL}};{str('TPOT + BO (auto)'):>{PRINT_COL}};\n")
         for _ in range(5*PRINT_COL):
             print("=",end='')
         print()

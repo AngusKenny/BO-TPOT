@@ -816,7 +816,7 @@ def run_tpot_bo_alt(n_iters=10,
             vprint.v1(f"\nTotal time elapsed: {round(t_end-t_start,2)} sec\n")
             
             
-def run_tpot_bo_compete(run_list=[], 
+def run_tpot_bo_auto(run_list=[], 
                         optuna_timeout_trials=100,
                         ignore_results=True,
                         prob_list=[], 
@@ -886,7 +886,7 @@ def run_tpot_bo_compete(run_list=[],
                     continue
             
             tpot_dir = os.path.join(run_dir, 'tpot')
-            comp_dir = os.path.join(run_dir, 'comp')
+            auto_dir = os.path.join(run_dir, 'auto')
             
             if not os.path.exists(tpot_dir):
                 if len(prob_list) == 1 and len(run_idxs) == 1:
@@ -895,28 +895,28 @@ def run_tpot_bo_compete(run_list=[],
                     vprint.verr(f"Cannot find TPOT directory {tpot_dir}")
                     continue
             
-            if not os.path.exists(comp_dir):
-                os.makedirs(comp_dir)
+            if not os.path.exists(auto_dir):
+                os.makedirs(auto_dir)
             
             # establish filenames for data output
             fname_tpot_prog = os.path.join(tpot_dir, "tpot_progress.out")
             fname_tpot_pipes = os.path.join(tpot_dir, "tpot_pipes.out")
-            fname_comp_prog = os.path.join(comp_dir, "comp_progress.out")
-            fname_comp_pipes = os.path.join(comp_dir, "comp_pipes.out")
-            fname_comp_grads = os.path.join(comp_dir, "comp_grads.out")
+            fname_auto_prog = os.path.join(auto_dir, "auto_progress.out")
+            fname_auto_pipes = os.path.join(auto_dir, "auto_pipes.out")
+            fname_auto_grads = os.path.join(auto_dir, "auto_grads.out")
             # fname_comp_bo_pipes = os.path.join(comp_dir, "comp_bo_pipes.out")
             
-            if os.path.exists(fname_comp_pipes) and not ignore_results:
+            if os.path.exists(fname_auto_pipes) and not ignore_results:
                 if len(prob_list) == 1 and len(run_idxs) == 1:
-                    sys.exit(f"alt_bo_pipes.out already exists in {comp_dir} - " 
+                    sys.exit(f"alt_bo_pipes.out already exists in {auto_dir} - " 
                                 + "skipping run..")
                 else:
-                    vprint.verr(f"alt_bo_pipes.out already exists in {comp_dir} - " 
+                    vprint.verr(f"alt_bo_pipes.out already exists in {auto_dir} - " 
                                 + "skipping run..")
                     continue
             else:
                 # delete alt_bo_pipes
-                f = open(fname_comp_pipes, 'w')
+                f = open(fname_auto_pipes, 'w')
                 f.close()
                 # f = open(fname_comp_tpot_pipes, 'w')
                 # f.close()
@@ -961,7 +961,7 @@ def run_tpot_bo_compete(run_list=[],
             vprint.v2(f"seed: {seed}")
             vprint.v2(f"pop size: {pop_size}")
             
-            with open(fname_comp_prog, 'w') as f:
+            with open(fname_auto_prog, 'w') as f:
                 f.write(f"TIME:{time.asctime()}\n")
                 f.write(f"SEED:{seed}\n")
                 f.write(f"POP SIZE:{pop_size}\n")
@@ -1033,7 +1033,7 @@ def run_tpot_bo_compete(run_list=[],
                 # writing previous generation pipes
                 best_pipe = ""
                 best_cv = -1e20
-                with open(fname_comp_pipes,'a') as f:
+                with open(fname_auto_pipes,'a') as f:
                     for k,v in tpot.evaluated_individuals_.items():
                         if k not in old_eval_list:
                             f.write(f"{k};{g-1};"+ f"{v['internal_cv_score']};"
@@ -1190,7 +1190,7 @@ def run_tpot_bo_compete(run_list=[],
                 t_iter_old = t_iter
                 t_iter = time.time()
                 
-                with open(fname_comp_prog, 'a') as f:
+                with open(fname_auto_prog, 'a') as f:
                     f.write(f"{time.strftime('%d %b %Y, %H:%M', time.localtime())}\n")
                     f.write(f"****** GENERATION {g} ******\n")
                     f.write(f"Best pipe:\n{best_pipe}\n")
@@ -1207,7 +1207,7 @@ def run_tpot_bo_compete(run_list=[],
             # writing previous generation pipes
             best_pipe = ""
             best_cv = -1e20
-            with open(fname_comp_pipes,'a') as f:
+            with open(fname_auto_pipes,'a') as f:
                 for k,v in tpot.evaluated_individuals_.items():
                     if k not in old_eval_list:
                         f.write(f"{k};{g};"+ f"{v['internal_cv_score']};"
@@ -1218,7 +1218,7 @@ def run_tpot_bo_compete(run_list=[],
                         best_cv = v['internal_cv_score']
             
             # write gradients
-            with open(fname_comp_grads, 'w') as f:
+            with open(fname_auto_grads, 'w') as f:
                 for g,v in grads.items():
                     if 'tpot' in v and 'bo' in v:
                         f.write(f"{g},{v['tpot']},{v['bo']}\n")
@@ -1266,7 +1266,7 @@ class TestHandler(object):
             rmv_txt = ("BO and alt" if params['RUN_BO'] and params['RUN_ALT'] 
                        else "BO" if params['RUN_BO'] 
                        else "alt" if params['RUN_ALT'] 
-                       else "comp" if params['RUN_COMP']
+                       else "auto" if params['RUN_AUTO']
                        else "nothing (check 'CLEAN_DATA' flag)")
             self.vprint.vwarn(f"about to remove {rmv_txt} data from runs:\n"
                               + f"{self.run_list}\n"
@@ -1298,8 +1298,8 @@ class TestHandler(object):
                     rmtree(os.path.join(run_path,"bo"),ignore_errors=True)
                 if self.params['RUN_ALT']: 
                     rmtree(os.path.join(run_path,"alt"),ignore_errors=True)
-                if self.params['RUN_COMP']: 
-                    rmtree(os.path.join(run_path,"comp"),ignore_errors=True)
+                if self.params['RUN_AUTO']: 
+                    rmtree(os.path.join(run_path,"auto"),ignore_errors=True)
         self.vprint.v0("Done!\n")
         cont_conf = input("Do you want to continue executing the script? [Y/n] ")
         if cont_conf in "nN":
@@ -1393,12 +1393,12 @@ class TestHandler(object):
             with open(self.fname_prog, 'a') as f:
                 f.write(f"Run {run} (BO): Failed..\n{trace}\n\n")
                 
-    def run_comp(self, run, problem):
+    def run_auto(self, run, problem):
         try:
-            t_comp_start = time.time()
-            self.vprint.v1(f"{u.CYAN_U}****** Running TPOT + BO competing (run {run}) for problem '{problem}' ******{u.OFF}\n")
-            # run TPOT + BO competing
-            run_tpot_bo_compete(run_list=[run],
+            t_auto_start = time.time()
+            self.vprint.v1(f"{u.CYAN_U}****** Running TPOT + BO Auto (run {run}) for problem '{problem}' ******{u.OFF}\n")
+            # run TPOT + BO Auto
+            run_tpot_bo_auto(run_list=[run],
                                 optuna_timeout_trials=self.params['OPTUNA_TIMEOUT_TRIALS'],
                                 prob_list=[problem],
                                 data_dir=self.params['DATA_DIR'],
@@ -1409,9 +1409,9 @@ class TestHandler(object):
                                 real_vals=self.params['REAL_VALS'],
                                 pipe_eval_timeout=self.params['PIPE_EVAL_TIMEOUT'])
             
-            t_comp_end = time.time()
+            t_auto_end = time.time()
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} (alt): Successful ({round(t_comp_end-t_comp_start,2)}s)\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} (alt): Successful ({round(t_auto_end-t_auto_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
