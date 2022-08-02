@@ -24,15 +24,16 @@ SAVE_PLOTS:     Save generated plots to file in ./<RESULTS_DIR>/Plots/
 '''
 
 params = {
-    'RESULTS_DIR'   : 'Results_cont',
-    'PROBLEMS'      : ['socmob'],
+    'RESULTS_DIR'   : 'Results_discrete',
+    'PROBLEMS'      : ['brazilian_houses','elevators'],
     'RUN_LIST'      : range(21),
-    'SAVE_PLOTS'    : True,
+    'SAVE_PLOTS'    : False,
+    'SAVE_STATS'    : False,
     'PLOT_ALT'      : True,
-    'PLOT_AUTO'      : True,
+    'PLOT_AUTO'      :False,
     'PLOT_MIN_MAX'  : False,
-    'SKIP_PLOT_INIT': 100,
-    'ADD_TITLE_TEXT': '(continuous)',
+    'SKIP_PLOT_INIT': 10,
+    'ADD_TITLE_TEXT': '(discrete)',
     'COLOURMAP'     : plt.cm.bwr
     }
 
@@ -785,8 +786,9 @@ for problem in prob_list:
         # plot alt results (median)
         fig12, ax_auto_m = plt.subplots()
         for i in range(200, data[med_auto_run]['auto_y'].shape[0], pop_size):
-            ax_auto_m.plot(range(i,i+pop_size),data[med_auto_run]['auto_y'][i:i+pop_size,0], c=params['COLOURMAP'](data[med_auto_run]['auto_y'][i,1]),lw=4)
-        tpot_line = Line2D([0], [0], label="TPOT evaluation", color='blue', linewidth=3)
+            colour = "red" if data[med_auto_run]['auto_y'][i,1] == 1 else "C0"
+            ax_auto_m.plot(range(i,i+pop_size),data[med_auto_run]['auto_y'][i:i+pop_size,0], c=colour,lw=4)
+        tpot_line = Line2D([0], [0], label="TPOT evaluation", color='C0', linewidth=3)
         bo_line = Line2D([0], [0], label="BO evaluation", color='red', linewidth=3)
         labels = ['TPOT evaluation', 'BO evaluation']
         ax_auto_m.legend(handles=[tpot_line, bo_line])
@@ -919,6 +921,10 @@ for problem in prob_list:
             fname_alt_plot_s = os.path.join(
                 plot_dir, problem + "_alt_mu_sigma.png")
         
+        if params['PLOT_AUTO']:
+            fname_auto_plot_s = os.path.join(
+                plot_dir, problem + "_auto_mu_sigma.png")
+        
         if params['PLOT_MIN_MAX']:
             fig1.savefig(fname_tpot_plot,bbox_inches='tight')
             fig3.savefig(fname_tpot_bo_plot,bbox_inches='tight')
@@ -933,30 +939,41 @@ for problem in prob_list:
             if params['PLOT_MIN_MAX']:
                 fig9.savefig(fname_alt_plot,bbox_inches='tight')
         
-
-fname_stats = os.path.join(results_path, "stats.out")
-with open(fname_stats, 'w') as f:
-    f.write(f"%TIME: {time.asctime()}\n\n")
-    # print statistics
-    for problem in prob_list:
-        f.write(f"***** {problem} *****\n")
-        f.write(f"!RUN LIST:{stats[problem]['runs']}\n")
-        print(f"\n{u.CYAN}{problem} statistics:{u.OFF}")
-        print(f"{str(''):>{PRINT_COL}}{str('TPOT only'):>{PRINT_COL}}{str('TPOT + BO'):>{PRINT_COL}}{str('TPOT + BO (alt)'):>{PRINT_COL}}{str('TPOT + BO (auto)'):>{PRINT_COL}}")
-        f.write(f"{str('#'):<{PRINT_COL}};{str('TPOT only'):>{PRINT_COL}};{str('TPOT + BO'):>{PRINT_COL}};{str('TPOT + BO (alt)'):>{PRINT_COL}};{str('TPOT + BO (auto)'):>{PRINT_COL}};\n")
-        for _ in range(5*PRINT_COL):
-            print("=",end='')
+        if params['PLOT_AUTO']:
+            fig12.savefig(fname_auto_plot_s,bbox_inches='tight')
+            
+            
+for problem in prob_list:
+    print(f"\n{u.CYAN}{problem} statistics:{u.OFF}")
+    print(f"{str(''):>{PRINT_COL}}{str('TPOT only'):>{PRINT_COL}}{str('TPOT + BO'):>{PRINT_COL}}{str('TPOT + BO (alt)'):>{PRINT_COL}}{str('TPOT + BO (auto)'):>{PRINT_COL}}")
+    for _ in range(5*PRINT_COL):
+        print("=",end='')
+    print()
+    
+    for stat,methods in stats[problem].items():
+        if stat == 'runs':
+            continue
+        print(f"{str(stat):>{PRINT_COL}}",end="")
+        for method,val in methods.items():
+            print(f"{round(val,12):>{PRINT_COL}}",end="")
         print()
-        
-        for stat,methods in stats[problem].items():
-            if stat == 'runs':
-                continue
-            print(f"{str(stat):>{PRINT_COL}}",end="")
-            f.write(f"{str(stat):>{PRINT_COL}};")
-            for method,val in methods.items():
-                print(f"{round(val,12):>{PRINT_COL}}",end="")
-                f.write(f"{round(val,12):>{PRINT_COL}};")
-            print()
+            
+if params['SAVE_STATS']:
+    fname_stats = os.path.join(results_path, "stats.out")
+    with open(fname_stats, 'a') as f:
+        f.write(f"\n%TIME: {time.asctime()}\n\n")
+        # print statistics
+        for problem in prob_list:
+            f.write(f"***** {problem} *****\n")
+            f.write(f"!RUN LIST:{stats[problem]['runs']}\n")
+            f.write(f"{str('#'):<{PRINT_COL}};{str('TPOT only'):>{PRINT_COL}};{str('TPOT + BO'):>{PRINT_COL}};{str('TPOT + BO (alt)'):>{PRINT_COL}};{str('TPOT + BO (auto)'):>{PRINT_COL}};\n")
+            
+            for stat,methods in stats[problem].items():
+                if stat == 'runs':
+                    continue
+                f.write(f"{str(stat):>{PRINT_COL}};")
+                for method,val in methods.items():
+                    f.write(f"{round(val,12):>{PRINT_COL}};")
+                f.write("\n")
             f.write("\n")
-        f.write("\n")
     
