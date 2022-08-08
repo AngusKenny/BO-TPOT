@@ -47,7 +47,7 @@ class Objective(object):
     ''' Class for optuna optimisation objective function
     '''
     def __init__(self, po, ind_idx, X, y, n_evals, real_vals=True, 
-                 seed_samples=[], vprint=u.Vprint(1)):
+                 skip_params=[], vprint=u.Vprint(1)):
         ''' Constructor for Objective class
 
         Parameters
@@ -77,7 +77,7 @@ class Objective(object):
         self.ind_idx = ind_idx
         self.X = X
         self.y = y
-        self.seed_samples = seed_samples
+        self.skip_params = skip_params
     
     def __call__(self, trial):
         ''' Evaluation call for optuna optimisation
@@ -99,9 +99,9 @@ class Objective(object):
         # set up search space
         param_names = [param[0] for param in self.po.best_params[self.ind_idx]]
         if self.real_vals:
-            trial_params = make_hp_space_real(trial, param_names)
+            trial_params = make_hp_space_real(trial, param_names, self.skip_params)
         else:
-            trial_params = make_hp_space_discrete(trial, param_names)  
+            trial_params = make_hp_space_discrete(trial, param_names, self.skip_params)  
         
         self.vprint.v1(f"{u.YELLOW_U}optuna call "
                        + f"{len(self.po.eval_scores[self.ind_idx])+1} "
@@ -323,7 +323,7 @@ class PipelinePopOpt(object):
                         
         return matching_strs
     
-    def optimise(self, ind_idx, X_train, y_train, n_evals, real_vals=True, seed_samples=[], timeout_trials=1e20):
+    def optimise(self, ind_idx, X_train, y_train, n_evals, real_vals=True, seed_samples=[], skip_params=[], timeout_trials=1e20):
         ''' Run optuna optimisation        
 
         Parameters
@@ -366,9 +366,9 @@ class PipelinePopOpt(object):
         # create trial based on seed data and insert to model without evaluation
         for seed_sample in seed_samples:
             if real_vals:
-                trial = make_optuna_trial_real(seed_sample[0], seed_sample[1])
+                trial = make_optuna_trial_real(seed_sample[0], seed_sample[1],skip_params)
             else:
-                trial = make_optuna_trial_discrete(seed_sample[0], seed_sample[1])
+                trial = make_optuna_trial_discrete(seed_sample[0], seed_sample[1],skip_params)
             study.add_trial(trial)
             
             self.best_scores[ind_idx] = max(self.best_scores[ind_idx],seed_sample[1])
@@ -383,4 +383,13 @@ class PipelinePopOpt(object):
         stop_callback = RequiredTrialsCallback(n_evals_adj, self.tpot.evaluated_individuals_, timeout_trials, vprint=self.vprint)
         
         # run optimise method
-        study.optimize(Objective(self, ind_idx, X_train, y_train,n_evals_adj,real_vals=real_vals,vprint=self.vprint),callbacks=[stop_callback])
+        study.optimize(Objective(self, 
+                                 ind_idx, 
+                                 X_train, 
+                                 y_train, 
+                                 n_evals_adj, 
+                                 real_vals=real_vals, 
+                                 skip_params=skip_params, 
+                                 vprint=self.vprint), 
+                       callbacks=[stop_callback])
+        
