@@ -26,6 +26,7 @@ params = {
     'RUN_BO' : True,
     'RUN_ALT' : False,
     'RUN_AUTO' : False,
+    'RESTRICT_BO' : True,
     'VERBOSITY' : 2,
     'DATA_DIR' : 'Data',
     'RESULTS_DIR' : 'Results_abalone',
@@ -58,7 +59,6 @@ params = {
     # BO and TPOT + BO alternating parameters
     #
     # stop optuna running forever if it cannot find enough new pipelines
-    'RESTRICT_BO' : True,
     'OPTUNA_TIMEOUT_TRIALS' : 100,
     'nALT_ITERS' : 10,
     }
