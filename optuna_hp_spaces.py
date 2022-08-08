@@ -15,11 +15,14 @@ from optuna.distributions import (CategoricalDistribution,
                                   LogUniformDistribution,
                                   DiscreteUniformDistribution)
 
-def make_hp_space_discrete(trial, param_names):
+def make_hp_space_discrete(trial, param_names, skip_params=[]):
             
     trial_params = []
 
     for name in param_names:
+        if name in skip_params:
+            trial_params.append((name, 'skip'))
+            continue
         # ***** REGRESSOR HYPERPARAMETERS *****
         # ElasticNetCV hyperparameters
         if name == 'ElasticNetCV__l1_ratio':
@@ -310,11 +313,15 @@ def make_hp_space_discrete(trial, param_names):
                 
     return trial_params
 
-def make_hp_space_real(trial, param_names):
+def make_hp_space_real(trial, param_names, skip_params=[]):
             
     trial_params = []
 
     for name in param_names:
+        if name in skip_params:
+            trial_params.append((name, 'skip'))
+            continue
+        
         # ***** REGRESSOR HYPERPARAMETERS *****
         # ElasticNetCV hyperparameters
         if name == 'ElasticNetCV__l1_ratio':
@@ -605,13 +612,14 @@ def make_hp_space_real(trial, param_names):
     return trial_params
 
 
-def make_optuna_trial_discrete(trial_params, value):
+def make_optuna_trial_discrete(trial_params, value, skip_params=[]):
         
     params = {}
     distributions = {}
     
     for (name,val) in trial_params:
-        
+        if name in skip_params:
+            continue
         # to avoid TPOT precision issues, round number values to 6 decimals
         if u.is_number(val):
             val = np.round(val,decimals=6)
@@ -924,12 +932,14 @@ def make_optuna_trial_discrete(trial_params, value):
     
     return trial
 
-def make_optuna_trial_real(trial_params, value):
+def make_optuna_trial_real(trial_params, value, skip_params=[]):
     
     params = {}
     distributions = {}
     
     for (name,val) in trial_params:
+        if name in skip_params:
+            continue
         # ***** REGRESSOR HYPERPARAMETERS *****
         # ElasticNetCV hyperparameters
         if name == 'ElasticNetCV__l1_ratio':
