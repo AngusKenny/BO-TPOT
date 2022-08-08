@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.model_selection import train_test_split
-
+from sklearn.linear_model import LinearRegression
 
 ''' Escape codes for printing coloured text
 '''
@@ -59,6 +59,18 @@ def is_number(string):
         return True
     except ValueError:
         return False
+
+def convert_str_param(p,config_dict):
+    try:
+        return float(p[1])
+    except ValueError:
+        if p[1] in 'TrueFalse':
+            return bool(p[1])
+        
+        p_s = p[0].split("__")
+        for k,v in config_dict.items():
+            if p_s[0] in k:
+                return v[p_s[1]].index(p[1])
 
 def get_run_data(fname_prog):
     seed = n_tot_gens = tpot_stop_gen = pop_size = None
@@ -209,3 +221,55 @@ def loguniform(low, high, size=None):
     if low == 0 or high == 0:
         print("Error: cannot do log of 0!")
     return np.exp(np.random.uniform(np.log(low), np.log(high), size))
+
+
+def get_restricted_set(pipes, config_dict, fname_bo_res_plot):
+    
+    best_pipe = next(iter(pipes))
+    
+    best_params = string_to_params(best_pipe)
+    
+    param_list = [v[0] for v in best_params]
+    
+    rem_p = []
+    
+    for p in param_list:
+        p_s = p.split("__")
+        for k,v in config_dict.items():
+            if p_s[0] in k:
+                if len(v[p_s[1]]) == 1:
+                    rem_p.append(p)
+    
+    [param_list.remove(v) for v in rem_p]
+    
+    n_params = len(param_list)
+    
+    hp_x = np.empty((0,n_params))        
+            
+    for pipe in pipes:
+        pipe_params = string_to_params(pipe)
+        hp_x = np.vstack((hp_x,np.array([convert_str_param(v,config_dict) 
+                                         for v in pipe_params if v[0] 
+                                         in param_list])))
+    
+    scores = []
+    x_vals = []
+    freeze_params = []
+    
+    hp_y = np.array([v['internal_cv_score'] for k,v in pipes.items()]).reshape(-1,1)
+    
+    while hp_x.shape[1] > 0:
+        x_vals.append(hp_x.shape[1])
+        regressor = LinearRegression(fit_intercept=False)
+        regressor.fit(hp_x, hp_y)
+        scores.append(regressor.score(hp_x, hp_y))
+        worst_idx = np.argmin(np.abs(regressor.coef_))
+        freeze_params.append(param_list.pop(worst_idx))
+        hp_x = np.delete(hp_x, worst_idx, axis=1)
+        
+    freeze_idx = np.argmin(np.abs(scores-0.95*np.max(scores)))
+    
+    plot_data = np.hstack((np.array(x_vals).reshape(-1,1), np.array(scores).reshape(-1,1)))
+    np.savetxt(fname_bo_res_plot, plot_data, delimiter=',')
+    
+    return freeze_params[:freeze_idx], freeze_idx, n_params

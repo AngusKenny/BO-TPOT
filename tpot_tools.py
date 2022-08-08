@@ -181,7 +181,8 @@ def get_tpot_data(tot_gens=100,
         return run_no
     
                 
-def run_bo(run_list=[], 
+def run_bo(restricted=False,
+           run_list=[], 
            optuna_timeout_trials=100,
            force_bo_evals=None,
            ignore_results=True,
@@ -194,6 +195,8 @@ def run_bo(run_list=[],
            real_vals=True,
            pipe_eval_timeout=5):
 
+    restricted_text = "_restricted" if restricted else ""
+    
     # set tpot verbosity to vprint.verbosity + 1 to give more information
     tpot_verb = vprint.verbosity + 1 if vprint.verbosity > 0 else 0
     
@@ -254,7 +257,7 @@ def run_bo(run_list=[],
                                 + "skipping run..")
                     continue
             
-            bo_dir = os.path.join(run_dir, 'bo')
+            bo_dir = os.path.join(run_dir, f'bo{restricted_text}')
             if not os.path.exists(bo_dir):
                 os.makedirs(bo_dir)
             
@@ -263,8 +266,9 @@ def run_bo(run_list=[],
             # establish filenames for data output
             fname_tpot_prog = os.path.join(tpot_dir, "tpot_progress.out")
             fname_tpot_pipes = os.path.join(tpot_dir, "tpot_pipes.out")
-            fname_bo_prog = os.path.join(bo_dir, "bo_progress.out")
-            fname_bo_pipes = os.path.join(bo_dir, "bo_pipes.out")
+            fname_bo_prog = os.path.join(bo_dir, f"bo{restricted_text}_progress.out")
+            fname_bo_pipes = os.path.join(bo_dir, f"bo{restricted_text}_pipes.out")
+            fname_bo_res_plot = os.path.join(bo_dir, "bo_res_plot.out")
             
             if os.path.exists(fname_bo_pipes) and not ignore_results:
                 if len(prob_list) == 1 and len(run_idxs) == 1:
@@ -349,7 +353,7 @@ def run_bo(run_list=[],
             # remove generated pipeline and transplant saved from before
             tpot._pop = [creator.Individual.from_string(
                 best_init_pipe, tpot._pset)]
-            
+                        
             # convert pipe strings to parameter sets
             seed_samples = [(u.string_to_params(best_init_pipe),
                             loaded_pipes[best_init_pipe]['internal_cv_score'])]
@@ -357,6 +361,16 @@ def run_bo(run_list=[],
                 matching_dict[pipe_str] = loaded_pipes[pipe_str]
                 seed_samples.append((u.string_to_params(pipe_str),
                                     loaded_pipes[pipe_str]['internal_cv_score']))
+            
+            
+            (skip_params,n_freeze,n_params) = (u.get_restricted_set(matching_dict,tpot_config_copy, fname_bo_res_plot) if restricted else ([], 0, 0))
+            
+            if restricted:
+                vprint.v2(f"{u.CYAN}\n{n_freeze} of {n_params} hyperparameters (with >1 possible values) frozen for BO step..{u.OFF}")
+                if n_freeze == 0:
+                    if len(run_idxs) == 1:
+                        return "Unable to freeze any BO hyperparameters" 
+                    else: continue
             
             # replace tpot evaluated individuals with matching pipes
             tpot.evaluated_individuals_ = matching_dict
@@ -377,7 +391,8 @@ def run_bo(run_list=[],
               
             # run bayesian optimisation with seed_dicts as initial samples
             po.optimise(0, X_train, y_train, n_evals=n_bo_evals,
-                        seed_samples=seed_samples,real_vals=real_vals, 
+                        seed_samples=seed_samples,real_vals=real_vals,
+                        skip_params=skip_params,
                         timeout_trials=optuna_timeout_trials)
     
             # record time        
@@ -405,6 +420,10 @@ def run_bo(run_list=[],
                 f.write(f"TPOT STOP GEN:{tpot_stop_gen}\n")
                 f.write(f"BAYESIAN OPTIMISATION EVALS:{n_bo_evals}\n")
                 f.write(f"REAL_VALS:{real_vals}\n")
+                f.write(f"RESTRICTED:{restricted}\n")
+                f.write(f"BO_PARAMS:{n_params}\n")
+                f.write(f"FROZEN:{n_freeze}\n")
+                
                 f.write("\n")
                 f.write(f"***** AFTER {tpot_stop_gen} INITIAL TPOT " 
                         + "GENERATIONS *****\n")
@@ -426,6 +445,8 @@ def run_bo(run_list=[],
             vprint.v1("Time elapsed: {round(t_end_bo-t_start,2)}")
             vprint.v1(f"Best CV: {best_bo_cv}")
             vprint.v1(f"Best pipeline:\n{best_bo_pipe}\n")
+    
+    return "Successful"
             
             
 def run_tpot_bo_alt(n_iters=10,
@@ -1348,19 +1369,21 @@ class TestHandler(object):
             t_bo_start = time.time()
             self.vprint.v1(f"{u.CYAN_U}****** Running BO (run {run}) for problem '{problem}' ******{u.OFF}\n")
             # run BO on generated TPOT data
-            run_bo(run_list=[run],
-                        optuna_timeout_trials=self.params['OPTUNA_TIMEOUT_TRIALS'],
-                        prob_list=[problem],
-                        data_dir=self.params['DATA_DIR'],
-                        results_dir=self.params['RESULTS_DIR'],
-                        tpot_config_dict=self.params['TPOT_CONFIG_DICT'],
-                        n_jobs=self.params['nJOBS'],
-                        vprint=self.vprint,
-                        real_vals=self.params['REAL_VALS'],
-                        pipe_eval_timeout=self.params['PIPE_EVAL_TIMEOUT'])
+            res_txt = run_bo(restricted=self.params['RESTRICT_BO'],
+                   run_list=[run],
+                   optuna_timeout_trials=self.params['OPTUNA_TIMEOUT_TRIALS'],
+                   prob_list=[problem],
+                   data_dir=self.params['DATA_DIR'],
+                   results_dir=self.params['RESULTS_DIR'],
+                   tpot_config_dict=self.params['TPOT_CONFIG_DICT'],
+                   n_jobs=self.params['nJOBS'],
+                   vprint=self.vprint,
+                   real_vals=self.params['REAL_VALS'],
+                   pipe_eval_timeout=self.params['PIPE_EVAL_TIMEOUT'])
             t_bo_end = time.time()
+            bo_r_txt = "-R" if self.params['RESTRICT_BO'] else ""
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} (BO): Successful ({round(t_bo_end-t_bo_start,2)}s)\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} (BO{bo_r_txt}): {res_txt} ({round(t_bo_end-t_bo_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")

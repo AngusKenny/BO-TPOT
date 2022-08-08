@@ -23,17 +23,17 @@ params = {
     # (will ask for confirmation)
     'CLEAN_DATA' : False,
     'RUN_TPOT' : False,
-    'RUN_BO' : False,
+    'RUN_BO' : True,
     'RUN_ALT' : False,
-    'RUN_AUTO' : True,
+    'RUN_AUTO' : False,
     'VERBOSITY' : 2,
     'DATA_DIR' : 'Data',
-    'RESULTS_DIR' : 'Results',
+    'RESULTS_DIR' : 'Results_abalone',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : [16,17,18,19,20],
+    'RUNS' : [15,16,17,18,19,20],
     'PROBLEMS' : [
-    #            'abalone',
-		'socmob',
+                'abalone',
+# 		'socmob',
                 # 'quake',
     #             'house_16h',
     #             'brazilian_houses',
@@ -42,9 +42,9 @@ params = {
     #             'black_friday'
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
-    'nJOBS' : 6,
+    'nJOBS' : 4,
     # toggle between real and discrete parameter spaces
-    'REAL_VALS' : False,
+    'REAL_VALS' : True,
     # maximum time allowed for a single pipeline evaluation (mins)
     'PIPE_EVAL_TIMEOUT' : 5,
     #
@@ -58,6 +58,7 @@ params = {
     # BO and TPOT + BO alternating parameters
     #
     # stop optuna running forever if it cannot find enough new pipelines
+    'RESTRICT_BO' : True,
     'OPTUNA_TIMEOUT_TRIALS' : 100,
     'nALT_ITERS' : 10,
     }
