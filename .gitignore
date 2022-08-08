@@ -3,3 +3,6 @@ __pycache__/
 Results/
 *.zip
 *Results*
+find_important_variables.py
+freeze_plots.py
+get_best_pipes.py
