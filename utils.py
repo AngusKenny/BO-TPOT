@@ -245,18 +245,20 @@ def get_restricted_set(pipes, config_dict, fname_bo_res_plot):
     n_params = len(param_list)
     
     hp_x = np.empty((0,n_params))        
-            
-    for pipe in pipes:
+    hp_y = np.empty((0,1))        
+    
+    for pipe,v in pipes.items():
+        if v['internal_cv_score'] == -np.inf:
+            continue
         pipe_params = string_to_params(pipe)
         hp_x = np.vstack((hp_x,np.array([convert_str_param(v,config_dict) 
                                          for v in pipe_params if v[0] 
                                          in param_list])))
+        hp_y = np.vstack((hp_y, np.array([v['internal_cv_score']])))
     
     scores = []
     x_vals = []
     freeze_params = []
-    
-    hp_y = np.array([v['internal_cv_score'] for k,v in pipes.items()]).reshape(-1,1)
     
     while hp_x.shape[1] > 0:
         x_vals.append(hp_x.shape[1])

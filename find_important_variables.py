@@ -30,9 +30,9 @@ def convert_str_param(p,config_dict):
                 return v[p_s[1]].index(p[1])
 
 params = {
-    'RESULTS_DIR'   : 'Results_discrete',
-    'PROBLEM'       :  'abalone',
-    'RUN'           : 3,
+    'RESULTS_DIR'   : 'house_16h_Results_C',
+    'PROBLEM'       :  'house_16h',
+    'RUN'           : 0,
     }
 
 
@@ -71,6 +71,8 @@ with open(fname_matching_pipes, 'r') as f:
     for line in f:
         pipe = line.split(";")[0]
         cv = float(line.split(";")[-1])
+        if cv == -np.inf:
+            continue
         pipes[pipe] = cv
 
 best_params = u.string_to_params(best_pipe)
@@ -99,7 +101,6 @@ x_vals = []
 freeze_params = []
 
 hp_y = np.array(list(pipes.values())).reshape(-1,1)
-
 
 print(param_list)
 
