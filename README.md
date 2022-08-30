@@ -340,7 +340,7 @@ The generated pipelines are accessible as the class attribute `pipes`. The dicti
 
 ## Running BO-TPOT
 
-As mentioned above, it is possible to run the `TPOT-BASE`, `TPOT-BO-S` and `TPOT-BO-ALT` processes individually, by instantiating their classes and calling their respective `optimize` methods with the appropriate training data, but the simplest way is to execute the script in the file `run_tpot_tests.py` in the `run_scripts` directory. At the start of this script is a parameters dictionary `params` which the user can populate and is given to a `TestHandler` object which sets up and runs all the required tests, in accordance with the specified parameters, automatically.
+As mentioned above, it is possible to run the `TPOT-BASE`, `TPOT-BO-S` and `TPOT-BO-ALT` processes individually, by instantiating their classes and calling their respective `optimize` methods with the appropriate training data, but the simplest way is to execute the script in the file `run_tpot_tests.py`. At the start of this script is a parameters dictionary `params` which the user can populate and is given to a `TestHandler` object which sets up and runs all the required tests, in accordance with the specified parameters, automatically.
 
 The table below gives the parameters in this dictionary and their type, followed by a description of their functions:
 
@@ -490,7 +490,7 @@ Each time this class is instantiated, a file in `./<RESULTS_DIR>/` called `BO_TP
 
 
 ## Processing Results
-Also included in the `run_scripts` directory, the file `process_tpot_tests.py` provides a script that automatically processes the results produced by BO-TPOT, computes the statistics and generates plots for the data. By default, the script searches each problem sub-directory in the results directory to find runs which have valid results. It performs a check on each run to ensure that the parameters used to generate the results are the same as those used in the first valid run, if there is a mis-match in parameter values, or if the results themselves are invalid, it will skip the run and not include it in the final statistics or plots.
+The file `process_tpot_tests.py` provides a script that automatically processes the results produced by BO-TPOT, computes the statistics and generates plots for the data. By default, the script searches each problem sub-directory in the results directory to find runs which have valid results. It performs a check on each run to ensure that the parameters used to generate the results are the same as those used in the first valid run, if there is a mis-match in parameter values, or if the results themselves are invalid, it will skip the run and not include it in the final statistics or plots.
 
 Depending on what is required, a plot is generated for `TPOT-BASE`, `TPOT-BO-S`, `TPOT-BO-Sr`, `TPOT-BO-ALT` and/or `TPOT-BO-AUTO`. 
 
