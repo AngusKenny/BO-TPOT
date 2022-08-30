@@ -17,9 +17,10 @@ import time
 
 
 class TPOT_BO_AUTO(object):
-    tpot_pipes = {}
+    pipes = {}
     
     def __init__(self,
+                 init_pipes={},
                  pop_size=100,
                  n_gens=100,
                  seed=42,
@@ -27,7 +28,6 @@ class TPOT_BO_AUTO(object):
                  optuna_timeout_trials=100,
                  config_dict=default_tpot_config_dict,
                  n_jobs=-1,
-                 init_pipes={},
                  pipe_eval_timeout=5,
                  vprint=u.Vprint(1)):
         
@@ -60,7 +60,7 @@ class TPOT_BO_AUTO(object):
         self.tpot._fit_init()
         
         for k,v in init_pipes.items():
-            v['chosen_method'] = 'tpot'
+            v['source'] = 'TPOT-BO-AUTO(TPOT)'
             v['auto_gen'] = 0
         
         if len(init_pipes) > 0:
@@ -90,30 +90,29 @@ class TPOT_BO_AUTO(object):
         if out_path:
             if not os.path.exists(out_path):
                 os.makedirs(out_path)
-            fname_auto_pipes = os.path.join(out_path,"auto_pipes.out")
+            fname_auto_pipes = os.path.join(out_path,"TPOT-BO-AUTO.pipes")
             # wipe pipe existing pipe files if they exist
             f = open(fname_auto_pipes,'w')
             
         
         for k,v in self.tpot.evaluated_individuals_.items():
-            self.tpot_pipes[k] = v
+            self.pipes[k] = v
             if out_path:
-                f.write(f"{k};{v['auto_gen']};{v['chosen_method']};"
+                f.write(f"{k};{v['auto_gen']};{v['source']};"
                         + f"{v['internal_cv_score']}\n")
             
         if out_path:
             f.close()
         
-        
         self.tpot.generations = 1
         
         # force tpot to be run once first, then bo
-        grads = {0: {'tpot':1e20, 'bo':1e10}}
+        grads = {0: {'TPOT-BO-AUTO(TPOT)':1e20, 'TPOT-BO-AUTO(BO)':1e10}}
         
         old_best_cv = -1e20
         
         do_tpot = True
-        chosen_method = 'tpot'
+        chosen_method = 'TPOT-BO-AUTO(TPOT)'
         
         # skip 0 for init pop
         for g in range(1, self.n_gens):
@@ -124,12 +123,12 @@ class TPOT_BO_AUTO(object):
                 f = open(fname_auto_pipes,'a')
             
             for k,v in self.tpot.evaluated_individuals_.items():
-                if k not in self.tpot_pipes:
+                if k not in self.pipes:
                     v['auto_gen'] = g
-                    v['chosen_method'] = chosen_method
-                    self.tpot_pipes[k] = v
+                    v['source'] = chosen_method
+                    self.pipes[k] = v
                     
-                    f.write(f"{k};{v['auto_gen']};{v['chosen_method']};"
+                    f.write(f"{k};{v['auto_gen']};{v['source']};"
                             + f"{v['internal_cv_score']}\n")
             
             if out_path:
@@ -146,9 +145,9 @@ class TPOT_BO_AUTO(object):
             old_best_cv = best_cv
             
             # if gradient is the same then toggle, otherwise take best
-            if grads[g-1]['bo'] == grads[g-1]['tpot']:
+            if grads[g-1]['TPOT-BO-AUTO(BO)'] == grads[g-1]['TPOT-BO-AUTO(TPOT)']:
                 do_tpot = not do_tpot
-            elif grads[g-1]['bo'] < grads[g-1]['tpot']:
+            elif grads[g-1]['TPOT-BO-AUTO(BO)'] < grads[g-1]['TPOT-BO-AUTO(TPOT)']:
                 do_tpot = True
             else:
                 do_tpot = False
@@ -157,16 +156,16 @@ class TPOT_BO_AUTO(object):
             
             # check previous gradient to determine which to use
             if do_tpot:
-                chosen_method = 'tpot'
-                grads[g] = {'bo':grads[g-1]['bo']}
+                chosen_method = 'TPOT-BO-AUTO(TPOT)'
+                grads[g] = {'TPOT-BO-AUTO(BO)':grads[g-1]['TPOT-BO-AUTO(BO)']}
                 self.vprint.v2(f"{u.YELLOW}Running TPOT..{u.OFF}")
                 self.tpot.fit(X_train, y_train)
                 self.vprint.v1("")
                 new_idx,new_cv = self.tpot_handler.get_best_pipe_idx()
                 improve_success = new_cv > best_cv
             else:
-                chosen_method = 'bo'
-                grads[g] = {'tpot':grads[g-1]['tpot']}
+                chosen_method = 'TPOT-BO-AUTO(BO)'
+                grads[g] = {'TPOT-BO-AUTO(TPOT)':grads[g-1]['TPOT-BO-AUTO(TPOT)']}
                 self.vprint.v2(f"{u.YELLOW}Running BO..{u.OFF}")
 
                 # get all pipelines that match the structure of best pipe
@@ -272,14 +271,14 @@ class TPOT_BO_AUTO(object):
 
 
         for k,v in self.tpot.evaluated_individuals_.items():
-            if k not in self.tpot_pipes:
+            if k not in self.pipes:
                 v['auto_gen'] = g
-                v['chosen_method'] = chosen_method
-                self.tpot_pipes[k] = v
+                v['source'] = chosen_method
+                self.pipes[k] = v
 
         t_end = time.time() 
         
-        best_pipe, best_cv = u.get_best(self.tpot_pipes)
+        best_pipe, best_cv = u.get_best(self.pipes)
         
         self.vprint.v1(f"\n{u.YELLOW}* best pipe found:{u.OFF}")
         self.vprint.v1(f"{best_pipe}")
@@ -287,18 +286,10 @@ class TPOT_BO_AUTO(object):
         self.vprint.v1(f"\nTotal time elapsed: {round(t_end-t_start,2)} sec\n")
         
         if out_path:
-            if not os.path.exists(out_path):
-                os.makedirs(out_path)
-            # fname_auto_pipes = os.path.join(out_path,"auto_pipes.out")
-            fname_auto_grads = os.path.join(out_path,"auto_grads.out")
-            
-            # with open(fname_auto_pipes,'w') as f:
-            #     for k,v in self.tpot_pipes.items():
-            #             f.write(f"{k};{v['auto_gen']};{v['internal_cv_score']};"
-            #                     + f"{v['chosen_method']}\n")
-                    
+            fname_auto_grads = os.path.join(out_path,"TPOT-BO-AUTO.grads")
             with open(fname_auto_grads,'w') as f:
                 for g,v in grads.items():
-                    if 'tpot' in v and 'bo' in v:
-                        f.write(f"{g},{v['tpot']},{v['bo']}\n")
+                    if 'TPOT-BO-AUTO(TPOT)' in v and 'TPOT-BO-AUTO(BO)' in v:
+                        f.write(f"{g},{v['TPOT-BO-AUTO(TPOT)']},{v['TPOT-BO-AUTO(BO)']}\n")
                         
+        return "Successful"

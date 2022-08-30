@@ -14,7 +14,7 @@ import os
 import time
 
 class TPOT_Base(object):
-    tpot_pipes = None
+    pipes = None
     
     def __init__(self,
                  n_gens=100,
@@ -56,18 +56,20 @@ class TPOT_Base(object):
                + f"..\n{u.WHITE}")
         
         # in case something has been done to pipes externally update tpot pipes
-        self.tpot.evaluated_individuals_ = copy.deepcopy(self.tpot_pipes)
+        self.tpot.evaluated_individuals_ = copy.deepcopy(self.pipes)
         
         # fit tpot model to training data
         self.tpot.fit(X_train, y_train)
         
         # copy evaluated individuals dictionary
-        self.tpot_pipes = copy.deepcopy(self.tpot.evaluated_individuals_)
+        self.pipes = copy.deepcopy(self.tpot.evaluated_individuals_)
         
+        for k,v in self.pipes.items():
+            v['source'] = 'TPOT-BASE'
         
         t_end = time.time()
         
-        best_tpot_pipe, best_tpot_cv = u.get_best(self.tpot_pipes)
+        best_tpot_pipe, best_tpot_cv = u.get_best(self.pipes)
         
         self.vprint.v1(f"\n{u.YELLOW}* best pipe found by TPOT:{u.OFF}")
         self.vprint.v1(f"{best_tpot_pipe}")
@@ -80,11 +82,11 @@ class TPOT_Base(object):
             print(out_path)
             if not os.path.exists(out_path):
                 os.makedirs(out_path)
-            fname_tpot_pipes = os.path.join(out_path,'tpot_pipes.out')
+            fname_tpot_pipes = os.path.join(out_path,'TPOT-BASE.pipes')
             print(fname_tpot_pipes)
             # write all evaluated pipes
             with open(fname_tpot_pipes, 'w') as f:
-                for k,v in self.tpot_pipes.items():
+                for k,v in self.pipes.items():
                     f.write(f"{k};{v['generation']};{v['internal_cv_score']}\n")
                     
         return "Successful"

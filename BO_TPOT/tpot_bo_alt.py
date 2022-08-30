@@ -17,8 +17,7 @@ import time
 
 
 class TPOT_BO_ALT(object):
-    tpot_pipes = {}
-    bo_pipes = {}
+    pipes = {}
     
     def __init__(self,
                  init_pipes={},
@@ -86,7 +85,7 @@ class TPOT_BO_ALT(object):
         if out_path:
             if not os.path.exists(out_path):
                 os.makedirs(out_path)
-            fname_alt_pipes = os.path.join(out_path,"alt_pipes.out")
+            fname_alt_pipes = os.path.join(out_path,"TPOT-BO-ALT.pipes")
             # wipe pipe existing pipe files if they exist
             f = open(fname_alt_pipes,'w')
             f.close()
@@ -109,14 +108,14 @@ class TPOT_BO_ALT(object):
                 f = open(fname_alt_pipes,'a')
             
             for k,v in self.tpot.evaluated_individuals_.items():
-                if k not in self.tpot_pipes and k not in self.bo_pipes:
+                if k not in self.pipes:
                     v['iteration'] = i
-                    v['method'] = 'tpot'
-                    self.tpot_pipes[k] = v
+                    v['source'] = 'TPOT-BO-ALT(tpot)'
+                    self.pipes[k] = v
                     
                     if out_path:
                         f.write(f"{k};{v['iteration']};{v['generation']};"
-                                + f"{v['method']};{v['internal_cv_score']}\n")
+                                + f"{v['source']};{v['internal_cv_score']}\n")
             
             if out_path:
                 f.close()
@@ -193,18 +192,18 @@ class TPOT_BO_ALT(object):
                 f = open(fname_alt_pipes,'a')
                         
             for k,v in bo_tpot.evaluated_individuals_.items():
-                if k not in self.bo_pipes and k not in self.tpot_pipes:
+                if k not in self.pipes:
                     if v['internal_cv_score'] > best_bo_cv:
                         best_bo_cv = v['internal_cv_score']
                         best_bo_pipe = k
                     v['iteration'] = i
+                    v['source'] = 'TPOT-BO-ALT(BO)'
                     v['generation'] = -1
-                    v['method'] = 'bo'
-                    self.bo_pipes[k] = v
+                    self.pipes[k] = v
                     
                     if out_path:
                         f.write(f"{k};{v['iteration']};{v['generation']};"
-                                + f"{v['method']};{v['internal_cv_score']}\n")
+                                + f"{v['source']};{v['internal_cv_score']}\n")
             if out_path:
                 f.close()
             
@@ -241,23 +240,15 @@ class TPOT_BO_ALT(object):
                 self.tpot_handler.evaluate(best_iter_idx, X_train, y_train)
                 
                 self.vprint.v1(f"CV of new evaluated tpot pipe: {self.tpot._pop[best_iter_idx].fitness.values[1]}")
-                
-                # set new and add to tpot pipes list as best for next iteration
-                self.tpot.evaluated_individuals_[best_bo_pipe]['generation'] = -1
-                # self.tpot.evaluated_individuals_[best_bo_pipe]['iteration'] = i+1
-                # self.tpot_pipes[best_bo_pipe] = self.tpot.evaluated_individuals_[best_bo_pipe]
-                # if out_path:
-                #     with open(fname_alt_tpot_pipes,'a') as f:
-                #         f.write(f"{best_bo_pipe};{self.tpot_pipes[best_bo_pipe]['iteration']};{self.tpot_pipes[best_bo_pipe]['generation']};{self.tpot_pipes[best_bo_pipe]['internal_cv_score']}\n")
-                
+                                
             else:
                 self.vprint.v1(f"{u.RED}BO unsuccessful - reverting to original"
                                + f" TPOT population..{u.OFF}")
         
         t_end = time.time() 
         
-        best_tpot_pipe, best_tpot_cv = u.get_best(self.tpot_pipes)
-        best_bo_pipe, best_bo_cv = u.get_best(self.bo_pipes)
+        best_tpot_pipe, best_tpot_cv = u.get_best(self.pipes,source='TPOT-BO-ALT(TPOT)')
+        best_bo_pipe, best_bo_cv = u.get_best(self.pipes,source='TPOT-BO-ALT(BO)')
         
         self.vprint.v1(f"\n{u.YELLOW}* best pipe found by tpot:{u.OFF}")
         self.vprint.v1(f"{best_tpot_pipe}")
@@ -265,20 +256,5 @@ class TPOT_BO_ALT(object):
         self.vprint.v1(f"\n{u.YELLOW}best pipe found by BO:{u.OFF}")
         self.vprint.v1(f"{best_bo_pipe}\n{u.GREEN} * score:{u.OFF} {best_bo_cv}")
         self.vprint.v1(f"\nTotal time elapsed: {round(t_end-t_start,2)} sec\n")
-        
-        # if out_path:
-        #     if not os.path.exists(out_path):
-        #         os.makedirs(out_path)
-        #     fname_alt_tpot_pipes = os.path.join(out_path,"alt_tpot_pipes.out")
-        #     fname_alt_bo_pipes = os.path.join(out_path,"alt_bo_pipes.out")
-            
-        #     with open(fname_alt_tpot_pipes,'w') as f:
-        #         for k,v in self.tpot_pipes.items():
-        #                 f.write(f"{k};{v['iteration']};{v['generation']};"
-        #                         + f"{v['internal_cv_score']}\n")
-                    
-        #     with open(fname_alt_bo_pipes,'w') as f:
-        #         for k,v in self.bo_pipes.items():
-        #             f.write(f"{k};{v['iteration']};{v['internal_cv_score']}\n")
                     
         return "Successful"

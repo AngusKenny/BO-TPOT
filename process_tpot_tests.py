@@ -29,13 +29,11 @@ params = {
     'RUN_LIST'      : [],
     'SAVE_PLOTS'    : False,
     'SAVE_STATS'    : False,
-    'PLOT_BO_R'     : False,
+    'PLOT_BO_R'     : True,
     'PLOT_ALT'      : True,
     'PLOT_AUTO'     : True,
     'DISCRETE_MODE' : True,
-    'SKIP_PLOT_INIT': 200,
-    'LIMIT_SCALE'   : 0.5,
-    'COLOURMAP'     : plt.cm.bwr
+    'SKIP_PLOT_INIT': 200
     }
 
 cwd = os.getcwd()
@@ -672,7 +670,7 @@ for problem in prob_list:
     if len(run_idxs) > 1:
         ylim_min = y_mu_end - 1.5*bo_y_sigma[-1]
     else:
-        ylim_min = y_mu_end - params['LIMIT_SCALE']*(y_mu_start-y_mu_end)
+        ylim_min = y_mu_end - (y_mu_start-y_mu_end)
         
     ylim_max = y_mu_start
     

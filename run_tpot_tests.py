@@ -22,16 +22,16 @@ params = {
     # clear BO and alt data from directories to be written to 
     # (will ask for confirmation)
     'CLEAN_DATA': False,
-    'RUN_TPOT-BASE' : False,
+    'RUN_TPOT-BASE' : True,
     'RUN_TPOT-BO-S' : True,
-    'RUN_TPOT-BO-ALT' : False,
-    'RUN_TPOT-BO-AUTO' : False,
-    'RESTRICT_BO' : True,
+    'RUN_TPOT-BO-Sr' : True,
+    'RUN_TPOT-BO-ALT' : True,
+    'RUN_TPOT-BO-AUTO' : True,
     'VERBOSITY' : 2,
     'DATA_DIR' : 'Data',
-    'RESULTS_DIR' : 'Results_newcode',
+    'RESULTS_DIR' : 'Results_finaltest3',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : [0,1,2],
+    'RUNS' : 3,
     'PROBLEMS' : [
                 # 'abalone',
 # 		'socmob',
@@ -43,7 +43,7 @@ params = {
     #             'black_friday'
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
-    'nJOBS' : 4,
+    'nJOBS' : 16,
     # toggle between discrete and continuous parameter spaces
     'DISCRETE_MODE' : True,
     # maximum time allowed for a single pipeline evaluation (mins)
@@ -69,35 +69,43 @@ if params['VERBOSITY'] < 3:
 
 test_handler = TestHandler(params)
 
+seed = params['START_SEED']
+
 for problem in test_handler.prob_list:
     test_handler.write_problem(problem)
     test_handler.set_problem(problem)
     for run in test_handler.run_list:
         # generate TPOT data - this creates a new run directory, so we need
         # to get the run number to pass to the other processes
-        if params['RUN_TPOT']:
+        if params['RUN_TPOT-BASE']:
             test_handler.set_run()
             tpot_data = test_handler.run_TPOT_BASE()
             if tpot_data is None:
                 test_handler.vprint.verr("TPOT data not generated, skipping run..\n\n")
-                test_handler.seed_inc()
+                test_handler.update_seed()
                 continue
         else:
             test_handler.set_run(run)
-            tpot_data = test_handler.load_TPOT_data()
+            seed, pop_size, tpot_data = test_handler.load_TPOT_data()
+            test_handler.params['POP_SIZE'] = pop_size
+            test_handler.update_seed(seed)
             
         # run BO optimiser
-        if params['RUN_BO']:
-            test_handler.run_TPOT_BO_S(tpot_data)
+        if params['RUN_TPOT-BO-S']:
+            test_handler.run_TPOT_BO_S(tpot_data, restricted_hps=False)
+            
+        # run BO optimiser
+        if params['RUN_TPOT-BO-Sr']:
+            test_handler.run_TPOT_BO_S(tpot_data, restricted_hps=True)
         
         # run alternating TPOT + BO
-        if params['RUN_ALT']:
+        if params['RUN_TPOT-BO-ALT']:
             test_handler.run_TPOT_BO_ALT(tpot_data)
             
         # run alternating TPOT + BO
-        if params['RUN_AUTO']:
+        if params['RUN_TPOT-BO-AUTO']:
             test_handler.run_TPOT_BO_AUTO(tpot_data)
         
-        test_handler.seed_inc()
+        test_handler.update_seed()
         
 test_handler.write_end()

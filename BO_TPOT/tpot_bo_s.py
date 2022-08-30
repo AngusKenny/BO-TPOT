@@ -15,7 +15,7 @@ import os
 import time
 
 class TPOT_BO_S(object):
-    bo_pipes = {}
+    pipes = {}
     
     def __init__(self,  
                  init_pipes,
@@ -62,13 +62,16 @@ class TPOT_BO_S(object):
         # get best from previous pop
         self.best_init_pipe,self.best_init_cv = u.get_best(self.tpot_pipes)
  
-        self.bo_pipes = u.get_matching_set(self.best_init_pipe, self.tpot_pipes)   
- 
+        self.pipes = u.get_matching_set(self.best_init_pipe, self.tpot_pipes)   
+        
+        for k,v in self.pipes.items():
+            v['source'] = 'TPOT-BASE'
+        
         # remove generated pipeline and transplant saved from before
         self.tpot._pop = [creator.Individual.from_string(self.best_init_pipe, self.tpot._pset)]        
         
         # replace evaluated individuals dict
-        self.tpot.evaluated_individuals_ = self.bo_pipes
+        self.tpot.evaluated_individuals_ = self.pipes
         
         # initialise tpot bo handler
         self.handler = TPOT_BO_Handler(self.tpot, vprint=self.vprint, discrete_mode=self.discrete_mode)
@@ -85,14 +88,10 @@ class TPOT_BO_S(object):
         
         self.vprint.v1("")
         
-        # convert pipe strings to parameter sets
-        # seed_samples = [(u.string_to_params(self.best_init_pipe),
-        #                 self.bo_pipes[self.best_init_pipe]['internal_cv_score'])]
-        
-        seed_samples = [(u.string_to_params(k), v['internal_cv_score']) for k,v in self.bo_pipes.items()]
+        seed_samples = [(u.string_to_params(k), v['internal_cv_score']) for k,v in self.pipes.items()]
         
         
-        (self.skip_params,self.n_freeze,self.n_params) = (u.get_restricted_set(self.bo_pipes,self.config_dict) if self.restricted_hps else ([], 0, 0))
+        (self.skip_params,self.n_freeze,self.n_params) = (u.get_restricted_set(self.pipes,self.config_dict) if self.restricted_hps else ([], 0, 0))
         
         if self.restricted_hps:
             self.vprint.v2(f"{u.CYAN}\n{self.n_freeze} of {self.n_params} hyperparameters (with >1 possible values) frozen for BO step..{u.OFF}")
@@ -105,12 +104,17 @@ class TPOT_BO_S(object):
                     skip_params=self.skip_params,
                     timeout_trials=self.optuna_timeout_trials)
         
-        self.bo_pipes = copy.deepcopy(self.tpot.evaluated_individuals_)
+        r_txt = "r" if self.restricted_hps else ""
+        
+        for k,v in self.tpot.evaluated_individuals_.items():
+            if k not in self.pipes:
+                v['source'] = r'TPOT-BO-S{r_txt}'
+                self.pipes[k]= v
         
         t_end = time.time()
         
-        best_tpot_pipe, best_tpot_cv = u.get_best(self.tpot_pipes)
-        best_bo_pipe, best_bo_cv = u.get_best(self.bo_pipes)
+        best_tpot_pipe, best_tpot_cv = u.get_best(self.pipes, source='TPOT-BASE')
+        best_bo_pipe, best_bo_cv = u.get_best(self.pipes, source=f'TPOT-BO-S{r_txt}')
         
         self.vprint.v1(f"\n{u.YELLOW}* best pipe found by tpot:{u.OFF}")
         self.vprint.v1(f"{best_tpot_pipe}")
@@ -123,11 +127,12 @@ class TPOT_BO_S(object):
         if out_path:
             if not os.path.exists(out_path):
                 os.makedirs(out_path)
-            fname_bo_pipes = os.path.join(out_path,'bo_pipes.out')
+            fname_bo_pipes = os.path.join(out_path,f'TPOT-BO-S{r_txt}.pipes')
             # write all evaluated pipes
             with open(fname_bo_pipes, 'w') as f:
-                for k,v in self.bo_pipes.items():
-                    f.write(f"{k};{v['internal_cv_score']}\n")
+                for k,v in self.pipes.items():
+                    if v['source'] == f'TPOT-BO-S{r_txt}':
+                        f.write(f"{k};{v['internal_cv_score']}\n")
                     
         return "Successful"
                     

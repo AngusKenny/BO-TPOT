@@ -25,12 +25,14 @@ class TestHandler(object):
         
         self.t_start = time.time()
         
-        if params['RUN_TPOT'] and type(params['RUNS']) is not int:
+        if params['RUN_TPOT-BASE'] and type(params['RUNS']) is not int:
             sys.exit('Cannot specify list of runs when generating new TPOT data')       
         
         self.run_list = range(params['RUNS']) if type(params['RUNS']) is int else params['RUNS']
         
         self.seed = params['START_SEED']
+        
+        self.disc_txt = "discrete" if params['DISCRETE_MODE'] else "continuous"
         
         # set up verbosity printer
         self.vprint = u.Vprint(params['VERBOSITY'])
@@ -49,26 +51,26 @@ class TestHandler(object):
                     
         # if CLEAN_DATA flag is set, confirm and delete data
         if params['CLEAN_DATA']: 
-            if not params['RUN_TPOT']:
+            if not params['RUN_TPOT-BASE']:
                 rmv_txt = []
-                if params['RUN_BO'] and not params['RESTRICT_BO']: rmv_txt.append("BO")
-                if params['RUN_BO'] and params['RESTRICT_BO']: rmv_txt.append("RESTRICTED_BO")
-                if params['RUN_ALT']: rmv_txt.append("ALT")
-                if params['RUN_AUTO']: rmv_txt.append("AUTO")
-                self.vprint.vwarn(f"about to remove {rmv_txt} data from runs:\n"
+                if params['RUN_TPOT-BO-S']: rmv_txt.append("TPOT-BO-S")
+                if params['RUN_TPOT-BO-Sr']: rmv_txt.append("TPOT-BO-Sr")
+                if params['RUN_TPOT-BO-ALT']: rmv_txt.append("TPOT-BO-ALT")
+                if params['RUN_TPOT-BO-AUTO']: rmv_txt.append("TPOT-BO-AUTO")
+                self.vprint.vwarn(f"about to remove {rmv_txt} data from {self.disc_txt} runs:\n"
                                   + f"{self.run_list}\n"
                                   +f"of problem(s):\n{self.prob_list}\n")
                 rmv_conf = input("Are you sure you want to do this? [y/N] ")
                 if rmv_conf in "yY":
                     self.clean_data()
             else:
-                sys.exit(f"Exiting.. Make sure to check CLEAN_DATA flag!")
+                sys.exit("Exiting.. Make sure to check CLEAN_DATA flag!")
             
-        self.fname_prog = os.path.join(self.results_path,"progress.out")          
+        self.fname_prog = os.path.join(self.results_path,"BO_TPOT.progress")          
 
         with open(self.fname_prog, 'w') as f:
             f.write(f"TIME STARTED:{time.asctime()}\n")
-            f.write(f"USER SPECIFIED PARAMETERS:\n")
+            f.write("USER SPECIFIED PARAMETERS:\n")
             for k,v in params.items():
                 if 'CONFIG' in k and v == default_tpot_config_dict:
                     f.write(f"{k}:default_tpot_config_dict\n")
@@ -78,21 +80,22 @@ class TestHandler(object):
     def clean_data(self):
         self.vprint.vwarn("Cleaning data..")
         for prob in self.prob_list:
+            prob_path = os.path.join(self.results_path, prob)
             for run in self.run_list:
                 run_str = str(run) if run > 9 else f"0{run}"
-                run_path = prob_dir = os.path.join(self.results_path, prob, f"Run_{run_str}")
-                if self.params['RUN_BO'] and not self.params['RESTRICT_BO']: 
-                    rmtree(os.path.join(run_path,"bo"),ignore_errors=True)
-                if self.params['RUN_BO'] and self.params['RESTRICT_BO']:
-                    rmtree(os.path.join(run_path,"bo_restricted"),ignore_errors=True)
-                if self.params['RUN_ALT']: 
-                    rmtree(os.path.join(run_path,"alt"),ignore_errors=True)
-                if self.params['RUN_AUTO']: 
-                    rmtree(os.path.join(run_path,"auto"),ignore_errors=True)
+                run_path = os.path.join(prob_path, f"Run_{run_str}")
+                if self.params['RUN_TPOT-BO-S']: 
+                    rmtree(os.path.join(run_path,"TPOT-BO-S",self.disc_txt),ignore_errors=True)
+                if self.params['RUN_TPOT-BO-Sr']:
+                    rmtree(os.path.join(run_path,"TPOT-BO-Sr",self.disc_txt),ignore_errors=True)
+                if self.params['RUN_TPOT-BO-ALT']: 
+                    rmtree(os.path.join(run_path,"TPOT-BO-ALT",self.disc_txt),ignore_errors=True)
+                if self.params['RUN_TPOT-BO-AUTO']: 
+                    rmtree(os.path.join(run_path,"TPOT-BO-AUTO",self.disc_txt),ignore_errors=True)
         self.vprint.v0("Done!\n")
         cont_conf = input("Do you want to continue executing the script? [Y/n] ")
         if cont_conf in "nN":
-            sys.exit(f"Exiting..")
+            sys.exit("Exiting..")
             
     def write_problem(self, problem):
         with open(self.fname_prog, 'a') as f:
@@ -105,7 +108,7 @@ class TestHandler(object):
 
     def run_TPOT_BASE(self):
         run = self.run_path.split("_")[-1]
-        tpot_path = os.path.join(self.run_path,'tpot')
+        tpot_path = os.path.join(self.run_path,'TPOT-BASE')
         if not os.path.exists(tpot_path):
             os.makedirs(tpot_path)
         try:
@@ -124,38 +127,41 @@ class TestHandler(object):
             t_tpot_end = time.time()
             
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Generate TPOT data (run {run}): {res_txt} ({round(t_tpot_end-t_tpot_start,2)}s)\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) TPOT-BASE (run {run}): {res_txt} ({round(t_tpot_end-t_tpot_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
             with open(self.fname_prog, 'a') as f:
-                f.write(f"Generate TPOT data (run {run}): Failed..\n{trace}\n\n")
+                f.write(f"TPOT-BASE (run {run}): Failed..\n{trace}\n\n")
             return None
         
-        fname_tpot_prog = os.path.join(tpot_path,'tpot_progress.out')
-        best_tpot_pipe,best_tpot_cv = u.get_best(tb.tpot_pipes)
+        fname_tpot_prog = os.path.join(tpot_path,'TPOT-BASE.progress')
+        best_tpot_pipe,best_tpot_cv = u.get_best(tb.pipes)
         
         # write progress to file
         with open(fname_tpot_prog, 'w') as f:
+            f.write("TPOT-BASE\n")
             f.write(f"TIME:{time.asctime()}\n")
             f.write(f"SEED:{tb.seed}\n")
             f.write(f"POP SIZE:{tb.pop_size}\n")
             f.write(f"TOTAL TPOT GENS:{tb.n_gens}\n")
             f.write("\n")
-            f.write(f"***** AFTER {tb.n_gens} TPOT GENERATIONS *****\n")
+            f.write(f"***** AFTER {tb.n_gens} TPOT-BASE GENERATIONS *****\n")
             f.write(f"Time elapsed:{round(t_tpot_end-t_tpot_start,2)}\n")
             f.write(f"Best full TPOT CV:{best_tpot_cv}\n")
             f.write("Best full TPOT pipeline:\n")
             f.write(f"{best_tpot_pipe}\n")
         
-        return tb.tpot_pipes
+        return tb.pipes
     
-    def run_TPOT_BO_S(self, init_pipes):
+    def run_TPOT_BO_S(self, init_pipes, restricted_hps=False):
         run = self.run_path.split("_")[-1]
-        init_bo_pipes = u.truncate_pop(init_pipes, self.params['STOP_GEN'])
+        init_bo_pipes = u.truncate_pop(init_pipes, self.params['STOP_GEN'])        
         
-        bo_dir = "bo_restricted" if self.params['RESTRICT_BO'] else "bo"
-        bo_path = os.path.join(self.run_path,bo_dir)
+        r_txt = "r" if restricted_hps else ""
+        
+        bo_dir = f"TPOT-BO-S{r_txt}"
+        bo_path = os.path.join(self.run_path,bo_dir,self.disc_txt)
         
         if not os.path.exists(bo_path):
             os.makedirs(bo_path)
@@ -165,13 +171,13 @@ class TestHandler(object):
         
         try:
             t_bo_start = time.time()
-            self.vprint.v1(f"{u.CYAN_U}****** Running BO (run {run}) for problem '{self.problem}' ******{u.OFF}\n")
+            self.vprint.v1(f"{u.CYAN_U}****** Running TPOT-BO-S{r_txt} (run {run}) for problem '{self.problem}' ******{u.OFF}\n")
             # run BO on generated TPOT data
             tbs = TPOT_BO_S(init_bo_pipes,
                             seed=self.seed,
                             n_bo_evals=n_bo_evals,
                             discrete_mode=self.params['DISCRETE_MODE'],
-                            restricted_hps=self.params['RESTRICT_BO'],
+                            restricted_hps=restricted_hps,
                             optuna_timeout_trials=self.params['OPTUNA_TIMEOUT_TRIALS'],
                             config_dict=self.params['TPOT_CONFIG_DICT'],
                             pipe_eval_timeout=self.params['PIPE_EVAL_TIMEOUT'],
@@ -180,30 +186,31 @@ class TestHandler(object):
             res_txt = tbs.optimize(self.X_train, self.y_train, out_path=bo_path)
                 
             t_bo_end = time.time()
-            bo_r_txt = "-R" if self.params['RESTRICT_BO'] else ""
+            
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} (BO{bo_r_txt}): {res_txt} ({round(t_bo_end-t_bo_start,2)}s)\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} (TPOT-BO-S{r_txt}): {res_txt} ({round(t_bo_end-t_bo_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
             with open(self.fname_prog, 'a') as f:
-                f.write(f"Run {run} (BO): Failed..\n{trace}\n\n")
+                f.write(f"Run {run} (TPOT-BO-S{r_txt}): Failed..\n{trace}\n\n")
             return
                 
-        fname_bo_prog = os.path.join(bo_path,'bo_progress.out')
-        best_bo_pipe,best_bo_cv = u.get_best(tbs.bo_pipes)
+        fname_bo_prog = os.path.join(bo_path,f'TPOT-BO-S{r_txt}.progress')
+        best_bo_pipe,best_bo_cv = u.get_best(tbs.pipes)
         best_init_pipe, best_init_cv = u.get_best(init_bo_pipes)
         
         # write final results to prog file
         with open(fname_bo_prog, 'w') as f:
             # update progress file for validation
+            f.write(f"TPOT-BO-S{r_txt}\n")
             f.write(f"TIME:{time.asctime()}\n")
             f.write(f"SEED:{tbs.seed}\n")
             f.write(f"TOTAL TPOT GENS:{self.params['nTOTAL_GENS']}\n")
             f.write(f"TPOT STOP GEN:{self.params['STOP_GEN']}\n")
             f.write(f"BAYESIAN OPTIMISATION EVALS:{n_bo_evals}\n")
             f.write(f"DISCRETE_MODE:{tbs.discrete_mode}\n")
-            f.write(f"RESTRICTED:{tbs.restricted_hps}\n")
+            f.write(f"RESTRICTED:{restricted_hps}\n")
             f.write(f"BO_PARAMS:{tbs.n_params}\n")
             f.write(f"FROZEN:{tbs.n_freeze}\n")
             
@@ -222,7 +229,7 @@ class TestHandler(object):
 
     def run_TPOT_BO_ALT(self, init_pipes=None):
         run = self.run_path.split("_")[-1]
-        alt_path = os.path.join(self.run_path,'alt')
+        alt_path = os.path.join(self.run_path,'TPOT-BO-ALT',self.disc_txt)
         if not os.path.exists(alt_path):
             os.makedirs(alt_path)
         n_tpot_gens = int((self.params['nTOTAL_GENS'] - self.params['STOP_GEN'])/self.params['nALT_ITERS'])
@@ -233,7 +240,7 @@ class TestHandler(object):
         
         try:
             t_alt_start = time.time()
-            self.vprint.v1(f"{u.CYAN_U}****** Running TPOT + BO alternating (run {run}) for problem '{self.problem}' ******{u.OFF}\n")
+            self.vprint.v1(f"{u.CYAN_U}****** Running TPOT-BO-ALT (run {run}) for problem '{self.problem}' ******{u.OFF}\n")
             # run TPOT + BO alternating
             tba = TPOT_BO_ALT(n_iters=self.params['nALT_ITERS'],
                               pop_size=self.params['POP_SIZE'],
@@ -252,20 +259,21 @@ class TestHandler(object):
             
             t_alt_end = time.time()
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} (alt): {res_txt} ({round(t_alt_end-t_alt_start,2)}s)\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} (TPOT-BO-ALT): {res_txt} ({round(t_alt_end-t_alt_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
             with open(self.fname_prog, 'a') as f:
-                f.write(f"Run {run} (BO): Failed..\n{trace}\n\n")
+                f.write(f"Run {run} (TPOT-BO-ALT): Failed..\n{trace}\n\n")
             return
         
-        fname_alt_prog = os.path.join(alt_path,'alt_progress.out')
+        fname_alt_prog = os.path.join(alt_path,'TPOT-BO-ALT.progress')
         
-        best_tpot_pipe,best_tpot_cv = u.get_best(tba.tpot_pipes)
-        best_bo_pipe,best_bo_cv = u.get_best(tba.bo_pipes)
+        best_tpot_pipe,best_tpot_cv = u.get_best(tba.pipes,source="TPOT-BO-AUTO(TPOT)")
+        best_bo_pipe,best_bo_cv = u.get_best(tba.pipes, source="TPOT-BO-AUTO(BO)")
         
         with open(fname_alt_prog, 'w') as f:
+            f.write("TPOT-BO-ALT\n")
             f.write(f"TIME:{time.asctime()}\n")
             f.write(f"SEED:{tba.seed}\n")
             f.write(f"POP SIZE:{tba.pop_size}\n")
@@ -284,14 +292,14 @@ class TestHandler(object):
         
     def run_TPOT_BO_AUTO(self, init_pipes=None):
         run = self.run_path.split("_")[-1]
-        auto_path = os.path.join(self.run_path,'auto')
+        auto_path = os.path.join(self.run_path,'TPOT-BO-AUTO',self.disc_txt)
         if not os.path.exists(auto_path):
             os.makedirs(auto_path)
         auto_init_pipes = u.truncate_pop(init_pipes, 0)
         
         try:
             t_auto_start = time.time()
-            self.vprint.v1(f"{u.CYAN_U}****** Running TPOT + BO Auto (run {run}) for problem '{self.problem}' ******{u.OFF}\n")
+            self.vprint.v1(f"{u.CYAN_U}****** Running TPOT-BO-AUTO (run {run}) for problem '{self.problem}' ******{u.OFF}\n")
             # run TPOT + BO Auto
             tbat = TPOT_BO_AUTO(pop_size=self.params['POP_SIZE'],
                                 n_gens=self.params['nTOTAL_GENS'],
@@ -308,40 +316,40 @@ class TestHandler(object):
             
             t_auto_end = time.time()
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} (alt): {res_txt} ({round(t_auto_end-t_auto_start,2)}s)\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} (TPOT-BO-AUTO): {res_txt} ({round(t_auto_end-t_auto_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
             with open(self.fname_prog, 'a') as f:
-                f.write(f"Run {run} (BO): Failed..\n{trace}\n\n")
+                f.write(f"Run {run} (TPOT-BO-AUTO): Failed..\n{trace}\n\n")
             return
         
-        fname_auto_prog = os.path.join(auto_path,'auto_progress.out')
+        fname_auto_prog = os.path.join(auto_path,'TPOT-BO-AUTO.progress')
         
-        best_tpot_pipe,best_tpot_cv = u.get_best(tbat.tpot_pipes)
-        # best_bo_pipe,best_bo_cv = u.get_best(tbat.bo_pipes)
+        best_pipe,best_cv = u.get_best(tbat.pipes)
         
         with open(fname_auto_prog, 'w') as f:
+            f.write("TPOT-BO-AUTO\n")
             f.write(f"TIME:{time.asctime()}\n")
             f.write(f"SEED:{tbat.seed}\n")
             f.write(f"POP SIZE:{tbat.pop_size}\n")
             f.write(f"DISCRETE_MODE:{tbat.discrete_mode}\n")                
             f.write("\n")
             f.write(f"****** GENERATION {tbat.n_gens-1} ******\n")
-            f.write(f"Best pipe:\n{best_tpot_pipe}\n")
-            f.write(f"Best CV:{best_tpot_cv}\n\n")
-            # f.write(f"Best BO pipe:\n{best_bo_pipe}\n")
-            # f.write(f"Best BO CV:{best_bo_cv}\n\n")
+            f.write(f"Best pipe:\n{best_pipe}\n")
+            f.write(f"Best CV:{best_cv}\n\n")
             f.write(f"Total time elapsed:{round(t_auto_end-t_auto_start,2)}\n")
             f.write("\n")
 
-    def seed_inc(self):
-        self.seed = self.seed + 1
+    def update_seed(self, new_seed=None):
+        if new_seed:
+            self.seed = new_seed
+        else:
+            self.seed = self.seed + 1
         
     def set_problem(self, problem):
         self.problem = problem
-        disc_txt = "discrete" if self.params['DISCRETE_MODE'] else "continuous"
-        self.prob_path = os.path.join(self.results_path, problem, disc_txt)
+        self.prob_path = os.path.join(self.results_path, problem)
         if not os.path.exists(self.prob_path):
             os.makedirs(self.prob_path)
             
@@ -362,6 +370,10 @@ class TestHandler(object):
         self.run_path = os.path.join(self.prob_path, f"Run_{run_str}")
         
     def load_TPOT_data(self):
-        tpot_path = os.path.join(self.run_path,'tpot','tpot_pipes.out')
-        return u.get_progress_pop(tpot_path)        
+        tpot_path = os.path.join(self.run_path,'TPOT-BASE')
+        pipe_path = os.path.join(tpot_path,'TPOT-BASE.pipes')
+        prog_path = os.path.join(tpot_path,'TPOT-BASE.progress')
+        pipes = u.get_progress_pop(pipe_path)
+        seed, n_tot_gens, tpot_stop_gen, pop_size = u.get_run_data(prog_path)
+        return seed, pop_size, pipes
         

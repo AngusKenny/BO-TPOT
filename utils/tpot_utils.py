@@ -327,11 +327,15 @@ def load_data(fpath):
     return X_train, X_test, y_train, y_test
 
 
-def get_best(pipes):
+def get_best(pipes, source=None):
     best_pipe = ""
     best_cv = -1e20
     for k,v in pipes.items():
-        if v['internal_cv_score'] > best_cv:
+        if source:
+            if v['internal_cv_score'] > best_cv and v['source'] == source:
+                best_pipe = k
+                best_cv = v['internal_cv_score']
+        elif v['internal_cv_score'] > best_cv:
             best_pipe = k
             best_cv = v['internal_cv_score']
 
