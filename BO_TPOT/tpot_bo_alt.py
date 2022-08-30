@@ -75,7 +75,7 @@ class TPOT_BO_ALT(object):
                 self.tpot._pop.append(creator.Individual.from_string(k, self.tpot._pset))
         
         
-        self.tpot.evaluated_individuals_ = init_pipes
+        self.tpot.evaluated_individuals_ = copy.deepcopy(init_pipes)
         self.tpot.generations = self.n_tpot_gens-1
         
         # initialise tpot bo handler
@@ -109,13 +109,13 @@ class TPOT_BO_ALT(object):
             
             for k,v in self.tpot.evaluated_individuals_.items():
                 if k not in self.pipes:
-                    v['iteration'] = i
-                    v['source'] = 'TPOT-BO-ALT(tpot)'
                     self.pipes[k] = v
+                    self.pipes[k]['iteration'] = i
+                    self.pipes[k]['source'] = 'TPOT-BO-ALT(TPOT)'
                     
                     if out_path:
-                        f.write(f"{k};{v['iteration']};{v['generation']};"
-                                + f"{v['source']};{v['internal_cv_score']}\n")
+                        f.write(f"{k};{self.pipes[k]['iteration']};{self.pipes[k]['generation']};"
+                                + f"{self.pipes[k]['source']};{self.pipes[k]['internal_cv_score']}\n")
             
             if out_path:
                 f.close()
@@ -196,14 +196,14 @@ class TPOT_BO_ALT(object):
                     if v['internal_cv_score'] > best_bo_cv:
                         best_bo_cv = v['internal_cv_score']
                         best_bo_pipe = k
-                    v['iteration'] = i
-                    v['source'] = 'TPOT-BO-ALT(BO)'
-                    v['generation'] = -1
                     self.pipes[k] = v
+                    self.pipes[k]['iteration'] = i
+                    self.pipes[k]['source'] = 'TPOT-BO-ALT(BO)'
+                    self.pipes[k]['generation'] = -1
                     
                     if out_path:
-                        f.write(f"{k};{v['iteration']};{v['generation']};"
-                                + f"{v['source']};{v['internal_cv_score']}\n")
+                        f.write(f"{k};{self.pipes[k]['iteration']};{self.pipes[k]['generation']};"
+                                + f"{self.pipes[k]['source']};{self.pipes[k]['internal_cv_score']}\n")
             if out_path:
                 f.close()
             

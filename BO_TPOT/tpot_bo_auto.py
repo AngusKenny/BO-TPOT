@@ -75,7 +75,7 @@ class TPOT_BO_AUTO(object):
             for k,v in init_pop.items():
                 self.tpot._pop.append(creator.Individual.from_string(k, self.tpot._pset))
             
-        self.tpot.evaluated_individuals_ = init_pipes
+        self.tpot.evaluated_individuals_ = copy.deepcopy(init_pipes)
         
         # initialise tpot bo handler
         self.tpot_handler = TPOT_BO_Handler(self.tpot, vprint=self.vprint, discrete_mode=self.discrete_mode)
@@ -124,12 +124,13 @@ class TPOT_BO_AUTO(object):
             
             for k,v in self.tpot.evaluated_individuals_.items():
                 if k not in self.pipes:
-                    v['auto_gen'] = g
-                    v['source'] = chosen_method
                     self.pipes[k] = v
+                    self.pipes[k]['auto_gen'] = g
+                    self.pipes[k]['source'] = chosen_method
                     
-                    f.write(f"{k};{v['auto_gen']};{v['source']};"
-                            + f"{v['internal_cv_score']}\n")
+                    if out_path:
+                        f.write(f"{k};{self.pipes[k]['auto_gen']};{self.pipes[k]['source']};"
+                                + f"{self.pipes[k]['internal_cv_score']}\n")
             
             if out_path:
                 f.close()
@@ -188,7 +189,7 @@ class TPOT_BO_AUTO(object):
                 bo_tpot._fit_init()
                 
                 # share evaluated individuals dict across methods
-                bo_tpot.evaluated_individuals_ = self.tpot.evaluated_individuals_
+                bo_tpot.evaluated_individuals_ = copy.deepcopy(self.tpot.evaluated_individuals_)
                 
                 seed_samples = [(u.string_to_params(k), v['internal_cv_score']) for k,v in matching.items()]
                 
@@ -268,14 +269,22 @@ class TPOT_BO_AUTO(object):
                 else:
                     self.vprint.v1(f"{u.RED}BO unsuccessful - reverting to original"
                               + f" TPOT population..{u.OFF}")
-
+        
+        if out_path:
+            f = open(fname_auto_pipes,'a')
 
         for k,v in self.tpot.evaluated_individuals_.items():
             if k not in self.pipes:
-                v['auto_gen'] = g
-                v['source'] = chosen_method
                 self.pipes[k] = v
-
+                self.pipes[k]['auto_gen'] = g
+                self.pipes[k]['source'] = chosen_method
+                
+                if out_path:
+                    f.write(f"{k};{self.pipes[k]['auto_gen']};{self.pipes[k]['source']};"
+                            + f"{self.pipes[k]['internal_cv_score']}\n")
+        if out_path:
+            f.close()
+            
         t_end = time.time() 
         
         best_pipe, best_cv = u.get_best(self.pipes)

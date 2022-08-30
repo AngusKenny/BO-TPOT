@@ -22,16 +22,16 @@ params = {
     # clear BO and alt data from directories to be written to 
     # (will ask for confirmation)
     'CLEAN_DATA': False,
-    'RUN_TPOT-BASE' : True,
+    'RUN_TPOT-BASE' : False,
     'RUN_TPOT-BO-S' : True,
     'RUN_TPOT-BO-Sr' : True,
     'RUN_TPOT-BO-ALT' : True,
-    'RUN_TPOT-BO-AUTO' : True,
+    'RUN_TPOT-BO-AUTO' : False,
     'VERBOSITY' : 2,
     'DATA_DIR' : 'Data',
     'RESULTS_DIR' : 'Results_finaltest3',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : 3,
+    'RUNS' : [0,1],
     'PROBLEMS' : [
                 # 'abalone',
 # 		'socmob',

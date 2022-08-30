@@ -71,7 +71,7 @@ class TPOT_BO_S(object):
         self.tpot._pop = [creator.Individual.from_string(self.best_init_pipe, self.tpot._pset)]        
         
         # replace evaluated individuals dict
-        self.tpot.evaluated_individuals_ = self.pipes
+        self.tpot.evaluated_individuals_ = copy.deepcopy(self.pipes)
         
         # initialise tpot bo handler
         self.handler = TPOT_BO_Handler(self.tpot, vprint=self.vprint, discrete_mode=self.discrete_mode)
@@ -108,8 +108,8 @@ class TPOT_BO_S(object):
         
         for k,v in self.tpot.evaluated_individuals_.items():
             if k not in self.pipes:
-                v['source'] = r'TPOT-BO-S{r_txt}'
-                self.pipes[k]= v
+                self.pipes[k] = v
+                self.pipes[k]['source'] = r'TPOT-BO-S{r_txt}'
         
         t_end = time.time()
         
