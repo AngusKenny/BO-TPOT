@@ -1,34 +1,34 @@
 # Bayesian Optimisation for TPOT (BO-TPOT)
-An add-on for the [Tree-based Pipeline Optimisation Tool (TPOT)](http://epistasislab.github.io/tpot/), a Python library for automated machine learning. By employing [Optuna](https://optuna.org/), a hyperparameter optimisation Python library, Bayesian optimisation can be applied to an existing TPOT pipeline in an attempt to improve its quality by intelligently searching real-valued hyperparameter spaces.
+An add-on for the [Tree-based Pipeline Optimisation Tool (TPOT)](http://epistasislab.github.io/tpot/), a Python library for automated machine learning. By employing [Optuna](https://optuna.org/), a hyperparameter optimisation Python library, Bayesian optimisation can be applied to an existing TPOT pipeline to improve its quality of prediction by identifying real-valued hyperparameters of the machine learning components of the pipeline.
 
 
 ## Dependencies
 [TPOT](http://epistasislab.github.io/tpot/), [PyTorch](http://pytorch.org), [Optuna](https://optuna.org/) - and various packages from [Anaconda Distribution](http://anaconda.org).
 
 ## Introduction
-There are many different types of machine learning models, each of which has its own unique set of hyperparameters. These hyperparameters can be real values, integers or even categories, and control various aspects of the model like learning rate, different thresholds, etc. Machine learning models can be employed singularly, or combined; using the output of one model as the input to the next, harnessing the different strengths of multiple models simultaneously. When combined in this manner, the models are collectively known as a _pipeline_.
+Regression problems are regularly encountered in practice where there is a need to identify a model that captures the relationship between independent variables/features and the dependent variable/response. The performance of the model is often characterised by the complexity of the model and the accuracy of prediction. There are many different types of machine learning models that can be used to deal with such problems and each of such machine learnbing models have their own unique set of hyperparameters. These hyperparameters can be real values, integers or even categories, and controls the predictive performance of the model. Machine learning models can be employed singularly, or combined; using the output of one model as the input to the next, harnessing the different strengths of multiple models simultaneously. When combined in this manner, the models are collectively known as a _pipeline_. Over the last decade there has been significant research effort dedicated towards automating the process of identifying promising machine learning pipelines.
 
-Three main decisions to consider when designing machine learning pipelines are:
+There are three key decisions to consider when designing machine learning pipelines:
 - which models to select; 
-- how they are organised, relative to each other; and, 
-- what the values of their respective hyperparameters should be. 
+- how they are organised/structured, relative to each other; and, 
+- what are the values of their respective hyperparameters. 
 
-TPOT is a Python libarary, built on top of the [Distributed Evolutionary Algorithms in Python (DEAP)](https://github.com/deap) library, which is designed to automate this machine learning pipeline development process. It represents pipelines as tree-based data structures and constructs them using the genetic programming (GP) methods provided by DEAP. 
+TPOT is a Python libarary, built on top of the [Distributed Evolutionary Algorithms in Python (DEAP)](https://github.com/deap) library, which is designed to automate design of machine learning pipelines. It represents pipelines as tree-based data structures and constructs them using the genetic programming (GP) methods provided by DEAP. 
 
-One significant limitation of TPOT is that for all its GP bells-and-whistles, it is still essentially a grid-search method, and as such cannot operate on continuous hyperparameter spaces. Many hyperparameters are real-valued however, but TPOT circumvents this issue by descretising the continuous search space with a certain granularity. Although this is an effective method of handling this issue, the fact still remains that unless the global optimum value for a given hyperparameter lies on the exact point of descretisation, TPOT will never find it.
+One significant limitation of TPOT is that for all its GP bells-and-whistles, it is still employs a grid-search to assign the hyperparameters to the constituent machine learning models. Since many hyperparameters are real-valued, TPOT descretises the continuous search spaces with a certain granularity. Although such a discretization is effective method to reduce the search space, the fact still remains that unless the global optimum value for a given hyperparameter lies on the exact point of descretisation, TPOT will never be able to find it.
 
-[Optuna](https://optuna.org/) is a hyperparameter optimisation library for Python which uses Bayesian optimisation to tune hyperparameter values. It uses a Tree-based Parzen Estimator (TPE)-based surrogate model, built on historical information, to estimate and suggest hyperparameter values, which are then evaluated and the model subsequently updated. In contrast to TPOT,  Optuna has no limitations on the type of values the hyperparameters can take, however it is not as effective at selecting models and constructing pipelines as TPOT. 
+[Optuna](https://optuna.org/) is a hyperparameter optimisation library for Python which uses Bayesian optimisation to tune hyperparameter values. It uses a Tree-based Parzen Estimator (TPE)-based surrogate model, built on historical information, to estimate and suggest hyperparameter values, which are then evaluated and the model subsequently updated. Unlike TPOT,  Optuna has no limitations on the type of values the hyperparameters can take. However it is not as effective at selecting models or structuring models in a pipeline as TPOT. 
 
-We can think of TPOT as an effective tool for pipeline _exploration_ and Optuna as effective for pipeline _exploitation_. By using Optuna to _fine-tune_ the coarser results produced by TPOT, the algorithims in the BO-TPOT suite is able to harness the strengths of both of these powerful tools.
+We can think of TPOT as an effective tool for pipeline _exploration_ and Optuna as effective tool for pipeline _exploitation_. By using Optuna to _fine-tune_ the coarser results produced by TPOT, the algorithims in the BO-TPOT suite can potentially harness the strengths of both of these powerful tools.
 
 ## Description of Operation 
 There are three main tools in the BO-TPOT suite:
 
-1. `TPOT-BASE` which generates the initial TPOT pipelines from the problem data;
+1. `TPOT-BASE` which generates the initial TPOT pipelines from the given data of the problem;
 2. `TPOT-BO-S` which performs a single instance of Bayesian optimisation after a pre-determined point in the `TPOT-BASE` process, to allow comparison; and,
 3. `TPOT-BO-ALT` which performs an alternating series of TPOT and Bayesian optimisation operations.
 
-All three of these are found as classes in separate Python files in the directory `BO-TPOT` and may be run independently of each other, however TPOT-BO-S relies on previously generated pipelines and require that [1] has been run _at some stage_.
+All three of these are found as classes in separate Python files in the directory `BO-TPOT` and may be run independently of each other. However, TPOT-BO-S relies on previously generated pipelines and require that [1] has been run _at some stage_.
 
 Each class has a constructor and a single `optimize` method, into which the training data `X_train` and `y_train` must be passed. The `optimize` method may also be called with an optional keyword `out_path` which specifies a directory that the output files should be written to (if required). 
 
@@ -39,11 +39,11 @@ The following is a detailed description of these three classes and their constru
 ---
 
 ### `TPOT-BASE`:
-This method uses TPOT to generate the initial pipelines for use as control data for comparison, and to save the other methods time generating pipelines.
+This method uses TPOT to generate the initial pipelines for use as control data for comparison.
 
 #### Constructor parameters:
 
-The table below gives all parameter arguments, their type and default values:
+The table below lists all parameter arguments, their type and default values:
 
 | Parameter          | Type     | Default                   | 
 |:-------------------|:--------:|--------------------------:|
@@ -75,7 +75,7 @@ tpot = TPOTRegressor(generations=n_gens-1,
 
 #### `optimize` operation:
 
-Having created the TPOT object in the constructor, it is fitted to the training data for the specified number of generations. Here, we use `n_gens-1` because the methods are compared by number of pipeline evaluations and when counting generations, TPOT does not include generation 0 - which still does need to be evaluated. Mutation and crossover rates are standard values, and the rest of the parameters are discussed below in the 'Running BO-TPOT' section of this document.
+Having created the TPOT object in the constructor, it is fitted to the training data over the specified number of generations. Here, we use `n_gens-1` because the methods are compared by the number of pipeline evaluations and when counting generations, TPOT does not include generation 0 - and all piplines in generation 0 still need to be evaluated. Mutation and crossover rates are set to standard values, and the rest of the parameters are discussed below in the 'Running BO-TPOT' section of this document.
 
 After fitting, `tpot.evaluated_individuals_` provides a dictionary of all pipelines that were evaulated, along with their cross-validation error (CV) scores. The keys for this dictionary are the string representations of each pipeline, which use a system of nested brackets to indicate the structure of the tree that represents it. For example, given operators `OpA` with a single input and 2 parameters, `OpB` with two inputs and one parameter and `OpC` with one input and one parameter, the string
 ```text
@@ -113,11 +113,11 @@ The generated pipelines are accessible as the class attribute `pipes`.
 ---
 
 ### `TPOT-BO-S`:
-This method takes data previously generated by `TPOT-BASE` and uses Bayesian optimisation techniques driven by the Optuna hyperparamter optimisation library for Python to improve the best pipeline that was found within a certain number of generations by TPOT.
+This method takes data previously generated by `TPOT-BASE` and uses Bayesian optimisation technique provided by the Optuna hyperparamter optimisation library for Python to improve the best pipeline that was found by TPOT.
 
 #### Constructor parameters:
 
-The table below gives all parameter arguments, their type and default values:
+The table below lists all parameter arguments, their type and default values:
 
 | Parameter              | Type     | Default                   | 
 |:-----------------------|:--------:|--------------------------:|
@@ -147,7 +147,7 @@ tpot = TPOTRegressor(generations=0,
                       warm_start=True,
                       max_eval_time_mins=pipe_eval_timeout)
 ```
-This is similar to above, with a few main differences. Firstly, zero generations are used so because we just want the TPOT object for the purposes of evaluating pipes, generating them. Secondly, population size is set at 1, because we only want to evaluate one pipeline at a time - it is for this reason we set `n_jobs` to 1 as well. The configuration dictionary `tpot_config_copy` is a deepcopy of `config_dict` that is created at the start of each run, as Python dictionaries store information by reference, so any change made in one run will be carried over until the next. Finally, `warm_start` is set to `True`, otherwise TPOT deletes all parameter sets (psets) and current population data after it finishes its operation.
+This is similar to above, with a few differences. Firstly, zero generations are used as we just want the TPOT object for the purposes of evaluating pipes. Secondly, population size is set at 1, because we only want to evaluate one pipeline at a time - it is for this reason we set `n_jobs` to 1 as well. The configuration dictionary `tpot_config_copy` is a deepcopy of `config_dict` that is created at the start of each run, as Python dictionaries store information by reference, so any change made in one run will be carried over until the next. Finally, `warm_start` is set to `True`, otherwise TPOT deletes all parameter sets (psets) and current population data after it finishes its operation.
 
 The parameter `init_pipes` specifies a population of TPOT pipelines which have been previously evaluated, after which BO should be applied[^1]. This population is searched for the best pipeline, and all other pipelines which have matching structures to the best pipeline. A pipeline is said to have a matching structure if it has the same operators, in the same order, but with different parameters. For example, the pipeline:
 ```text
@@ -193,7 +193,7 @@ One final element that should be mentioned in this digression is the `deap.gp.Pr
 
 Back with Optuna...
 
-Although TPOT is a grid-search algorithm requiring a discrete search space, Optuna has no such limitations. This means that Optuna can suggest any value from a distribution, be it categorical, bound (or unbound) integer, uniform real or even log uniform real - the challenge is in making the two methods play nicely with each other. Once the new hyperparameter values have been suggested, `Terminal` objects for each of the new hyperparameters are created and inserted into the `PrimitiveTree` object for the single individual in the population. As well as this, the new hyperparameter values must be added to `tpot.operators` and `tpot._pset`, in order to "trick" TPOT into accepting these new values as part of the original, discrete, set of choices. Having updated these two data structures, the fitness values for the individual are deleted, to mark it for evaluation, and `tpot._evaluate_individuals` is called. This updates the fitness values tuple and the CV value is returned as the score for that Optuna trial. These values are tracked in the `TPOT_BO_Handler` object and the next trial is performed, until either of the stopping conditions mentioned earlier are met.
+Although TPOT employs a grid-search algorithm requiring a discrete hyperparameter search space, Optuna has no such limitations. This means that Optuna can suggest any value from a distribution, be it categorical, bound (or unbounded) integer, uniform real or even log uniform real - the challenge is in making the two methods interact seamlessly with each other. Once the new hyperparameter values have been suggested, `Terminal` objects for each of the new hyperparameters are created and inserted into the `PrimitiveTree` object for the single individual in the population. As well as this, the new hyperparameter values must be added to `tpot.operators` and `tpot._pset`, in order to "trick" TPOT into accepting these new values as part of the original, discrete, set of choices. Having updated these two data structures, the fitness values for the individual are deleted, to mark it for evaluation, and `tpot._evaluate_individuals` is called. This updates the fitness values tuple and the CV value is returned as the score for that Optuna trial. These values are tracked in the `TPOT_BO_Handler` object and the next trial is performed, until either of the stopping conditions mentioned earlier are met.
 
 Once the stopping conditions are met, (if the `out_path` parameter is set) the `tpot.evaluated_individuals_` dictionary is written to the file:
 
@@ -207,7 +207,7 @@ The generated pipelines are accessible as the class attribute `pipes`.
 
 ### `TPOT-BO-Sr` variant:
 
-When the `optimize` method for `TPOT-BO-S` is run with the `restricted_hps` flag set to `True`, this runs a variant called `TPOT-BO-Sr`. This operates exactly as `TPOT-BO-S`, except that linear regression is used before the BO step to determine which hyper-parameters are the most influential. By focusing only on the most influential hyper-parameters, and ignoring the less influential ones, the complexity of the BO model can be reduced, and therefore the efficiency of the search increased. 
+When the `optimize` method for `TPOT-BO-S` is run with the `restricted_hps` flag set to `True`, this runs a variant called `TPOT-BO-Sr`. This operates exactly as `TPOT-BO-S`, except that linear regression is used before the BO step to determine which hyper-parameters are the most influential. By focusing only on the most influential hyper-parameters, and ignoring the less influential ones, the complexity of the search during the BO step can be reduced, and therefore the efficiency of the search increased. 
 
 Once the best pipeline and set of pipelines with matching structures is determined, this set is passed to the `get_restricted_set` method in the `tpot_utils.py` file, along with `config_dict`. This method removes all parameters which can only take a single variable (according to `config_dict`) and then performs linear regression on the remaining hyper-parameters, using the set of matching pipelines as data points for the regression model. If an assumption is made that the fitness of a pipeline is simply a linear combination of its hyper-parameters, the beta-coefficients of a linear regression model can be used to determine the influence of any given parameter on the response of the system. These beta-coefficients are computed for the model, along with its regression score, and the hyper-parameter with the smallest beta-coefficient is removed from the set, the model retrained, and the process repeated until there are no more hyper-parameters left.
 
@@ -323,7 +323,7 @@ The constructor for `TPOT-BO-AUTO` operates the same as `TPOT-BO-ALT`.
 
 #### `optimize` operation:
 
-`TPOT-BO-AUTO` operates very similarly to `TPOT-BO-ALT`, except that it removes the arbitrary nature of specifiying a number of iterations to divide the total budget into, instead deciding on a generation-by-generation basis, what method should be used. If TPOT is used then the entire population is evolved for a single generations, if BO is used, then `pop_size` evaluations are performed on the best pipeline and pipelines with matching structures to it.
+`TPOT-BO-AUTO` operates very similarly to `TPOT-BO-ALT`, except that it removes the arbitrary nature of specifiying a number of iterations to divide the total budget into, instead deciding on a generation-by-generation basis, what method should be used. If TPOT is used then the entire population is evolved for a single generation, if BO is used, then `pop_size` evaluations are performed on the best pipeline and pipelines with matching structures to it.
 
 If the `out_path` parameter is set, the evaluated pipelines are written to:
 
