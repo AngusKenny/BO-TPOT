@@ -51,6 +51,13 @@ class Vprint(object):
         print(f"{RED}Warning:{OFF}",*args, **kwargs)
 
 
+def flatten(A):
+    rt = []
+    for i in A:
+        if isinstance(i,list): rt.extend(flatten(i))
+        else: rt.append(i)
+    return rt
+
 def is_number(string):
     ''' Check if string is a number
     '''    
@@ -91,7 +98,11 @@ def get_run_data(fname_prog):
     
     return seed, n_tot_gens, tpot_stop_gen, pop_size
 
-def get_progress_pop(fname_pipes, stop_gen):
+
+def get_progress_pop(fname_pipes, stop_gen=np.inf):
+    ''' call with stop_gen-1 as parameter because of initial pop generation
+    '''
+    
     pop = {}
     
     with open(fname_pipes, 'r') as f:
@@ -109,19 +120,115 @@ def get_progress_pop(fname_pipes, stop_gen):
     return pop
 
 
+def get_unique_pop(fname_pipes, stop_gen=np.inf, config_dict=None):
+    strucs = {}
+    total_best_pipe = None
+    total_best_cv = -np.inf
+    with open(fname_pipes, 'r') as f:
+        for line in f:
+            line_s = line.split(';')
+            pipe_str = line_s[0]
+            gen = int(line_s[1])
+            cv = float(line_s[2])
+            op_count = len(string_to_ops(pipe_str))
+            struc = string_to_structure(pipe_str)
+            struc_str = str(struc)
+            
+            # skip invalid or past stop_gen
+            if gen > stop_gen or cv == -np.inf:
+                continue
+            
+            if cv > total_best_cv:
+                total_best_cv = cv
+                total_best_pipe = pipe_str
+            
+            if struc_str in strucs:
+                strucs[struc_str]['matching_pipes'][pipe_str] = {'internal_cv_score':cv,
+                                                                 'operator_count':op_count,
+                                                                 'generation':gen}
+                strucs[struc_str]['matching_cv'].append(cv)
+                strucs[struc_str]['matching_keys'].append(pipe_str)
+                
+                continue
+            
+            
+            strucs[struc_str] = {'matching_pipes': 
+                                 {pipe_str: {'internal_cv_score':cv,
+                                             'operator_count':op_count,
+                                             'generation':gen}},
+                                 'matching_cv': [cv],
+                                 'matching_keys': [pipe_str]}
+
+    unique_pipes = {}
+    for s,v in strucs.items():
+        best_idx = np.argmax(v['matching_cv'])
+        best_pipe = v['matching_keys'][best_idx]
+        unique_pipes[best_pipe] = v['matching_pipes'][best_pipe]
+        unique_pipes[best_pipe]['selected?'] = True if best_pipe == total_best_pipe else False
+        unique_pipes[best_pipe]['cv_mu'] = np.mean(v['matching_cv'])
+        unique_pipes[best_pipe]['cv_sigma'] = np.std(v['matching_cv'])
+        unique_pipes[best_pipe]['cv_best'] = np.max(v['matching_cv'])
+        unique_pipes[best_pipe]['cv_worst'] = np.min(v['matching_cv'])
+        unique_pipes[best_pipe]['matching'] = v['matching_pipes']
+        unique_pipes[best_pipe]['params'] = string_to_params(best_pipe)
+        unique_pipes[best_pipe]['operators'] = string_to_ops(best_pipe)
+        unique_pipes[best_pipe]['bo_params'] = string_to_params(best_pipe,config_dict=config_dict)
+    
+    return unique_pipes
+
+
+def truncate_pop(pipes, stop_gen):
+    sub_pop = {}
+    for k,v in pipes.items():
+        if v['generation'] <= stop_gen:
+            sub_pop[k] = v
+
+    return sub_pop
+
+
+def string_to_structure(pipe_str):
+    # split string and flatten to separate elements
+    ps = flatten([v.split(",") for v in pipe_str.split("(")])
+    ps = [v.replace(" ","").replace(")","") for v in ps]
+    # remove hyper-parameter values
+    ps = [v.split("=")[0] for v in ps]
+    return ps
+
+
 def string_to_ops(pipe_str):
     ''' Extract operators from pipeline string
     '''
-    # split string to separate operators from parameters
-    split_str = pipe_str.split("(")
-    # operators are in all but last elements
-    ops = [s.replace("input_matrix, ","") for s in split_str[0:-1]]
+    ops = string_to_structure(pipe_str)
+    # remove input matrix and anything with "=" in 
+    rem_idx = []
+    for o in ops:
+        if 'input_matrix' in o or '__' in o:
+            rem_idx.append(o)
+    
+    [ops.remove(i) for i in rem_idx]
     
     return ops
     
 
-def string_to_params(pipe_str):
+def get_matching_set(tgt, pipes):
+    ''' Using tgt as the target string, get all strings representing
+        pipelines that have been evaluated by TPOT so far, with matching
+        structures
+        stop_gen indicates maximum generation to get pipes from
+    '''
+    tgt_struc = string_to_structure(tgt)
+    matching_set = {}
+    
+    for k,v in pipes.items():
+        if string_to_structure(k) == tgt_struc:
+            matching_set[k] = v
+            
+    return matching_set
+
+
+def string_to_params(pipe_str, config_dict=None):
     ''' Extract parameters from pipeline as parameter list
+        If you want bo params, pass in a config dict
     '''
     params = []
     # params are in the last element - split on "," to separate params
@@ -138,7 +245,23 @@ def string_to_params(pipe_str):
             params.append((param_str[0], float(param_str[1])))
         else:
             params.append((param_str[0], int(param_str[1])))
-        
+    
+    if config_dict:
+        rem_p = []
+        for p in params:
+            p_s = p[0].split("__")
+            for k,v in config_dict.items():
+                if p_s[0] in k:
+                    if p_s[0] == "SelectFromModel" and len(p_s) == 3:
+                        for k2,v2 in v['estimator'].items():
+                            if p_s[1] in k2:
+                                if len(v2[p_s[2]]) == 1:
+                                    rem_p.append(p)            
+                    elif len(v[p_s[1]]) == 1:
+                        rem_p.append(p)
+                        
+        [params.remove(v) for v in rem_p]
+    
     return params
 
 
@@ -192,21 +315,7 @@ def load_data(fpath):
     for i in range(0, ncol):
         if(var_type[i]=="C"):
             header="F"+str(i)
-            df[header] = LabelEncoder().fit_transform(df[header].tolist())
-            # # transform categorical variables to one-hot (only for GP)
-            # transformed_feature = OneHotEncoder().fit_transform(
-            #     df[header].values.reshape(-1,1)).toarray()
-            # df_encoded = pd.DataFrame(
-            #     transformed_feature, 
-            #     columns = [header+"_"+str(int(j)) 
-            #                 for j in range(transformed_feature.shape[1])])
-            
-            # Dropping the above column
-            # df=df.drop([header],axis=1)
-
-            # Adding the one hot encoded variables
-            # df = pd.concat([df, df_encoded], axis=1)
-            
+            df[header] = LabelEncoder().fit_transform(df[header].tolist())            
 
     # These are predictor variables
     X=df
@@ -217,13 +326,33 @@ def load_data(fpath):
     
     return X_train, X_test, y_train, y_test
 
+
+def get_best(pipes):
+    best_pipe = ""
+    best_cv = -1e20
+    for k,v in pipes.items():
+        if v['internal_cv_score'] > best_cv:
+            best_pipe = k
+            best_cv = v['internal_cv_score']
+
+    return best_pipe,best_cv
+
+
+def get_max_gen(pipes):
+    max_gen = 0
+    for k,v in pipes.items():
+        max_gen = max(max_gen, v['generation'])
+
+    return max_gen
+
+
 def loguniform(low, high, size=None):
     if low == 0 or high == 0:
         print("Error: cannot do log of 0!")
     return np.exp(np.random.uniform(np.log(low), np.log(high), size))
 
 
-def get_restricted_set(pipes, config_dict, fname_bo_res_plot):
+def get_restricted_set(pipes, config_dict):
     
     best_pipe = next(iter(pipes))
     
@@ -270,8 +399,5 @@ def get_restricted_set(pipes, config_dict, fname_bo_res_plot):
         hp_x = np.delete(hp_x, worst_idx, axis=1)
         
     freeze_idx = np.argmin(np.abs(scores-0.95*np.max(scores)))
-    
-    plot_data = np.hstack((np.array(x_vals).reshape(-1,1), np.array(scores).reshape(-1,1)))
-    np.savetxt(fname_bo_res_plot, plot_data, delimiter=',')
     
     return freeze_params[:freeze_idx], freeze_idx, n_params

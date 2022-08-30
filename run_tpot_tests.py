@@ -7,8 +7,8 @@ Created on Wed Apr 13 18:29:51 2022
 """
 import sys
 import warnings
-from tpot_tools import TestHandler
-from tpot_config import reduced_tpot_config_dict, default_tpot_config_dict
+from utils.test_handler import TestHandler
+from config.tpot_config import reduced_tpot_config_dict, default_tpot_config_dict
 
 ''' General Parameters
 
@@ -21,21 +21,21 @@ Verbosity settings:
 params = {
     # clear BO and alt data from directories to be written to 
     # (will ask for confirmation)
-    'CLEAN_DATA' : False,
-    'RUN_TPOT' : False,
-    'RUN_BO' : True,
-    'RUN_ALT' : False,
-    'RUN_AUTO' : False,
+    'CLEAN_DATA': False,
+    'RUN_TPOT-BASE' : False,
+    'RUN_TPOT-BO-S' : True,
+    'RUN_TPOT-BO-ALT' : False,
+    'RUN_TPOT-BO-AUTO' : False,
     'RESTRICT_BO' : True,
     'VERBOSITY' : 2,
     'DATA_DIR' : 'Data',
-    'RESULTS_DIR' : 'Results_abalone',
+    'RESULTS_DIR' : 'Results_newcode',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : [15,16,17,18,19,20],
+    'RUNS' : [0,1,2],
     'PROBLEMS' : [
-                'abalone',
+                # 'abalone',
 # 		'socmob',
-                # 'quake',
+                'quake',
     #             'house_16h',
     #             'brazilian_houses',
     #             'diamonds',
@@ -44,10 +44,10 @@ params = {
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
     'nJOBS' : 4,
-    # toggle between real and discrete parameter spaces
-    'REAL_VALS' : True,
+    # toggle between discrete and continuous parameter spaces
+    'DISCRETE_MODE' : True,
     # maximum time allowed for a single pipeline evaluation (mins)
-    'PIPE_EVAL_TIMEOUT' : 5,
+    'PIPE_EVAL_TIMEOUT' : 1,
     #
     # TPOT data generation parameters
     #
@@ -67,32 +67,37 @@ params = {
 if params['VERBOSITY'] < 3:
     warnings.simplefilter("ignore")
 
-tpot_handler = TestHandler(params)
+test_handler = TestHandler(params)
 
-for problem in tpot_handler.prob_list:
-    tpot_handler.write_problem(problem)
-        
-    for run_idx in range(len(tpot_handler.run_list)):
-        # generate TPOT data - this creates a new run folder, so we need
+for problem in test_handler.prob_list:
+    test_handler.write_problem(problem)
+    test_handler.set_problem(problem)
+    for run in test_handler.run_list:
+        # generate TPOT data - this creates a new run directory, so we need
         # to get the run number to pass to the other processes
         if params['RUN_TPOT']:
-            run = tpot_handler.generate_tpot_data(run_idx, problem)
-            if run is None:
-                tpot_handler.vprint.verr("TPOT data not generated, skipping run..\n\n")
+            test_handler.set_run()
+            tpot_data = test_handler.run_TPOT_BASE()
+            if tpot_data is None:
+                test_handler.vprint.verr("TPOT data not generated, skipping run..\n\n")
+                test_handler.seed_inc()
                 continue
         else:
-            run = tpot_handler.run_list[run_idx]
+            test_handler.set_run(run)
+            tpot_data = test_handler.load_TPOT_data()
             
         # run BO optimiser
         if params['RUN_BO']:
-            tpot_handler.run_BO(run, problem)
+            test_handler.run_TPOT_BO_S(tpot_data)
         
         # run alternating TPOT + BO
         if params['RUN_ALT']:
-            tpot_handler.run_alt(run, problem)
+            test_handler.run_TPOT_BO_ALT(tpot_data)
             
         # run alternating TPOT + BO
         if params['RUN_AUTO']:
-            tpot_handler.run_comp(run, problem)
+            test_handler.run_TPOT_BO_AUTO(tpot_data)
         
-tpot_handler.write_end()
+        test_handler.seed_inc()
+        
+test_handler.write_end()

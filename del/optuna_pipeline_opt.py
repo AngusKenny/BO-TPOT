@@ -3,7 +3,7 @@
 '''
 
 import warnings
-import utils as u
+import tpot_utils as u
 import optuna
 from optuna._experimental import experimental
 from deap.gp import Primitive, Terminal
@@ -320,7 +320,7 @@ class PipelinePopOpt(object):
                 continue
             if not stop_gen or v['generation'] < stop_gen:
                 matching_strs.append(k)
-                        
+                
         return matching_strs
     
     def optimise(self, ind_idx, X_train, y_train, n_evals, real_vals=True, seed_samples=[], skip_params=[], timeout_trials=1e20):

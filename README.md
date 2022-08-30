@@ -18,66 +18,63 @@ One significant limitation of TPOT is that for all its GP bells-and-whistles, it
 
 [Optuna](https://optuna.org/) is a hyperparameter optimisation library for Python which uses Bayesian optimisation to tune hyperparameter values. It uses a Tree-based Parzen Estimator (TPE)-based surrogate model, built on historical information, to estimate and suggest hyperparameter values, which are then evaluated and the model subsequently updated. In contrast to TPOT,  Optuna has no limitations on the type of values the hyperparameters can take, however it is not as effective at selecting models and constructing pipelines as TPOT. 
 
-We can think of TPOT as an effective tool for pipeline _exploration_ and Optuna as effective for pipeline _exploitation_. By using Optuna to _fine-tune_ the coarser results produced by TPOT, the BO-TPOT algorithm is able to harness the strengths of both of these powerful tools.
+We can think of TPOT as an effective tool for pipeline _exploration_ and Optuna as effective for pipeline _exploitation_. By using Optuna to _fine-tune_ the coarser results produced by TPOT, the algorithims in the BO-TPOT suite is able to harness the strengths of both of these powerful tools.
 
 ## Description of Operation 
-The operation of BO-TPOT can be separated into three main processes:
+There are three main tools in the BO-TPOT suite:
 
-1. `get_tpot_data` which generates the initial TPOT pipelines from the problem data;
-2. `run_bo` which performs a single instance of Bayesian optimisation after a pre-determined point in the `get_tpot_data` process, to allow comparison; and,
-3. `run_tpot_bo_alt` which performs an alternating series of TPOT and Bayesian optimisation operations.
+1. `TPOT-BASE` which generates the initial TPOT pipelines from the problem data;
+2. `TPOT-BO-S` which performs a single instance of Bayesian optimisation after a pre-determined point in the `TPOT-BASE` process, to allow comparison; and,
+3. `TPOT-BO-ALT` which performs an alternating series of TPOT and Bayesian optimisation operations.
 
-All three of these are found in the file`tpot_tools.py` and may be run independently of each other, however [2] and [3] rely on previously generated pipelines and require that [1] has been run _at some stage_.
+All three of these are found as classes in separate Python files in the directory `BO-TPOT` and may be run independently of each other, however TPOT-BO-S relies on previously generated pipelines and require that [1] has been run _at some stage_.
 
-The processing of parameters and running and tracking of these methods can be performed easily using the `TestHandler` class in `tpot_tools.py`, but they can also be accessed separately for use in other code.
+Each class has a constructor and a single `optimize` method, into which the training data `X_train` and `y_train` must be passed. The `optimize` method may also be called with an optional keyword `out_path` which specifies a directory that the output files should be written to (if required). 
 
-The following is a detailed description of these three methods and their parameters and operation.
+The processing of parameters and running and tracking of these methods can be performed easily using the `TestHandler` class in the `utils` directory, but they can also be accessed separately for use in other code.
+
+The following is a detailed description of these three classes and their constructors and `optimize` methods.
 
 ---
 
-### `get_tpot_data`:
+### `TPOT-BASE`:
 This method uses TPOT to generate the initial pipelines for use as control data for comparison, and to save the other methods time generating pipelines.
 
-#### Parameters:
+#### Constructor parameters:
 
 The table below gives all parameter arguments, their type and default values:
 
 | Parameter          | Type     | Default                   | 
 |:-------------------|:--------:|--------------------------:|
-|`tot_gens`          | int      | 100                       |
+|`n_gens`            | int      | 100                       |
 |`pop_size`          | int      | 100                       |
-|`stop_gen`          | int      | 80                        |
-|`n_runs`            | int      | 1                         |
-|`start_seed`        | int      | 42                        |
-|`prob_list`         | list     | `[]`                      |
-|`data_dir`          | string   |`'Data'`                   |
-|`results_dir`       | string   |`'Results'`                |
-|`tpot_config_dict`  | dict     |`default_tpot_config_dict` |
+|`seed`              | int      | 42                        |
+|`config_dict`       | dict     |`default_tpot_config_dict` |
 |`n_jobs`            | int      | -1                        |
 |`vprint`            | `Vprint` |`u.Vprint(1)`              |
 |`pipe_eval_timeout` | int      | 5                         |
 
-#### Operation:
-The parameter `prob_list` allows the user to specify a set of problems for batch processing as a list of strings. A problem is specified by the file name (without extension) for its data file, within the `data_dir` directory. For example, if the data for the two required problems are held in `./Data/prob1.data` and `./Data/prob2.data` then `data_dir` would be `'Data'` and `prob_list` would be `['prob1', 'prob2']`. If `prob_list` is supplied as the empty list `[]`, then `data_dir` is searched for all files with the extension `.data` and will process all of them.
+#### Constructor operation:
 
-Once the problem data is loaded using the `load_data` method in `utils.py`, the directory specified by `results_dir` is checked to see if there exists any previous run data. If such data exists, then it is kept and the current run is created in `./<results_dir>/<problem>/Run_<i+1>/` where `i` is the number of the most recent run. Run numbers are padded with a single zero, and if no run data exists, then the first run is created in `./<results_dir>/<problem>/Run_00/`. The random seed for each run is calculated as `start_seed + <run_no>` (assuming starting with run 0).
+When the constructor is called, the class attributes are initialized and a TPOT regressor object is created with the following parameters:
 
-In order to generate the pipes, a TPOT regressor object is created with the following parameters:
 ```python
-tpot = TPOTRegressor(generations=tot_gens-1,
+tpot = TPOTRegressor(generations=n_gens-1,
                       population_size=pop_size, 
                       mutation_rate=0.9, 
                       crossover_rate=0.1, 
                       cv=5,
                       verbosity=tpot_verb, 
-                      config_dict=tpot_config_copy, 
+                      config_dict=config_dict, 
                       random_state=seed, 
                       n_jobs=n_jobs,
                       warm_start=False,
                       max_eval_time_mins=pipe_eval_timeout)
 ```
 
-Having created the TPOT object, it is fitted to the training data for the specified number of generations. Here, we use `tot_gens-1` because the methods are compared by number of pipeline evaluations and when counting generations, TPOT does not include generation 0 - which still does need to be evaluated. Mutation and crossover rates are standard values, and the rest of the parameters are discussed below in the 'Running BO-TPOT' section of this document.
+#### `optimize` operation:
+
+Having created the TPOT object in the constructor, it is fitted to the training data for the specified number of generations. Here, we use `n_gens-1` because the methods are compared by number of pipeline evaluations and when counting generations, TPOT does not include generation 0 - which still does need to be evaluated. Mutation and crossover rates are standard values, and the rest of the parameters are discussed below in the 'Running BO-TPOT' section of this document.
 
 After fitting, `tpot.evaluated_individuals_` provides a dictionary of all pipelines that were evaulated, along with their cross-validation error (CV) scores. The keys for this dictionary are the string representations of each pipeline, which use a system of nested brackets to indicate the structure of the tree that represents it. For example, given operators `OpA` with a single input and 2 parameters, `OpB` with two inputs and one parameter and `OpC` with one input and one parameter, the string
 ```text
@@ -96,66 +93,40 @@ would represent the tree
     |-- paramA1=True
      `- paramA2=2
 ```
-TPOT operator parameters can be real-valued, integer, categorical or boolean and the naming convention is `<operator name>__<parameter name>=<parameter value>`.
+TPOT operator parameters can be continuous-valued, integer, categorical or boolean and the naming convention is `<operator name>__<parameter name>=<parameter value>`.
 
-The evaluated individuals dictionary is written in its entirety to the file:
+If `out_path` is specified, the evaluated individuals dictionary is written in its entirety to the file:
 
-`./<results_dir>/<problem>/<run_dir>/tpot/tpot_pipes.out` 
+`tpot_pipes.out` 
 
 in the format:
 
 `<TPOT pipe string>;<generation of pipe>;<CV value of pipe>`
 
-The best pipeline at `stop_gen` is extracted and a `PipelinePopOpt` object (more info below) is created in order to use its `get_matching_structures` method to find all pipelines in the dictionary that have the same structure as this interrim best pipeline, and all matching pipelines (if they exist) are written to the file:
-
-`./<data_dir>/<problem>/<run_dir>/tpot/matching_pipes.out`
-
-in the same format as above. A pipeline is said to have a matching structure if it has the same operators, in the same order, but with different parameters. For example, the pipeline:
-```text
-OpA(OpB(input_matrix, OpC(input_matrix, OpC__paramC1=0.7), OpB__paramB1=catY), OpA__paramA1=False, OpA__paramA2=4)
-```
-would be considered to have the same structure as the example pipeline given above.
-
-Finally, the details of the run, including relevant parameters, times taken and the best pipelines at `stop_gen` and `tot_gens-1` is output to the file:
-
-`./<results_dir>/<problem>/<run_dir>/tpot/tpot_progress.out` 
-
-In the case where `get_tpot_data` is run with a single problem and for a single run, the run number of the recently created data is returned so it can be passed directly to `run_bo` or `run_tpot_bo_alt`.
-
 ---
 
-### `run_bo`:
-This method takes data previously generated by `get_tpot_data` and uses Bayesian optimisation techniques driven by the Optuna hyperparamter optimisation library for Python to improve the best pipeline that was found within a certain number of generations by TPOT.
+### `TPOT-BO-S`:
+This method takes data previously generated by `TPOT-BASE` and uses Bayesian optimisation techniques driven by the Optuna hyperparamter optimisation library for Python to improve the best pipeline that was found within a certain number of generations by TPOT.
 
-#### Parameters:
+#### Constructor parameters:
 
 The table below gives all parameter arguments, their type and default values:
 
 | Parameter              | Type     | Default                   | 
 |:-----------------------|:--------:|--------------------------:|
-|`run_list`              | list     | `[]`                      |
+|`init_pipes`            | dict     |                           |
+|`seed`                  | int      | 42                        |
+|`n_bo_evals`            | int      | 2000                      |
+|`discrete_mode`         | bool     | `True`                    |
+|`restricted_hps`        | bool     |`False`                    |
 |`optuna_timeout_trials` | int      | 100                       |
-|`force_bo_evals`        | int      | `None`                    |
-|`ignore_results`        | boolean  | True                      |
-|`prob_list`             | list     | `[]`                      |
-|`data_dir`              | string   |`'Data'`                   |
-|`results_dir`           | string   |`'Results'`                |
-|`tpot_config_dict`      | dict     |`default_tpot_config_dict` |
-|`n_jobs`                | int      | -1                        |
-|`vprint`                | `Vprint` |`u.Vprint(1)`              |
-|`real_vals`             | boolean  | True                      |
+|`config_dict`           | dict     |`default_tpot_config_dict` |
 |`pipe_eval_timeout`     | int      | 5                         |
+|`vprint`                | `Vprint` |`u.Vprint(1)`              |
 
-### Operation
-As with above, the problems to be processed are specified using `prob_list`. However, unlike with `get_tpot_data`, new directories are not created for runs, rather existing run directories are searched for in the path `./<results_dir>/<problem>/`. If a particular set of runs is required, then this can be specified using the `run_list` parameter, e.g., `run_list=[0,4,7]` would process runs 0, 4 and 7 only.
+#### Constructor operation:
 
-The `tpot_progress.out` file from the current run is processed using `get_run_data` from `utils.py` to obtain the random seed, `stop_gen` and all other relevant information. This information is used to compute the number of Bayesian optimisation evaluations to be performed with the formula:
-
-`n_bo_evals = (n_tot_gens - tpot_stop_gen) * pop_size`
-
-This ensures that the total number of function evaluations between `run_bo` and `get_tpot_data` are the same, to enable comparison between the two methods. For debugging (or other) purposes, this value can be overriden using the parameter `force_bo_evals`.
-
-The method `get_progress_pop` from `utils.py` is used to load the entire set of evaluated pipelines for `tpot_stop_gen-1` generations (again, this `-1` is because TPOT does not count generation 0) from the previous `get_tpot_data` run. From this set, the best pipeline is selected and a TPOT object is created with the following parameters:
+After initializing the class attributes, a TPOT object is created with the following parameters:
 ```python
 tpot = TPOTRegressor(generations=0,
                       population_size=1, 
@@ -169,17 +140,26 @@ tpot = TPOTRegressor(generations=0,
                       warm_start=True,
                       max_eval_time_mins=pipe_eval_timeout)
 ```
-This is similar to above, with a few main differences. Firstly, zero generations are used so because we just want the TPOT object for the purposes of evaluating pipes, generating them. Secondly, population size is set at 1, because we only want to evaluate one pipeline at a time - it is for this reason we set `n_jobs` to 1 as well. The configuration dictionary `tpot_config_copy` is a deepcopy of `tpot_config_dict` that is created at the start of each run, as Python dictionaries store information by reference, so any change made in one run will be carried over until the next. Finally, `warm_start` is set to `True`, otherwise TPOT deletes all parameter sets (psets) and current population data after it finishes its operation.
+This is similar to above, with a few main differences. Firstly, zero generations are used so because we just want the TPOT object for the purposes of evaluating pipes, generating them. Secondly, population size is set at 1, because we only want to evaluate one pipeline at a time - it is for this reason we set `n_jobs` to 1 as well. The configuration dictionary `tpot_config_copy` is a deepcopy of `config_dict` that is created at the start of each run, as Python dictionaries store information by reference, so any change made in one run will be carried over until the next. Finally, `warm_start` is set to `True`, otherwise TPOT deletes all parameter sets (psets) and current population data after it finishes its operation.
 
-The newly created TPOT object is initialised using the `tpot._fit_init` method. The `tpot.evaluated_individuals_` dictionary is replaced by the full dictionary of loaded pipelines and a `PipelinePopOpt` object `po` is created, which contains most of the methods needed to interact with TPOT objects and their populations. This is used to find all pipelines with matching structures and produce a new dictionary consisting of only these matching pipelines, which is then substituted for `tpot.evaluated_individuals_`.
+The parameter `init_pipes` specifies a population of TPOT pipelines which have been previously evaluated, after which BO should be applied[^1]. This population is searched for the best pipeline, and all other pipelines which have matching structures to the best pipeline. A pipeline is said to have a matching structure if it has the same operators, in the same order, but with different parameters. For example, the pipeline:
+```text
+OpA(OpB(input_matrix, OpC(input_matrix, OpC__paramC1=0.7), OpB__paramB1=catY), OpA__paramA1=False, OpA__paramA2=4)
+```
+would be considered to have the same structure as the example pipeline given above in the `TPOT-BASE` operation description.
 
-TPOT is built on top of the [Distributed Evolutionary Algorithms in Python (DEAP)](https://github.com/deap) library, and uses many of its data structures and methods in its operation. A new individual is created using the `creator.Individual.from_string` method from this libraray, using the string representing the previously identified best pipeline and `tpot._pset` as its arguments, and substituted as the only element in the `tpot._pop` list. The TPOT object is now reinitialised by "fitting" it to the training data; however, because there already exist entries in the evaluated individuals dictionary which match the current population, it does not evaluate the pipeline, and just uses the CV value provided by the evaluated individuals dictionary. This reinitialised TPOT object is then used to reinitialise `po`.
+TPOT is built on top of the [Distributed Evolutionary Algorithms in Python (DEAP)](https://github.com/deap) library, and uses many of its data structures and methods in its operation. A new individual is created using the `creator.Individual.from_string` method from this libraray, using the string representing the previously identified best pipeline and `tpot._pset` as its arguments, and substituted as the only element in the `tpot._pop` list. The TPOT object is now reinitialised by "fitting" it to the training data; however, because there already exist entries in the evaluated individuals dictionary which match the current population, it does not evaluate the pipeline, and just uses the CV value provided by the evaluated individuals dictionary. The `evaluated_individuals_` dictionary is replaced by the set of matching pipelines.
 
-The method `string_to_params` from `utils.py` is used to convert the matching pipelines to sets of parameter-value pairs and passed, along with the training data, to `po.optimise`.  This method sets up an Optuna study using the multivariate Tree-based Parzen Estimator (TPE) sampler with the matching pipelines as initial seed samples. This study must be set up as a maximisation problem, as TPOT reports its CV values as negative[^1]. When processing the matching pipelines as the initial seeds for the Optuna study, a dictionary of the distribution for each parameter in the pipeline must be generated. This is done using the `make_optuna_trial_real` and `make_optuna_trial_discrete`. Due to a precision quirk in the way TPOT descretises continuous search spaces, sometimes it will provide hyperparameters such as `RandomForestRegressor__max_features=0.7500000000000001`. When working in continuous hyperparameter spaces, this is no problem; however, when `real_vals` is set to `False`, it is important to ensure that any numerical values are rounded to an appropriate precision, because Optuna will not accept the value `0.7500000000000001` as being part of the discrete distribution `[..., 0.7, 0.75, 8, ...]`.
+Finally a `TPOT_BO_Handler` object is initialized as well. This class contains all of the methods used by tools in the BO-TPOT suite to interface between TPOT and Optuna, and manage the various populations.
 
-A callback object is also established in this method to determine when the optimisation process should stop. We are only counting the number of pipeline evaluations, not number of Optuna "trials", therefore the stopping condition should be when the size of `tpot.evaluated_individuals_` is equal to the number of evaluations required (plus however many matching pipelines we started with), as TPOT only adds to this dictionary if it performs a full evaluation of a pipeline. In cases where there is a discrete search space (e.g., when all hyperparameters are categorical or bounded integers) it is possible that the entire search space will be exhausted before the required dictionary size is achieved, causing Optuna to run indefinitely. In these cases, a second stopping condition is triggered, which says that if there have been `optuna_timeout_trials` trials without any change in the size of `tpot.evaluated_individuals_`, then the `study.stop()` method should be called. The counter for this trigger is reset every time the size of the dictionary is increased.
 
-An `Objective` object is created with the training data and other relevant arguments, and passed to the Optuna `study.optimize` method. Each call to `Objective` first makes a call to `make_hp_space_real` or `make_hp_space_discrete` (depending on the value for the `real_vals` boolean flag) from `optuna_hp_spaces.py` with the current trial object and parameter names for the hyperparameters for arguments. These methods establish the hyperparameter space and distributions which Optuna should suggest values from. The values were taken directly from the [TPOT configuration files on GitHub](https://github.com/EpistasisLab/tpot/blob/master/tpot/config/regressor.py) (with some inference made as to the required distribution types). 
+#### `optimize` operation
+
+The method `string_to_params` from `tpot_utils.py` is used to convert the matching pipelines to sets of parameter-value pairs and passed, along with the training data, to the `optimize` method of the `TPOT_BO_Handler` object.  This method sets up an Optuna study using the multivariate Tree-based Parzen Estimator (TPE) sampler with the matching pipelines as initial seed samples. This study must be set up as a maximisation problem, as TPOT reports its CV values as negative[^2]. When processing the matching pipelines as the initial seeds for the Optuna study, a dictionary of the distribution for each parameter in the pipeline must be generated. This is done using the `make_optuna_trial_cont` and `make_optuna_trial_discrete`. Due to a precision quirk in the way TPOT descretises continuous search spaces, sometimes it will provide hyperparameters such as `RandomForestRegressor__max_features=0.7500000000000001`. When working in continuous hyperparameter spaces, this is no problem; however, when `real_vals` is set to `False`, it is important to ensure that any numerical values are rounded to an appropriate precision, because Optuna will not accept the value `0.7500000000000001` as being part of the discrete distribution `[..., 0.7, 0.75, 8, ...]`.
+
+A callback object is also established in this method to determine when the optimisation process should stop. We are only counting the number of pipeline evaluations, not number of Optuna "trials", therefore the stopping condition should be when the size of `tpot.evaluated_individuals_` is equal to the number of evaluations required `n_bo_evals` (plus however many matching pipelines we started with), as TPOT only adds to this dictionary if it performs a full evaluation of a pipeline. In cases where there is a discrete search space (e.g., when all hyperparameters are categorical or bounded integers) it is possible that the entire search space will be exhausted before the required dictionary size is achieved, causing Optuna to run indefinitely. In these cases, a second stopping condition is triggered, which says that if there have been `optuna_timeout_trials` trials without any change in the size of `tpot.evaluated_individuals_`, then the `study.stop()` method should be called. The counter for this trigger is reset every time the size of the dictionary is increased.
+
+An `Objective` object is created with the training data and other relevant arguments, and passed to the Optuna `study.optimize` method. Each call to `Objective` first makes a call to `make_hp_space_cont` or `make_hp_space_discrete` (depending on the value for the `discrete_mode` boolean flag) from `bo_utils.py` with the current trial object and parameter names for the hyperparameters for arguments. These methods establish the hyperparameter space and distributions which Optuna should suggest values from. The values were taken directly from the [TPOT configuration files on GitHub](https://github.com/EpistasisLab/tpot/blob/master/tpot/config/regressor.py) (with some inference made as to the required distribution types). 
 
 Having constructed the search space, Optuna samples values for each hyperparameter from the appropriate distributions, creating a new pipeline which needs to be evaluated. The existing TPOT infrastructure is used to achieve this, and to explain how this happens it is worth first digging a little deeper into the way in which TPOT structures its populations and performs its evaluations.
 
@@ -204,20 +184,20 @@ One final element that should be mentioned in this digression is the `deap.gp.Pr
 
 Back with Optuna...
 
-Although TPOT is a grid-search algorithm requiring a discrete search space, Optuna has no such limitations. This means that Optuna can suggest any value from a distribution, be it categorical, bound (or unbound) integer, uniform real or even log uniform real - the challenge is in making the two methods play nicely with each other. Once the new hyperparameter values have been suggested, `Terminal` objects for each of the new hyperparameters are created and inserted into the `PrimitiveTree` object for the single individual in the population. As well as this, the new hyperparameter values must be added to `tpot.operators` and `tpot._pset`, in order to "trick" TPOT into accepting these new values as part of the original, discrete, set of choices. Having updated these two data structures, the fitness values for the individual are deleted, to mark it for evaluation, and `tpot._evaluate_individuals` is called. This updates the fitness values tuple and the CV value is returned as the score for that Optuna trial. These values are tracked in the `PipelinePopOpt` object and the next trial is performed, until either of the stopping conditions mentioned earlier are met.
+Although TPOT is a grid-search algorithm requiring a discrete search space, Optuna has no such limitations. This means that Optuna can suggest any value from a distribution, be it categorical, bound (or unbound) integer, uniform real or even log uniform real - the challenge is in making the two methods play nicely with each other. Once the new hyperparameter values have been suggested, `Terminal` objects for each of the new hyperparameters are created and inserted into the `PrimitiveTree` object for the single individual in the population. As well as this, the new hyperparameter values must be added to `tpot.operators` and `tpot._pset`, in order to "trick" TPOT into accepting these new values as part of the original, discrete, set of choices. Having updated these two data structures, the fitness values for the individual are deleted, to mark it for evaluation, and `tpot._evaluate_individuals` is called. This updates the fitness values tuple and the CV value is returned as the score for that Optuna trial. These values are tracked in the `TPOT_BO_Handler` object and the next trial is performed, until either of the stopping conditions mentioned earlier are met.
 
 Once the stopping conditions are met, the `tpot.evaluated_individuals_` dictionary is written to the file:
 
-`./<results_dir>/<problem>/<run_dir>/bo/bo_pipes.out`
+`bo_pipes.out`
 
 using the same convention as before, and the general run information is written to the file:
 
-`./<results_dir>/<problem>/<run_dir>/bo/bo_progress.out`
+`bo_progress.out`
 
 ---
 
-### `run_tpot_bo_alt`:
-This method is similar in operation to `run_bo_alt`, except that instead of performing a single long TPOT execution and then a single long execution of BO to improve on it, the algorithm alternates between TPOT and BO in an interative fashion.
+### `TPOT-BO-ALT`:
+This method is similar in operation to `TPOT-BO-S`, except that instead of performing a single long TPOT execution and then a single long execution of BO to improve on it, the algorithm alternates between TPOT and BO in an interative fashion.
 
 #### Parameters:
 
@@ -225,24 +205,22 @@ The table below gives all parameter arguments, their type and default values:
 
 | Parameter              | Type     | Default                   | 
 |:-----------------------|:--------:|--------------------------:|
+|`init_pipes`            | dict     | `{}`                      |
 |`n_iters`               | int      | 10                        |
-|`run_list`              | list     | `[]`                      |
+|`pop_size`              | int      | 100                       |
+|`n_tpot_gens`           | int      | 8                         |
+|`n_bo_evals`            | int      | 200                       |
+|`seed`                  | int      | 42                        |
+|`discrete_mode`         | boolean  | True                      |
 |`optuna_timeout_trials` | int      | 100                       |
-|`force_bo_evals`        | int      | `None`                    |
-|`ignore_results`        | boolean  | True                      |
-|`prob_list`             | list     | `[]`                      |
-|`data_dir`              | string   |`'Data'`                   |
-|`results_dir`           | string   |`'Results'`                |
-|`tpot_config_dict`      | dict     |`default_tpot_config_dict` |
+|`config_dict`           | dict     |`default_tpot_config_dict` |
 |`n_jobs`                | int      | -1                        |
-|`vprint`                | `Vprint` |`u.Vprint(1)`              |
-|`real_vals`             | boolean  | True                      |
 |`pipe_eval_timeout`     | int      | 5                         |
+|`vprint`                | `Vprint` |`u.Vprint(1)`              |
 
-### Operation
-The initialisation and specification of problems, runs, etc. for `run_tpot_bo_alt` is very similar to `run_bo`, except it does not load the previous TPOT data all the way up until the original stopping generation. Instead, it uses the input variable `n_iters` to split the available computing budget into `n_iters` "chunks". For example, if the initial TPOT run had a population size of 100, went for 100 generations and had an initial stopping generation of 80, this would mean that `run_bo` would have had pipeline 2000 evaluations to carry out its optimisation on the single best pipeline after TPOT generation 80. If `n_iters` is set at 10, this would mean that `run_tpot_bo_alt` would run for 10 iterations, each iteration consisting of 8 TPOT generations (`n_tpot_gens`) and 200 BO evaluations (`n_bo_evals`).
+#### Constructor operation
 
-To begin with, a TPOT object is created with the following parameters:
+After initializing the class attributes, a TPOT object is created with the following parameters:
 ```python
 tpot = TPOTRegressor(generations=0,
                       population_size=pop_size, 
@@ -250,15 +228,20 @@ tpot = TPOTRegressor(generations=0,
                       crossover_rate=0.1, 
                       cv=5,
                       verbosity=tpot_verb, 
-                      config_dict=main_tpot_config_dict, 
+                      config_dict=config_dict, 
                       random_state=seed, 
                       n_jobs=n_jobs,
                       warm_start=True,
                       max_eval_time_mins=pipe_eval_timeout)
 ```
-and initialised using `tpot._fit_init` to generate the `tpot._pset`. This "master" TPOT object has a population size of `pop_size` and maintains the main population throughout the optimisation process. A "master" `PipelinePopOpt` object is also created to give access to the methods that interact with the TPOT object and provide an interface between TPOT and Optuna.
 
-With each iteration, `tpot.fit` is called, using the training data as input arguments, for `n_tpot_gens` generations (taking care to ensure that for the first iteration it runs for `n_tpot_gens-1` generations to account for the fact that TPOT doesn't include generation 0 in its count)[^2]. The best pipeline from the evolved population is identified, along with any others in the `tpot.evaluated_individuals_` dictionary that have the same structure. A new TPOT object is created using the parameters:
+The starting population from the `init_pipes` dictionary are created as pipeline objects and added to the TPOT population, with the information from the remaining pipelines being added to the `tpot.evaluated_individuals_` dictionary to speed up the evaluation process[^3]. The TPOT object is initialized with `tpot.fit_init`, to generate the `tpot.pset`, and a "master" `TPOT_BO_Handler` object is also created to give acces to the methods that interact with the TPOT object and provide an interface between TPOT and Optuna.
+
+
+The initialisation for `TPOT-BO-ALT` is very similar to `TPOT-BO-S`, except it does not load all pipes in `init_pipes`, rather   the previous TPOT data all the way up until the original stopping generation. Instead, it uses the input variable `n_iters` to split the available computing budget into `n_iters` "chunks". For example, if the initial TPOT run had a population size of 100, went for 100 generations and had an initial stopping generation of 80, this would mean that `run_bo` would have had pipeline 2000 evaluations to carry out its optimisation on the single best pipeline after TPOT generation 80. If `n_iters` is set at 10, this would mean that `run_tpot_bo_alt` would run for 10 iterations, each iteration consisting of 8 TPOT generations (`n_tpot_gens`) and 200 BO evaluations (`n_bo_evals`).
+
+#### `optimize` operation
+With each iteration, `tpot.fit` is called, using the training data as input arguments, for `n_tpot_gens` generations (taking care to ensure that for the first iteration it runs for `n_tpot_gens-1` generations to account for the fact that TPOT doesn't include generation 0 in its count)[^4]. The best pipeline from the evolved population is identified, along with any others in the `tpot.evaluated_individuals_` dictionary that have the same structure. A new TPOT object is created using the parameters:
 ```python
 bo_tpot = TPOTRegressor(generations=0,
                       population_size=1, 
@@ -291,6 +274,26 @@ and
 respectively, and it moves on to the next iteration.
 
 ## Running BO-TPOT
+
+============
+The parameter `prob_list` allows the user to specify a set of problems for batch processing as a list of strings. A problem is specified by the file name (without extension) for its data file, within the `data_dir` directory. For example, if the data for the two required problems are held in `./Data/prob1.data` and `./Data/prob2.data` then `data_dir` would be `'Data'` and `prob_list` would be `['prob1', 'prob2']`. If `prob_list` is supplied as the empty list `[]`, then `data_dir` is searched for all files with the extension `.data` and will process all of them.
+
+Once the problem data is loaded using the `load_data` method in `utils.py`, the directory specified by `results_dir` is checked to see if there exists any previous run data. If such data exists, then it is kept and the current run is created in `./<results_dir>/<problem>/Run_<i+1>/` where `i` is the number of the most recent run. Run numbers are padded with a single zero, and if no run data exists, then the first run is created in `./<results_dir>/<problem>/Run_00/`. The random seed for each run is calculated as `start_seed + <run_no>` (assuming starting with run 0).
+
+
+
+Finally, the details of the run, including relevant parameters, time taken is output to the file:
+
+`tpot_progress.out` 
+
+In the case where `get_tpot_data` is run with a single problem and for a single run, the run number of the recently created data is returned so it can be passed directly to `run_bo` or `run_tpot_bo_alt`.
+
+
+
+
+
+===================
+
 As mentioned above, it is possible to run the `get_tpot_data`, `run_bo` and `run_tpot_bo_alt` processes individually, by calling their respective methods with the appropriate parameter arguments, but the simplest way is to execute the script in the file`run_tpot_tests.py`. At the start of this script is a parameters dictionary `params` which the user can populate and is given to a `TestHandler` object which sets up and runs all the required tests, in accordance with the specified parameters, automatically.
 
 The table below gives the parameters in this dictionary and their type, followed by a description of their functions:
@@ -318,7 +321,7 @@ The table below gives the parameters in this dictionary and their type, followed
 |`nALT_ITERS`            | int        |
 
 ### `CLEAN_DATA`:
-This parameter allows the user to clear **all** data in run directories that are to be written to, when starting an execution. This parameter depends on the values of `RUN_TPOT`, `RUN_BO`, `RUN_ALT`, `RUNS` and `PROBLEMS`, and will only delete data from whatever is flagged to execute in the current instance. When set to `True`, it will display the list of runs and problems it is about to clear, and whether the `run_bo` or `run_tpot_bo_alt` (or both) data will be removed, and will ask for confirmation[^3]. Confirming with `y` will remove the specified data directories and continue with the execution; cancelling with `n` (or any other input) will exit the script. Once the data has been cleared it will ask for a second confirmation to ensure the user wants to continue executing the script. Selecting `y` (or any other input) here will continue as normal, selecting `n` here will exit without processing anything else, meaning this parameter can be used as an easy way to clean the `RESULTS_DIR` directory back to the initial TPOT data if needed. If this parameter is set to `False`, any existing data will still be overwritten, but only as-and-when new data is produced. If `RUN_TPOT` is set to `True` then this step is ignored, as generated TPOT data is never affected.
+This parameter allows the user to clear **all** data in run directories that are to be written to, when starting an execution. This parameter depends on the values of `RUN_TPOT`, `RUN_BO`, `RUN_ALT`, `RUNS` and `PROBLEMS`, and will only delete data from whatever is flagged to execute in the current instance. When set to `True`, it will display the list of runs and problems it is about to clear, and whether the `run_bo` or `run_tpot_bo_alt` (or both) data will be removed, and will ask for confirmation[^5]. Confirming with `y` will remove the specified data directories and continue with the execution; cancelling with `n` (or any other input) will exit the script. Once the data has been cleared it will ask for a second confirmation to ensure the user wants to continue executing the script. Selecting `y` (or any other input) here will continue as normal, selecting `n` here will exit without processing anything else, meaning this parameter can be used as an easy way to clean the `RESULTS_DIR` directory back to the initial TPOT data if needed. If this parameter is set to `False`, any existing data will still be overwritten, but only as-and-when new data is produced. If `RUN_TPOT` is set to `True` then this step is ignored, as generated TPOT data is never affected.
 
 ### `RUN_TPOT`/`RUN_BO`/`RUN_ALT`:
 Boolean flag to control which of `get_tpot_data`, `run_bo` and `run_tpot_bo_alt` are executed. Set to `False` to skip any of the processes, however keep in mind that both `run_bo` and `run_tpot_bo_alt` require that `get_tpot_data` has been run _at some stage_.
@@ -434,8 +437,12 @@ This parameter allows the user to add a custom string to the end of the first li
 
 
 ## Footnotes
-[^1]: In a previous version of the code, the Optuna study was set up as a minimisation problem, which negated the CV values returned by the TPOT pipeline evaluation. However, this created some confusion and, as a result, a bug was found where the CV of the initial samples given to Optuna was not negated when the study was set up. This meant that Optuna could never find a solution with a CV value better than its initial samples, because they were input as negative values, and any subsequent CV score from the TPOT pipeline evaluations were negated and stored as positive ones in the model. This did not mean that no improvement on the pipeline was possible with BO-TPOT, as any evaluated pipeline was stored in the TPOT evaluated individuals dictionary, along with its CV value, so if there was a better pipeline that was found, it would still be there - it just meant that, in an expected improvement sense, the "bar" was being set too high and Optuna did not know whether the new pipeline was actually an improvement or not. In order to remove this confusion and avoid any further problems, the entire process was converted to a maximisation problem for both TPOT and BO.
+[^1]: BO will be applied to whatever set of pipelines are passed to `TPOT-BO-S`. When running it to compare with previous `TPOT-BASE` executions at an earlier point, the `TPOT-BASE` population must first be truncated using the `truncate_pop` method in `tpot_utils.py`. This is done automatically by the `TestHandler` class.
 
-[^2]: To save a little bit of computational effort in the first iteration, some of the original TPOT data is used, but as the population for subsequent iterations is potentially changed by each BO step, all other TPOT data must be generated in real-time.
+[^2]: In a previous version of the code, the Optuna study was set up as a minimisation problem, which negated the CV values returned by the TPOT pipeline evaluation. However, this created some confusion and, as a result, a bug was found where the CV of the initial samples given to Optuna was not negated when the study was set up. This meant that Optuna could never find a solution with a CV value better than its initial samples, because they were input as negative values, and any subsequent CV score from the TPOT pipeline evaluations were negated and stored as positive ones in the model. This did not mean that no improvement on the pipeline was possible with BO-TPOT, as any evaluated pipeline was stored in the TPOT evaluated individuals dictionary, along with its CV value, so if there was a better pipeline that was found, it would still be there - it just meant that, in an expected improvement sense, the "bar" was being set too high and Optuna did not know whether the new pipeline was actually an improvement or not. In order to remove this confusion and avoid any further problems, the entire process was converted to a maximisation problem for both TPOT and BO.
 
-[^3]: Somer older versions of the Spyder IDE for the Anaconda distribution cannot handle user input from the keyboard. If you are using the Spyder IDE and it keeps crashing when asking for confirmation, ensure this parameter is set to `False` or run the main script from a terminal console or other IDE.
+[^3]: As with `TPOT-BO-S`, the entire population of `init_pipes` will be pre-loaded into the `tpot.evaluated_individuals_` dictionary. Therefore, if a fair comparison is required against other techniques, the `truncate_pop` method in `tpot_utils.py` should be used. This is done automatically by the `TestHandler` class.
+
+[^4]: To save a little bit of computational effort in the first iteration, some of the original TPOT data is used, but as the population for subsequent iterations is potentially changed by each BO step, all other TPOT data must be generated in real-time.
+
+[^5]: Somer older versions of the Spyder IDE for the Anaconda distribution cannot handle user input from the keyboard. If you are using the Spyder IDE and it keeps crashing when asking for confirmation, ensure this parameter is set to `False` or run the main script from a terminal console or other IDE.
