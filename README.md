@@ -1,6 +1,7 @@
 # Bayesian Optimisation for TPOT (BO-TPOT)
 An add-on for the [Tree-based Pipeline Optimisation Tool (TPOT)](http://epistasislab.github.io/tpot/), a Python library for automated machine learning. By employing [Optuna](https://optuna.org/), a hyperparameter optimisation Python library, Bayesian optimisation can be applied to an existing TPOT pipeline in an attempt to improve its quality by intelligently searching real-valued hyperparameter spaces.
 
+
 ## Dependencies
 [TPOT](http://epistasislab.github.io/tpot/), [PyTorch](http://pytorch.org), [Optuna](https://optuna.org/) - and various packages from [Anaconda Distribution](http://anaconda.org).
 
