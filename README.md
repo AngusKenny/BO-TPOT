@@ -207,6 +207,11 @@ The generated pipelines are accessible as the class attribute `pipes`.
 
 ### `TPOT-BO-Sr` variant:
 
+When the `optimize` method for `TPOT-BO-S` is run with the `restricted_hps` flag set to `True`, this runs a variant called `TPOT-BO-Sr`. This operates exactly as `TPOT-BO-S`, except that linear regression is used before the BO step to determine which hyper-parameters are the most influential. By focusing only on the most influential hyper-parameters, and ignoring the less influential ones, the complexity of the BO model can be reduced, and therefore the efficiency of the search increased. 
+
+Once the best pipeline and set of pipelines with matching structures is determined, this set is passed to the `get_restricted_set` method in the `tpot_utils.py` file, along with `config_dict`. This method removes all parameters which can only take a single variable (according to `config_dict`) and then performs linear regression on the remaining hyper-parameters, using the set of matching pipelines as data points for the regression model. If an assumption is made that the fitness of a pipeline is simply a linear combination of its hyper-parameters, the beta-coefficients of a linear regression model can be used to determine the influence of any given parameter on the response of the system. These beta-coefficients are computed for the model, along with its regression score, and the hyper-parameter with the smallest beta-coefficient is removed from the set, the model retrained, and the process repeated until there are no more hyper-parameters left.
+
+The hyper-parameter subset which provides the closest regression score (in absolute terms) to 95% of the maximum regression score, is used as decision variables for the BO step, the remaining hyper-parameters are "frozen" to the value they take in the best pipeline so far. The algorithm continues from this point in the same manner as `TPOT-BO-S`, and if the `out_path` parameter is set, the resulting pipelines and progress information is written to `<out_path>/TPOT-BO-Sr.pipes` and `<out_path>/TPOT-BO-Sr.progress`, respectively.
 
 ---
 
