@@ -24,16 +24,23 @@ SAVE_PLOTS:     Save generated plots to file in ./<RESULTS_DIR>/Plots/
 '''
 
 params = {
-    'RESULTS_DIR'       : 'Results_finaltest1',
-    'PROBLEMS'          : ['quake'],
+    'RESULTS_DIR'       : 'Results',
+    'PROBLEMS'          : [
+                            'quake',
+                            # 'abalone',
+                            # 'socmob',
+                            # 'brazilian_houses',
+                            # 'house_16h',
+                            # 'elevators'
+                          ],
     'RUN_LIST'          : [],
-    'SAVE_PLOTS'        : False,
-    'SAVE_STATS'        : False,
+    'SAVE_PLOTS'        : True,
+    'SAVE_STATS'        : True,
     'PLOT_TPOT-BO-Sr'   : True,
-    'PLOT_TPOT-BO-ALT'  : False,
+    'PLOT_TPOT-BO-ALT'  : True,
     'PLOT_TPOT-BO-AUTO' : True,
     'DISCRETE_MODE'     : False,
-    'SKIP_PLOT_INIT'    : 2
+    'SKIP_PLOT_INIT'    : 200
     }
 
 cwd = os.getcwd()
@@ -465,7 +472,6 @@ for problem in prob_list:
                     curr_gen = int(split_line[1])
                     curr_type = split_line[2].strip()
                     val = float(split_line[3])
-
                     if val > best_auto_cv:
                         best_auto_cv = val
 
@@ -482,7 +488,7 @@ for problem in prob_list:
                     continue
                 tmp = np.interp(np.linspace(0, len(v), pop_size), range(len(v)), v)
                 
-                data[run]['auto_y'] = np.vstack((data[run]['auto_y'],np.hstack((tmp.reshape(-1,1), (types[k] == 'TPOT-BO-ALT(TPOT)') * np.ones((pop_size,1))))))      
+                data[run]['auto_y'] = np.vstack((data[run]['auto_y'],np.hstack((tmp.reshape(-1,1), (types[k] == 'TPOT-BO-AUTO(TPOT)') * np.ones((pop_size,1))))))      
                 
     ###################
     
@@ -800,7 +806,6 @@ for problem in prob_list:
     plt.show()
     
     if params['PLOT_TPOT-BO-AUTO']:                
-        # data[med_auto_run]['auto_y'][-1,0]
         # plot alt results (median)
         fig12, ax_auto_m = plt.subplots()
         for i in range(2*pop_size, data[med_auto_run]['auto_y'].shape[0], pop_size):
@@ -811,11 +816,11 @@ for problem in prob_list:
         labels = ['TPOT evaluation', 'BO evaluation']
         ax_auto_m.legend(handles=[tpot_line, bo_line])
         
-        auto_title_text_m = (f"{problem} - TPOT-BO AUTO {add_text}\n"
+        auto_title_text_m = (f"{problem} - TPOT-BO-AUTO {add_text}\n"
                         + f"median run: {med_auto_run}, "
                         +f"obj: {data[med_auto_run]['auto_y'][-1,0]:.6e}")
         ax_auto_m.set_title(auto_title_text_m)
-        # ax_auto_s.set_ylim([ylim_min, ylim_max])
+        # ax_auto_m.set_ylim([ylim_min, ylim_max])
         ax_auto_m.set_xlabel("Evaluations")
         ax_auto_m.set_ylabel("CV")      
         
@@ -825,25 +830,26 @@ for problem in prob_list:
     res_txt = "_(res)" if params['PLOT_TPOT-BO-Sr'] else ""
     
     if params['SAVE_PLOTS']:
+        d_flag = "D" if params['DISCRETE_MODE'] else "C"
         plot_path = os.path.join(prob_path, "Plots")
         
         if not os.path.exists(plot_path):
             os.makedirs(plot_path)
         fname_tpot_plot_s = os.path.join(
-            plot_path, problem + f"_tpot{res_txt}.png")
+            plot_path, problem + f"_TPOT-BASE_{d_flag}.png")
         fname_tpot_bo_plot_s = os.path.join(
-            plot_path, problem + f"_bo{res_txt}.png")
+            plot_path, problem + f"_TPOT-BO_S_{d_flag}.png")
         if params['PLOT_TPOT-BO-ALT']:
             fname_alt_plot_s = os.path.join(
-                plot_path, problem + f"_alt{res_txt}.png")
+                plot_path, problem + f"_TPOT-BO-ALT_{d_flag}.png")
         
         if params['PLOT_TPOT-BO-AUTO']:
             fname_auto_plot_s = os.path.join(
-                plot_path, problem + f"_auto{res_txt}.png")
+                plot_path, problem + f"_TPOT-BO-AUTO_{d_flag}.png")
                 
         if params['PLOT_TPOT-BO-Sr']:
             fname_bo_r_plot_s = os.path.join(
-                plot_path, problem + f"_bo_r{res_txt}.png")
+                plot_path, problem + f"_TPOT-BO-Sr_{d_flag}.png")
         
         fig2.savefig(fname_tpot_plot_s,bbox_inches='tight')
         fig4.savefig(fname_tpot_bo_plot_s,bbox_inches='tight')
@@ -861,7 +867,7 @@ for problem in prob_list:
     print(f"\n{u.CYAN}{problem} {add_text} statistics:{u.OFF}")
     print(f"{str(''):>{PRINT_COL}}{str('TPOT-BASE'):>{PRINT_COL}}{str('TPOT-BO-S'):>{PRINT_COL}}",end="")
     if params['PLOT_TPOT-BO-Sr']:
-        print(f"{str('TPOT-BO-R'):>{PRINT_COL}}",end="")
+        print(f"{str('TPOT-BO-Sr'):>{PRINT_COL}}",end="")
     if params['PLOT_TPOT-BO-ALT']:
         print(f"{str('TPOT-BO-ALT'):>{PRINT_COL}}",end="")
     if params['PLOT_TPOT-BO-AUTO']:
@@ -891,7 +897,7 @@ if params['SAVE_STATS']:
             f.write(f"!RUN LIST:{stats[problem]['runs']}\n")
             f.write(f"{str('#'):<{PRINT_COL}};{str('TPOT-BASE'):>{PRINT_COL}};{str('TPOT-BO-S'):>{PRINT_COL}};")
             if params['PLOT_TPOT-BO-Sr']:
-                f.write(f"{str('TPOT-BO-R'):>{PRINT_COL}};")
+                f.write(f"{str('TPOT-BO-Sr'):>{PRINT_COL}};")
             if params['PLOT_TPOT-BO-ALT']:
                 f.write(f"{str('TPOT-BO-ALT'):>{PRINT_COL}};")
             if params['PLOT_TPOT-BO-AUTO']:

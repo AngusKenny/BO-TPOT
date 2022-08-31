@@ -22,16 +22,16 @@ params = {
     # clear BO and alt data from directories to be written to 
     # (will ask for confirmation)
     'CLEAN_DATA': False,
-    'RUN_TPOT-BASE' : False,
+    'RUN_TPOT-BASE' : True,
     'RUN_TPOT-BO-S' : True,
     'RUN_TPOT-BO-Sr' : True,
     'RUN_TPOT-BO-ALT' : True,
-    'RUN_TPOT-BO-AUTO' : False,
+    'RUN_TPOT-BO-AUTO' : True,
     'VERBOSITY' : 2,
     'DATA_DIR' : 'Data',
-    'RESULTS_DIR' : 'Results_finaltest3',
+    'RESULTS_DIR' : 'Results',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : [0,1],
+    'RUNS' : [2],
     'PROBLEMS' : [
                 # 'abalone',
 # 		'socmob',
@@ -45,13 +45,13 @@ params = {
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
     'nJOBS' : 16,
     # toggle between discrete and continuous parameter spaces
-    'DISCRETE_MODE' : True,
+    'DISCRETE_MODE' : False,
     # maximum time allowed for a single pipeline evaluation (mins)
     'PIPE_EVAL_TIMEOUT' : 1,
     #
     # TPOT data generation parameters
     #
-    'START_SEED' : 442,
+    'START_SEED' : 42,
     'POP_SIZE' : 100,
     'nTOTAL_GENS' : 100,
     'STOP_GEN' : 80,
