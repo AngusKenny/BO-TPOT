@@ -109,7 +109,7 @@ class TPOT_BO_S(object):
         for k,v in self.tpot.evaluated_individuals_.items():
             if k not in self.pipes:
                 self.pipes[k] = v
-                self.pipes[k]['source'] = r'TPOT-BO-S{r_txt}'
+                self.pipes[k]['source'] = f'TPOT-BO-S{r_txt}'
         
         t_end = time.time()
         
