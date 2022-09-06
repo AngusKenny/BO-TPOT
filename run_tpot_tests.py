@@ -22,20 +22,22 @@ params = {
     # clear BO and alt data from directories to be written to 
     # (will ask for confirmation)
     'CLEAN_DATA': False,
-    'RUN_TPOT-BASE' : True,
-    'RUN_TPOT-BO-S' : True,
-    'RUN_TPOT-BO-Sr' : True,
-    'RUN_TPOT-BO-ALT' : True,
-    'RUN_TPOT-BO-AUTO' : True,
+    'RUN_TPOT-BASE' : False,
+    'RUN_TPOT-BO-S' : False,
+    'RUN_TPOT-BO-H' : True,
+    'RUN_TPOT-BO-ND' : False,
+    'RUN_TPOT-BO-Sr' : False,
+    'RUN_TPOT-BO-ALT' : False,
+    'RUN_TPOT-BO-AUTO' : False,
     'VERBOSITY' : 2,
     'DATA_DIR' : 'Data',
-    'RESULTS_DIR' : 'Results',
+    'RESULTS_DIR' : 'Results_Hr',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : [2],
+    'RUNS' : list(range(4,21)) + [0,1],
     'PROBLEMS' : [
-                # 'abalone',
+                # 'quake',
 # 		'socmob',
-                'quake',
+                'abalone',
     #             'house_16h',
     #             'brazilian_houses',
     #             'diamonds',
@@ -43,7 +45,7 @@ params = {
     #             'black_friday'
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
-    'nJOBS' : 16,
+    'nJOBS' : -1,
     # toggle between discrete and continuous parameter spaces
     'DISCRETE_MODE' : False,
     # maximum time allowed for a single pipeline evaluation (mins)
@@ -93,7 +95,15 @@ for problem in test_handler.prob_list:
         # run BO optimiser
         if params['RUN_TPOT-BO-S']:
             test_handler.run_TPOT_BO_S(tpot_data, restricted_hps=False)
-            
+        
+        # run BO optimiser
+        if params['RUN_TPOT-BO-H']:
+            test_handler.run_TPOT_BO_H(tpot_data, restricted_hps=False)
+        
+        # run BO optimiser
+        if params['RUN_TPOT-BO-ND']:
+            test_handler.run_TPOT_BO_ND(tpot_data, restricted_hps=False)
+        
         # run BO optimiser
         if params['RUN_TPOT-BO-Sr']:
             test_handler.run_TPOT_BO_S(tpot_data, restricted_hps=True)

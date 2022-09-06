@@ -8,6 +8,8 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
+import pygmo as pg
+import copy
 
 ''' Escape codes for printing coloured text
 '''
@@ -119,8 +121,67 @@ def get_progress_pop(fname_pipes, stop_gen=np.inf):
                         
     return pop
 
+def update_group(group):
+    group_cvs = [v['internal_cv_score'] for k,v in group['matching'].items()]
+    best_idx = np.argmax(group_cvs)
+    best_pipe = list(group['matching'].keys())[best_idx]
+    group['best_pipe'] = best_pipe
+    group['cv_mu'] = np.mean(group_cvs)
+    group['cv_best'] = np.max(group_cvs)
+    group['internal_cv_score'] = np.max(group_cvs)
+    group['cv_worst'] = np.min(group_cvs)
+    group['cv_sigma'] = np.std(group_cvs)
+    group['n_root'] = np.power(len(group['matching']),1/len(group['bo_params']))
+    
+    return group
 
-def get_unique_pop(fname_pipes, stop_gen=np.inf, config_dict=None):
+def get_unique_groups(pipes, stop_gen=np.inf, config_dict=None):
+    strucs = {}
+    
+    for k,v in pipes.items():
+        struc = string_to_structure(k)
+        struc_str = str(struc)
+
+        # skip invalid or past stop_gen
+        if v['generation'] > stop_gen or v['internal_cv_score'] == -np.inf or len(string_to_params(k,config_dict=config_dict)) == 0:
+            continue
+        
+        if struc_str in strucs:
+            strucs[struc_str]['matching_pipes'][k] = copy.deepcopy(v)
+            strucs[struc_str]['matching_cv'].append(v['internal_cv_score'])
+            strucs[struc_str]['matching_keys'].append(k)
+            
+            continue
+        
+        
+        strucs[struc_str] = {'matching_pipes': 
+                             {k: copy.deepcopy(v)},
+                             'matching_cv': [v['internal_cv_score']],
+                             'matching_keys': [k]}
+
+    unique_groups = {}
+    for s,v in strucs.items():
+        unique_groups[s] = {}
+        best_idx = np.argmax(v['matching_cv'])
+        best_pipe = v['matching_keys'][best_idx]
+        unique_groups[s]['best_pipe'] = best_pipe
+        unique_groups[s]['cv_mu'] = np.mean(v['matching_cv'])
+        unique_groups[s]['cv_sigma'] = np.std(v['matching_cv'])
+        unique_groups[s]['cv_best'] = np.max(v['matching_cv'])
+        unique_groups[s]['internal_cv_score'] = np.max(v['matching_cv'])
+        unique_groups[s]['cv_worst'] = np.min(v['matching_cv'])
+        unique_groups[s]['matching'] = copy.deepcopy(v['matching_pipes'])
+        unique_groups[s]['params'] = string_to_params(best_pipe)
+        unique_groups[s]['operators'] = string_to_ops(best_pipe)
+        unique_groups[s]['structure'] = string_to_structure(best_pipe)
+        unique_groups[s]['bo_params'] = string_to_params(best_pipe,config_dict=config_dict)
+        unique_groups[s]['n_bo_params'] = len(unique_groups[s]['bo_params'])
+        unique_groups[s]['n_root'] = np.power(len(unique_groups[s]['matching']),1/len(unique_groups[s]['bo_params']))
+    
+    return unique_groups
+
+
+def load_unique_pop(fname_pipes, stop_gen=np.inf, config_dict=None):
     strucs = {}
     total_best_pipe = None
     total_best_cv = -np.inf
@@ -168,6 +229,7 @@ def get_unique_pop(fname_pipes, stop_gen=np.inf, config_dict=None):
         unique_pipes[best_pipe]['cv_mu'] = np.mean(v['matching_cv'])
         unique_pipes[best_pipe]['cv_sigma'] = np.std(v['matching_cv'])
         unique_pipes[best_pipe]['cv_best'] = np.max(v['matching_cv'])
+        unique_pipes[best_pipe]['internal_cv_score'] = np.max(v['matching_cv'])
         unique_pipes[best_pipe]['cv_worst'] = np.min(v['matching_cv'])
         unique_pipes[best_pipe]['matching'] = v['matching_pipes']
         unique_pipes[best_pipe]['params'] = string_to_params(best_pipe)
@@ -221,7 +283,7 @@ def get_matching_set(tgt, pipes):
     
     for k,v in pipes.items():
         if string_to_structure(k) == tgt_struc:
-            matching_set[k] = v
+            matching_set[k] = copy.deepcopy(v)
             
     return matching_set
 
@@ -327,20 +389,65 @@ def load_data(fpath):
     return X_train, X_test, y_train, y_test
 
 
-def get_best(pipes, source=None):
-    best_pipe = ""
-    best_cv = -1e20
-    for k,v in pipes.items():
-        if not source is None:
-            if v['internal_cv_score'] > best_cv and v['source'] == source:
+def get_best(pipes, source=None, size=None):
+    '''
+    TODO: implement source for size > 1
+    '''
+    if size:
+        cvs = np.array([-v['internal_cv_score'] for k,v in pipes.items()])
+        sorted_idx = np.argsort(cvs)
+        pk = list(pipes.keys())
+        best_set = {pk[i]:copy.deepcopy(pipes[pk[i]]) for i in sorted_idx[:size]}
+        return best_set
+            
+    else:
+        best_pipe = ""
+        best_cv = -1e20
+        for k,v in pipes.items():
+            if not source is None:
+                if v['internal_cv_score'] > best_cv and source in v['source']:
+                    best_pipe = k
+                    best_cv = v['internal_cv_score']
+            elif v['internal_cv_score'] > best_cv:
                 best_pipe = k
                 best_cv = v['internal_cv_score']
-        elif v['internal_cv_score'] > best_cv:
-            best_pipe = k
-            best_cv = v['internal_cv_score']
+            
+        return best_pipe,best_cv        
 
-    return best_pipe,best_cv
 
+def get_nd_best(pipes, nd_params, source=None):
+    '''
+    If Pareto front required, pass params to sort by as nd_params, with 
+    negative if negative required. e.g., "-n_root" for -1 * 'n_root'
+    '''
+
+    pareto_pipes = {}
+    nd1_mod = -1 if "-" in nd_params[0] else 1
+    nd2_mod = -1 if "-" in nd_params[1] else 1
+    if source is None:
+        points = np.hstack((np.array([nd1_mod*v[nd_params[0].strip("-")] 
+                                      for k,v in pipes.items()]).reshape(-1,1), 
+                            np.array([nd2_mod * v[nd_params[1].strip("-")] 
+                                      for k,v in pipes.items()]).reshape(-1,1)))
+    else:
+        points = np.hstack((np.array([nd1_mod*v[nd_params[0].strip("-")] 
+                                      for k,v in pipes.items() 
+                                      if source in v['source']]).reshape(-1,1), 
+                            np.array([nd2_mod * v[nd_params[1].strip("-")] 
+                                      for k,v in pipes.items() 
+                                      if source in v['source']]).reshape(-1,1)))
+        
+        idxs = [0]            
+        if points.shape[0] > 1:
+            ndf, dl, dc, ndr = pg.fast_non_dominated_sorting(points=points)
+            idxs = ndf[0]
+        
+        p_list = list(pipes.keys())
+        
+        for i in idxs:
+            pareto_pipes[p_list[i]] = copy.deepcopy(pipes[p_list[i]])
+
+        return pareto_pipes
 
 def get_max_gen(pipes):
     max_gen = 0
