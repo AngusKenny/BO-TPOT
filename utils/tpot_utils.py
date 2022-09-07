@@ -8,7 +8,7 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
-import pygmo as pg
+# import pygmo as pg
 import copy
 
 ''' Escape codes for printing coloured text
@@ -416,38 +416,39 @@ def get_best(pipes, source=None, size=None):
 
 
 def get_nd_best(pipes, nd_params, source=None):
-    '''
-    If Pareto front required, pass params to sort by as nd_params, with 
-    negative if negative required. e.g., "-n_root" for -1 * 'n_root'
-    '''
+    return {}
+#     '''
+#     If Pareto front required, pass params to sort by as nd_params, with 
+#     negative if negative required. e.g., "-n_root" for -1 * 'n_root'
+#     '''
 
-    pareto_pipes = {}
-    nd1_mod = -1 if "-" in nd_params[0] else 1
-    nd2_mod = -1 if "-" in nd_params[1] else 1
-    if source is None:
-        points = np.hstack((np.array([nd1_mod*v[nd_params[0].strip("-")] 
-                                      for k,v in pipes.items()]).reshape(-1,1), 
-                            np.array([nd2_mod * v[nd_params[1].strip("-")] 
-                                      for k,v in pipes.items()]).reshape(-1,1)))
-    else:
-        points = np.hstack((np.array([nd1_mod*v[nd_params[0].strip("-")] 
-                                      for k,v in pipes.items() 
-                                      if source in v['source']]).reshape(-1,1), 
-                            np.array([nd2_mod * v[nd_params[1].strip("-")] 
-                                      for k,v in pipes.items() 
-                                      if source in v['source']]).reshape(-1,1)))
+#     pareto_pipes = {}
+#     nd1_mod = -1 if "-" in nd_params[0] else 1
+#     nd2_mod = -1 if "-" in nd_params[1] else 1
+#     if source is None:
+#         points = np.hstack((np.array([nd1_mod*v[nd_params[0].strip("-")] 
+#                                       for k,v in pipes.items()]).reshape(-1,1), 
+#                             np.array([nd2_mod * v[nd_params[1].strip("-")] 
+#                                       for k,v in pipes.items()]).reshape(-1,1)))
+#     else:
+#         points = np.hstack((np.array([nd1_mod*v[nd_params[0].strip("-")] 
+#                                       for k,v in pipes.items() 
+#                                       if source in v['source']]).reshape(-1,1), 
+#                             np.array([nd2_mod * v[nd_params[1].strip("-")] 
+#                                       for k,v in pipes.items() 
+#                                       if source in v['source']]).reshape(-1,1)))
         
-        idxs = [0]            
-        if points.shape[0] > 1:
-            ndf, dl, dc, ndr = pg.fast_non_dominated_sorting(points=points)
-            idxs = ndf[0]
+#         idxs = [0]            
+#         if points.shape[0] > 1:
+#             ndf, dl, dc, ndr = pg.fast_non_dominated_sorting(points=points)
+#             idxs = ndf[0]
         
-        p_list = list(pipes.keys())
+#         p_list = list(pipes.keys())
         
-        for i in idxs:
-            pareto_pipes[p_list[i]] = copy.deepcopy(pipes[p_list[i]])
+#         for i in idxs:
+#             pareto_pipes[p_list[i]] = copy.deepcopy(pipes[p_list[i]])
 
-        return pareto_pipes
+#         return pareto_pipes
 
 def get_max_gen(pipes):
     max_gen = 0
