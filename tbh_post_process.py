@@ -21,7 +21,7 @@ from matplotlib.lines import Line2D
 RESULTS_PATH = 'Results_Hr'
 PROBLEM = 'quake'
 DISCRETE_MODE = True
-RUNS = [2,3,4,5,6,7,8]
+RUNS = [0]
 PRINT_COL = 20
 SAVE_PLOTS = False
 WIN_TOL = 1e-6
@@ -222,8 +222,8 @@ ax3.set_xlabel("no. HPs")
 # ax3.set_ylim(ylims)
 # ax3.set_xlim(xlims)
 if SAVE_PLOTS:
-    f_hvs = os.path.join(plot_path,f'{PROBLEM}_TPOT-BO-HvS_run_{med_run}.png')
-    fig3.savefig(f_hvs,bbox_inches='tight')
+    f_hvs_hps = os.path.join(plot_path,f'{PROBLEM}_TPOT-BO-HvS_HPs_run_{med_run}.png')
+    fig3.savefig(f_hvs_hps,bbox_inches='tight')
 plt.show()
 
 

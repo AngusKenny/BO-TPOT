@@ -18,10 +18,10 @@ import matplotlib.pyplot as plt
 import matplotlib.colors
 from matplotlib.lines import Line2D
 
-RESULTS_PATH = 'Results'
+RESULTS_PATH = 'Results_Hr'
 PROBLEM = 'quake'
 DISCRETE_MODE = False
-RUNS = range(21)
+RUNS = range(20)
 PRINT_COL = 20
 SAVE_PLOTS = False
 WIN_TOL = 1e-6
