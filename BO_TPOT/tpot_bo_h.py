@@ -33,7 +33,7 @@ class TPOT_BO_H(object):
                  init_pipes,
                  seed=42,
                  pop_size=100,
-                 bo_pop_factor=0.2,
+                 bo_pop_factor=0.5,
                  n_bo_evals=2000,
                  discrete_mode=True,
                  restricted_hps=False,
