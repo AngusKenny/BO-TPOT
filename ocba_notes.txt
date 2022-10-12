@@ -1,0 +1,44 @@
+TPOT-BO-O (basic OCBA):
+	- start at gen 80
+	- sort pipeline structures by best CV
+	- take top 50
+	- ensure all 50 have n_0 initial samples (performing BO evals if necessary)
+	- while total budget remains:
+		- generation budget = remaining / ceil(log_2(pop_size))
+		- standard OCBA to allocate generation budget
+		- prune population so pop_size = pop_size/2
+
+
+* do this *
+TPOT-BO-Om (subset selection OCBA):
+	- start at gen 80
+	- sort pipeline structures by best CV
+	- take top 50
+	- ensure all 50 have n_0 initial samples (performing BO evals if necessary)
+	- while total budget remains:
+		- generation budget = remaining / ceil(log_2(pop_size))
+		- OCBAm to find optimal subset of pop_size/2 within generation budget
+		- prune population to subset found
+
+
+TPOT-BO-AO (based on TPOT-BO-AUTO):
+	- generate initial population
+	- fit for one generation
+	- BO on each pipeline once
+	- while total budget remains:
+		- compute gradient of most recent TPOT or BO iteration (maybe sum of all gradients?)
+		- if TPOT is best:
+			- run TPOT for one generation (<= pop_size evaluations)
+		- else if BO is best:
+			- sort structures by best CV
+			- take top 20% (can we remove this parameter? pop_size/2 maybe too much..?)
+			- ensure all have n_0 initial samples (performing BO evals if necessary)
+			- OCBA to allocate pop_size evaluations
+		- else toggle to method which *wasn't* most recently used
+
+
+
+NOTES:
+- OCBA requires initial statistics, so there might be an issue with pipeline structures which don't have more than one sample. This is more important for BO-Oa where new pipeline structures are potentially being created with each generation - dont want to waste too many evaluations on initialising.
+- for BO-O and BO-Om can start with discrete and once pop_size=1, switch to continuous in order to "polish" best pipeline
+- n_0 is suggested as 5 in the literature, but can be as low as 2 if needed
