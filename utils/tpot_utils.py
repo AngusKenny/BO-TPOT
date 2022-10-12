@@ -173,6 +173,7 @@ def get_unique_groups(pipes, stop_gen=np.inf, config_dict=None):
         unique_groups[s]['matching'] = copy.deepcopy(v['matching_pipes'])
         unique_groups[s]['params'] = string_to_params(best_pipe)
         unique_groups[s]['operators'] = string_to_ops(best_pipe)
+        unique_groups[s]['n_operators'] = len(string_to_ops(best_pipe))
         unique_groups[s]['structure'] = string_to_structure(best_pipe)
         unique_groups[s]['bo_params'] = string_to_params(best_pipe,config_dict=config_dict)
         unique_groups[s]['n_bo_params'] = len(unique_groups[s]['bo_params'])
@@ -234,6 +235,7 @@ def load_unique_pop(fname_pipes, stop_gen=np.inf, config_dict=None):
         unique_pipes[best_pipe]['matching'] = v['matching_pipes']
         unique_pipes[best_pipe]['params'] = string_to_params(best_pipe)
         unique_pipes[best_pipe]['operators'] = string_to_ops(best_pipe)
+        unique_pipes[best_pipe]['n_operators'] = len(string_to_ops(best_pipe))
         unique_pipes[best_pipe]['bo_params'] = string_to_params(best_pipe,config_dict=config_dict)
     
     return unique_pipes

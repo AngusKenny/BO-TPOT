@@ -18,8 +18,8 @@ import matplotlib.pyplot as plt
 import matplotlib.colors
 from matplotlib.lines import Line2D
 
-RESULTS_PATH = 'Results_Hr'
-PROBLEM = 'quake'
+RESULTS_PATH = 'Results (copy)'
+PROBLEM = 'socmob'
 DISCRETE_MODE = False
 RUNS = range(20)
 PRINT_COL = 20

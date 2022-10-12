@@ -18,17 +18,21 @@ import matplotlib.pyplot as plt
 import matplotlib.colors
 from matplotlib.lines import Line2D
 
-RESULTS_PATH = 'Results_Hr'
-PROBLEM = 'quake'
-DISCRETE_MODE = True
-RUNS = [0]
+RESULTS_PATH = 'Results (copy)'
+PROBLEM = 'house_16h'
+DISCRETE_MODE = False
+RUNS = [9]
 PRINT_COL = 20
 SAVE_PLOTS = False
 WIN_TOL = 1e-6
 ANIMATE = False
 SHOW_TITLE = False
+# YLIM = [4.195,4.273]
+YLIM = None
 
 disc_txt = "discrete" if DISCRETE_MODE else "continuous"
+
+disc_flag = "D" if DISCRETE_MODE else "C"
 
 cwd = os.getcwd()
 prob_path = os.path.join(cwd,RESULTS_PATH,PROBLEM)
@@ -171,19 +175,22 @@ stats['std dev'] = {k: np.std(v) for k,v in data.items()}
 med_auto_run_idx = np.abs(data['TPOT-BO-H'] - np.median(data['TPOT-BO-H'])).argmin()
 med_run = list(raw_data.keys())[med_auto_run_idx]
 
-struc_idxs = {struc:i for i,struc in enumerate(raw_tbh_pipes[med_run][0].keys())}
+struc_idxs = {struc:i for i,struc in enumerate(raw_tbh_pipes[med_run][0].keys()) if i < 50}
 
-struc_hps = {struc:len(u.string_to_params(v['pipe'],default_tpot_config_dict)) for struc,v in raw_tbh_pipes[med_run][0].items()}
+struc_hps = {struc:len(u.string_to_params(v['pipe'],default_tpot_config_dict)) for struc,v in raw_tbh_pipes[med_run][0].items() if struc in struc_idxs}
 
 
 if raw_tbs_pipes[med_run]['struc'] not in struc_idxs:
     struc_idxs[raw_tbs_pipes[med_run]['struc']] = len(struc_idxs)
 
-idx_plots = {gen:np.array([[struc_idxs[struc],raw_tbh_pipes[med_run][gen][struc]['cv']] for struc in raw_tbh_pipes[med_run][gen]]) for gen in raw_tbh_pipes[med_run]}
+idx_plots = {gen:np.array([[struc_idxs[struc],raw_tbh_pipes[med_run][gen][struc]['cv']] for struc in raw_tbh_pipes[med_run][gen] if struc in struc_idxs]) for gen in raw_tbh_pipes[med_run]}
 
-hp_plots = {gen:np.array([[struc_hps[struc],raw_tbh_pipes[med_run][gen][struc]['cv']] for struc in raw_tbh_pipes[med_run][gen]]) for gen in raw_tbh_pipes[med_run]}
+hp_plots = {gen:np.array([[struc_hps[struc],raw_tbh_pipes[med_run][gen][struc]['cv']] for struc in raw_tbh_pipes[med_run][gen] if struc in struc_idxs]) for gen in raw_tbh_pipes[med_run]}
 
 # idx_plots = {gen:np.vstack(([np.hstack((struc_idxs[struc]*np.ones((len(raw_tbh_pipes[med_run][gen][struc]),1)),np.array(raw_tbh_pipes[med_run][gen][struc]).reshape(-1,1))) for struc in raw_tbh_pipes[med_run][gen]])) for gen in raw_tbh_pipes[med_run]}                
+
+if len(idx_plots[list(idx_plots.keys())[-1]]) == 0:
+    idx_plots.pop(list(idx_plots.keys())[-1])
 
 ymax = np.max(idx_plots[0][:,1])
 ymin = np.min(idx_plots[list(idx_plots.keys())[-1]][:,1])
@@ -203,7 +210,8 @@ fig3,ax3 = plt.subplots()
 # ax3.set_xlim([0,30])
 for gen in idx_plots:
     # ax3.set_ylim([0.03535,0.03555])
-    # ax3.set_ylim([4,20])
+    if YLIM:
+        ax3.set_ylim(YLIM)
     ax3.scatter(struc_hps[raw_tbs_pipes[med_run]['struc']],raw_tbs_pipes[med_run]['cv_gens'][gen],color=reds(colour_grads[gen]),label='TPOT-BO-S',marker='o',facecolors='none',s=70)
     size = 10 if gen> 0 else 40
     ax3.scatter(hp_plots[gen][:,0],hp_plots[gen][:,1],label='TPOT-BO-H',marker='o',s=size,color=blues(colour_grads[gen]))
@@ -217,12 +225,12 @@ ax3.legend(handles=[l_tbh80,l_tbh,l_tbs80,l_tbs],prop={'size': 9})
 # ax2.legend()
 if SHOW_TITLE:
     ax3.set_title(f"{PROBLEM} :: Run {med_run} :: generation {gen}")
-ax3.set_ylabel("best CV (median run)")
+ax3.set_ylabel("best CV")
 ax3.set_xlabel("no. HPs")
 # ax3.set_ylim(ylims)
 # ax3.set_xlim(xlims)
 if SAVE_PLOTS:
-    f_hvs_hps = os.path.join(plot_path,f'{PROBLEM}_TPOT-BO-HvS_HPs_run_{med_run}.png')
+    f_hvs_hps = os.path.join(plot_path,f'{PROBLEM}_TPOT-BO-HvS_HPs_run_{med_run}_{disc_flag}.png')
     fig3.savefig(f_hvs_hps,bbox_inches='tight')
 plt.show()
 
@@ -230,7 +238,8 @@ plt.show()
 fig4,ax4 = plt.subplots()
 for gen in idx_plots:
     # ax3.set_ylim([0.03535,0.03555])
-    # ax3.set_ylim([4,20])
+    if YLIM:
+        ax4.set_ylim(YLIM)
     ax4.scatter(struc_idxs[raw_tbs_pipes[med_run]['struc']],raw_tbs_pipes[med_run]['cv_gens'][gen],color=reds(colour_grads[gen]),label='TPOT-BO-S',marker='o',facecolors='none',s=70)
     size = 10 if gen> 0 else 40
     ax4.scatter(idx_plots[gen][:,0],idx_plots[gen][:,1],label='TPOT-BO-H',marker='o',s=size,color=blues(colour_grads[gen]))
@@ -244,17 +253,17 @@ ax4.legend(handles=[l_tbh80,l_tbh,l_tbs80,l_tbs],prop={'size': 9})
 # ax2.legend()
 if SHOW_TITLE:
     ax4.set_title(f"{PROBLEM} :: Run {med_run} :: generation {gen}")
-ax4.set_ylabel("best CV (median run)")
+ax4.set_ylabel("best CV")
 ax4.set_xlabel("pipeline index")
 # ax3.set_ylim(ylims)
 # ax3.set_xlim(xlims)
 if SAVE_PLOTS:
-    f_hvs = os.path.join(plot_path,f'{PROBLEM}_TPOT-BO-HvS_run_{med_run}.png')
+    f_hvs = os.path.join(plot_path,f'{PROBLEM}_TPOT-BO-HvS_run_{med_run}_{disc_flag}.png')
     fig4.savefig(f_hvs,bbox_inches='tight')
 plt.show()
 
 
-print(f"\n{u.CYAN}{PROBLEM} statistics:{u.OFF}")
+print(f"\n{u.CYAN}{PROBLEM} ({disc_txt}) statistics:{u.OFF}")
 print(f"{str(''):>{PRINT_COL}}{str('init TPOT'):>{PRINT_COL}}{str('TPOT-BASE'):>{PRINT_COL}}{str('TPOT-BO-S'):>{PRINT_COL}}{str('TPOT-BO-H'):>{PRINT_COL}}")
     
 print("="*(5*PRINT_COL + 2))

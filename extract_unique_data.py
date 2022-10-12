@@ -30,21 +30,21 @@ from utils.bo_utils import (make_hp_space_cont,
 
 
 P_COL = 22
-RESULTS_PATH = "Results"
-PROBLEM = "quake"
-RUN = "Run_00"
+RESULTS_PATH = "Results (copy)"
+PROBLEM = "socmob"
+RUN = "Run_09"
 STOP_GEN = 80
-ND_SORT = ('cv_best','n_root')
+ND_SORT = ('cv_best','n_operators')
 VERBOSITY = 2
 nTPE_CANDIDATES = 1000
 DISCRETE_MODE = True
 
 cwd = os.getcwd()
 f_pipes = os.path.join(cwd, RESULTS_PATH, PROBLEM, RUN, 'TPOT-BASE', 'TPOT-BASE.pipes')
-f_out = os.path.join(cwd, RESULTS_PATH, 'extracted',f'{PROBLEM}_{RUN}_unique_data.csv')
+# f_out = os.path.join(cwd, RESULTS_PATH, 'extracted',f'{PROBLEM}_{RUN}_unique_data.csv')
 
 pipes = u.get_progress_pop(f_pipes,STOP_GEN-1)
-u_pipes = u.get_unique_pop(pipes, STOP_GEN-1, config_dict=default_tpot_config_dict)
+u_pipes = u.get_unique_groups(pipes, STOP_GEN-1, config_dict=default_tpot_config_dict)
 
 u_pipes2 = u.load_unique_pop(f_pipes, STOP_GEN-1, config_dict=default_tpot_config_dict)
 
@@ -63,9 +63,9 @@ for k,v in u_pipes2.items():
     v['n_root'] = np.power(len(v['matching']),1/len(v['bo_params']))
 
 
-points = np.hstack((np.array([-v[ND_SORT[0]] for k,v in u_pipes.items()]).reshape(-1,1), np.array([-v[ND_SORT[1]] for k,v in u_pipes.items()]).reshape(-1,1)))
+points = np.hstack((np.array([-v[ND_SORT[0]] for k,v in u_pipes.items()]).reshape(-1,1), np.array([v[ND_SORT[1]] for k,v in u_pipes.items()]).reshape(-1,1)))
 
-points2 = np.hstack((np.array([-v[ND_SORT[0]] for k,v in u_pipes2.items()]).reshape(-1,1), np.array([-v[ND_SORT[1]] for k,v in u_pipes2.items()]).reshape(-1,1)))
+points2 = np.hstack((np.array([-v[ND_SORT[0]] for k,v in u_pipes2.items()]).reshape(-1,1), np.array([v[ND_SORT[1]] for k,v in u_pipes2.items()]).reshape(-1,1)))
 
 
 ks = list(u_pipes.keys())
@@ -73,10 +73,18 @@ ks = list(u_pipes.keys())
 ndf, dl, dc, ndr = pg.fast_non_dominated_sorting(points=points)
 ndf2, dl2, dc2, ndr2 = pg.fast_non_dominated_sorting(points=points2)
 
-print(ndf[0],ndf[0])
+print(ndf[0],ndf2[0])
 
-nd_idxs = np.concatenate(ndf)
+for idx in ndf[0]:
+    print(u_pipes[ks[idx]]['n_operators'],u_pipes[ks[idx]]['cv_best'],end="")
+    if '202.713849' in str(u_pipes[ks[idx]]['cv_best']):
+        print("*")
+    else:
+        print("")
 
+# nd_idxs = np.concatenate(ndf)
+
+# print(nd_idxs)
 
 # for front,front_ids in enumerate(ndf):
 #     for i in front_ids:
