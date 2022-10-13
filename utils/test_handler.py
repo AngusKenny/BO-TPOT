@@ -104,10 +104,6 @@ class TestHandler(object):
         cont_conf = input("Do you want to continue executing the script? [Y/n] ")
         if cont_conf in "nN":
             sys.exit("Exiting..")
-            
-    def write_problem(self, problem):
-        with open(self.fname_prog, 'a') as f:
-            f.write(f"\n****** {problem} ******\n")
 
     def write_end(self):
         t_end = time.time()
@@ -135,7 +131,7 @@ class TestHandler(object):
             t_tpot_end = time.time()
             
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) TPOT-BASE (run {run}): {res_txt} ({round(t_tpot_end-t_tpot_start,2)}s)\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - TPOT-BASE (run {run}): {res_txt} ({round(t_tpot_end-t_tpot_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
@@ -196,7 +192,7 @@ class TestHandler(object):
                 t_bo_end = time.time()
                 
                 with open(self.fname_prog, 'a') as f:
-                    f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} (TPOT-BO-S{r_txt}): {res_txt} ({round(t_bo_end-t_bo_start,2)}s)\n")
+                    f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} (TPOT-BO-S{r_txt}): {res_txt} ({round(t_bo_end-t_bo_start,2)}s)\n")
             except:
                 trace = traceback.format_exc()
                 self.vprint.verr(f"FAILED:\n{trace}")
@@ -271,7 +267,7 @@ class TestHandler(object):
             t_tbh_end = time.time()
             
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} {self.problem} (TPOT-BO-H{r_txt} - {self.disc_txt}): {res_txt} ({round(t_tbh_end-t_tbh_start,2)}s)\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} {self.problem} (TPOT-BO-H{r_txt} - {self.disc_txt}): {res_txt} ({round(t_tbh_end-t_tbh_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
@@ -347,7 +343,7 @@ class TestHandler(object):
             t_bnd_end = time.time()
             
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} (TPOT-BO-H{r_txt}): {res_txt} ({round(t_bnd_end-t_bnd_start,2)}s)\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} (TPOT-BO-H{r_txt}): {res_txt} ({round(t_bnd_end-t_bnd_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
@@ -424,7 +420,7 @@ class TestHandler(object):
             
             t_alt_end = time.time()
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} (TPOT-BO-ALT): {res_txt} ({round(t_alt_end-t_alt_start,2)}s)\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} (TPOT-BO-ALT): {res_txt} ({round(t_alt_end-t_alt_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
@@ -481,7 +477,7 @@ class TestHandler(object):
             
             t_auto_end = time.time()
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) Run {run} (TPOT-BO-AUTO): {res_txt} ({round(t_auto_end-t_auto_start,2)}s)\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} (TPOT-BO-AUTO): {res_txt} ({round(t_auto_end-t_auto_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")

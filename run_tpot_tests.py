@@ -33,19 +33,19 @@ params = {
     'DATA_DIR' : 'Data',
     'RESULTS_DIR' : 'Results',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : [0,1,2,3,4,5,6],
+    'RUNS' : [14,15,16,17,18,19,20],
     'PROBLEMS' : [
-                 # 'quake',
+                  'quake',
 # 		'socmob',
                 #'abalone',
-                'house_16h',
+               # 'house_16h',
                 #'brazilian_houses',
     #             'diamonds',
                  # 'elevators',
     #             'black_friday'
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
-    'nJOBS' : 1,
+    'nJOBS' : 8,
     # toggle between discrete and continuous parameter spaces
     'DISCRETE_MODE' : True,
     # maximum time allowed for a single pipeline evaluation (mins)
@@ -74,7 +74,6 @@ test_handler = TestHandler(params)
 seed = params['START_SEED']
 
 for problem in test_handler.prob_list:
-    test_handler.write_problem(problem)
     test_handler.set_problem(problem)
     for run in test_handler.run_list:
         # generate TPOT data - this creates a new run directory, so we need
