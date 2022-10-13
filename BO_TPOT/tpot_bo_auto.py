@@ -37,7 +37,7 @@ class TPOT_BO_AUTO(object):
         self.discrete_mode=discrete_mode
         self.optuna_timeout_trials=optuna_timeout_trials
         self.config_dict=copy.deepcopy(config_dict)
-        self.n_jobs=-1
+        self.n_jobs=n_jobs
         self.pipe_eval_timeout=pipe_eval_timeout
         self.vprint=vprint
         
