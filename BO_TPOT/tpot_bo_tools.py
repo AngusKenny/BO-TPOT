@@ -11,6 +11,7 @@ from utils.bo_utils import (make_hp_space_cont,
                               make_hp_space_discrete, 
                               make_optuna_trial_cont,
                               make_optuna_trial_discrete)
+import time
 import numpy as np
 
 class RequiredTrialsCallback(object):
@@ -103,7 +104,7 @@ class Objective(object):
         else:
             trial_params = make_hp_space_cont(trial, param_names, self.skip_params)
         
-        self.vprint.v1(f"{u.YELLOW_U}optuna call "
+        self.vprint.v1(f"[{time.asctime()}] - {u.YELLOW_U}optuna call "
                        + f"{len(self.po.eval_scores[self.ind_idx])+1} "
                        + f"(arch size {len(self.po.tpot.evaluated_individuals_)})"
                        + f":{u.OFF}")
