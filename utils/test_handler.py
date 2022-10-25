@@ -73,6 +73,7 @@ class TestHandler(object):
         self.fname_prog = os.path.join(self.results_path,"BO_TPOT.progress")          
 
         with open(self.fname_prog, 'a') as f:
+            f.write("====================================\n\n")
             f.write(f"TIME STARTED:{time.asctime()}\n")
             f.write("USER SPECIFIED PARAMETERS:\n")
             for k,v in params.items():

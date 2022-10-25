@@ -33,15 +33,15 @@ params = {
     'DATA_DIR' : 'Data',
     'RESULTS_DIR' : 'Results',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : [7],
+    'RUNS' : [9],
     'PROBLEMS' : [
                   # 'quake',
 		#'socmob',
                 #'abalone',
                 # 'house_16h',
-                # 'brazilian_houses',
+                 'brazilian_houses',
     #             'diamonds',
-                   'elevators',
+                 #  'elevators',
     #             'black_friday'
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
