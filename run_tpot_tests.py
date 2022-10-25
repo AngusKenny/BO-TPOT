@@ -33,13 +33,13 @@ params = {
     'DATA_DIR' : 'Data',
     'RESULTS_DIR' : 'Results',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : [19,20],
+    'RUNS' : [15,16,17,18,19,20],
     'PROBLEMS' : [
                   # 'quake',
-		'socmob',
+		#'socmob',
                 #'abalone',
                 # 'house_16h',
-                # 'brazilian_houses',
+                 'brazilian_houses',
     #             'diamonds',
                   # 'elevators',
     #             'black_friday'
@@ -49,7 +49,7 @@ params = {
     # toggle between discrete and continuous parameter spaces
     'DISCRETE_MODE' : False,
     # maximum time allowed for a single pipeline evaluation (mins)
-    'PIPE_EVAL_TIMEOUT' : 5,
+    'PIPE_EVAL_TIMEOUT' : 1,
     #
     # TPOT data generation parameters
     #
