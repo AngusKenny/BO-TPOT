@@ -284,7 +284,7 @@ class TestHandler(object):
         # write final results to prog file
         with open(fname_bo_prog, 'w') as f:
             # update progress file for validation
-            f.write(f"TPOT-BO-ND{r_txt} - {res_txt}\n")
+            f.write(f"TPOT-BO-H{r_txt} - {res_txt}\n")
             f.write(f"TIME:{time.asctime()}\n")
             f.write(f"SEED:{tbh.seed}\n")
             f.write(f"TOTAL TPOT GENS:{self.params['nTOTAL_GENS']}\n")
