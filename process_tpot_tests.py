@@ -26,19 +26,19 @@ SAVE_PLOTS:     Save generated plots to file in ./<RESULTS_DIR>/Plots/
 params = {
     'RESULTS_DIR'       : 'Results',
     'PROBLEMS'          : [
-                            'quake',
+                            # 'quake',
                             # 'abalone',
                             # 'socmob',
                             # 'brazilian_houses',
                             # 'house_16h',
-                            # 'elevators'
+                            'elevators'
                           ],
     'RUN_LIST'          : [],
-    'SAVE_PLOTS'        : True,
-    'SAVE_STATS'        : True,
-    'PLOT_TPOT-BO-Sr'   : True,
+    'SAVE_PLOTS'        : False,
+    'SAVE_STATS'        : False,
+    'PLOT_TPOT-BO-Sr'   : False,
     'PLOT_TPOT-BO-ALT'  : True,
-    'PLOT_TPOT-BO-AUTO' : True,
+    'PLOT_TPOT-BO-AUTO' : False,
     'DISCRETE_MODE'     : False,
     'SKIP_PLOT_INIT'    : 200
     }
