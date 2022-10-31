@@ -311,7 +311,6 @@ class TestHandler(object):
             
     def run_TPOT_BO_Hs(self, init_pipes):
         run = self.run_path.split("_")[-1]
-        init_tbh_pipes = u.truncate_pop(copy.deepcopy(init_pipes), self.params['STOP_GEN'])
         tbh_dir = "TPOT-BO-H"
         tbh_path = os.path.join(self.run_path,tbh_dir)
         tbhd_path = os.path.join(tbh_path,"discrete")
@@ -325,8 +324,6 @@ class TestHandler(object):
         
         if not os.path.exists(tbhs_path):
             os.makedirs(tbhs_path)
-        
-        
         
         n_bo_evals = ((self.params['nTOTAL_GENS']-self.params['STOP_GEN']) * self.params['POP_SIZE'] - n_tbh_pipes)
         
@@ -359,8 +356,15 @@ class TestHandler(object):
                 
         fname_bo_prog = os.path.join(tbhs_path,f'TPOT-BO-Hs.progress')
         
-        best_bo_pipe,best_bo_cv = u.get_best(tbhs.pipes)
-        best_init_pipe, best_init_cv = u.get_best(init_tbh_pipes)
+        # best_bo_pipe,best_bo_cv = u.get_best(tbhs.pipes)
+        # best_init_pipe, best_init_cv = u.get_best(init_tbh_pipes)
+        
+        best_tpot_pipe, best_tpot_cv = u.get_best(tbhs.pipes, source='TPOT-BASE')
+        best_tbh_pipe, best_tbh_cv = u.get_best(tbhs.pipes, source='TPOT-BO-H')
+        best_tbhs_pipe, best_tbhs_cv = u.get_best(tbhs.pipes, source='TPOT-BO-Hs')
+        
+        if best_tbh_cv > best_tbhs_cv:
+            best_tbhs_pipe, best_tbhs_cv = best_tbh_pipe, best_tbh_cv
         
         # write final results to prog file
         with open(fname_bo_prog, 'w') as f:
@@ -378,15 +382,20 @@ class TestHandler(object):
             f.write("\n")
             f.write(f"***** AFTER {self.params['STOP_GEN']} INITIAL TPOT " 
                     + "GENERATIONS *****\n")
-            f.write(f"Best CV:{best_init_cv}\n")
+            f.write(f"Best CV:{best_tpot_cv}\n")
             f.write("Best pipeline:\n")
-            f.write(f"{best_init_pipe}\n")
+            f.write(f"{best_tpot_pipe}\n")
             f.write("\n")
-            f.write(f"\n***** AFTER {n_bo_evals} BAYESIAN OPTIMISATION *****\n")
-            f.write(f"Time elapsed:{round(t_tbhs_end-t_tbhs_start,2)}\n")
-            f.write(f"Best CV:{best_bo_cv}\n")
+            f.write(f"\n***** AFTER INITIAL {n_tbh_pipes} DISCRETE TPOT-BO-H EVALS *****\n")
+            f.write(f"Best CV:{best_tbh_cv}\n")
             f.write("Best pipeline:\n")
-            f.write(f"{best_bo_pipe}\n")
+            f.write(f"{best_tbh_pipe}\n")
+            f.write("\n")
+            f.write(f"\n***** AFTER FINAL {n_bo_evals} CONTINUOUS TPOT-BO-Hs EVALS *****\n")
+            f.write(f"Time elapsed:{round(t_tbhs_end-t_tbhs_start,2)}\n")
+            f.write(f"Best CV:{best_tbhs_cv}\n")
+            f.write("Best pipeline:\n")
+            f.write(f"{best_tbhs_pipe}\n")
     
     
     def run_TPOT_BO_ND(self, init_pipes, restricted_hps=False):

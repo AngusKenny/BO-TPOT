@@ -429,7 +429,7 @@ def get_best(pipes, source=None, size=None):
         best_cv = -1e20
         for k,v in pipes.items():
             if not source is None:
-                if v['internal_cv_score'] > best_cv and source in v['source']:
+                if v['internal_cv_score'] > best_cv and f"{source}(" in v['source']:
                     best_pipe = k
                     best_cv = v['internal_cv_score']
             elif v['internal_cv_score'] > best_cv:

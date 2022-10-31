@@ -392,15 +392,18 @@ class TPOT_BO_Hs(object):
                 
         
         t_end = time.time()
-        
+                
         best_tpot_pipe, best_tpot_cv = u.get_best(self.pipes, source='TPOT-BASE')
-        best_bo_pipe, best_bo_cv = u.get_best(self.pipes, source='TPOT-BO-Hs')
+        best_tbh_pipe, best_tbh_cv = u.get_best(self.pipes, source='TPOT-BO-H')
+        best_tbhs_pipe, best_tbhs_cv = u.get_best(self.pipes, source='TPOT-BO-Hs')
         
         self.vprint.v1(f"\n{u.YELLOW}* best pipe found by tpot:{u.OFF}")
         self.vprint.v1(f"{best_tpot_pipe}")
         self.vprint.v1(f"{u.GREEN} * score:{u.OFF} {best_tpot_cv}")
+        self.vprint.v1(f"\n{u.YELLOW}best pipe found by BO-H:{u.OFF}")
+        self.vprint.v1(f"{best_tbh_pipe}\n{u.GREEN} * score:{u.OFF} {best_tbh_cv}")
         self.vprint.v1(f"\n{u.YELLOW}best pipe found by BO-Hs:{u.OFF}")
-        self.vprint.v1(f"{best_bo_pipe}\n{u.GREEN} * score:{u.OFF} {best_bo_cv}")
+        self.vprint.v1(f"{best_tbhs_pipe}\n{u.GREEN} * score:{u.OFF} {best_tbhs_cv}")
         self.vprint.v1(f"\nTotal time elapsed: {round(t_end-t_start,2)} sec\n")
         
         # # if out_path exists then write pipes to file
