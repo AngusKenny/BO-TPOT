@@ -24,24 +24,25 @@ params = {
     'CLEAN_DATA': False,
     'RUN_TPOT-BASE' : False,
     'RUN_TPOT-BO-S' : False,
-    'RUN_TPOT-BO-H' : True,
+    'RUN_TPOT-BO-H' : False,
+    'RUN_TPOT-BO-Hs' : True,
     'RUN_TPOT-BO-ND' : False,
     'RUN_TPOT-BO-Sr' : False,
     'RUN_TPOT-BO-ALT' : False,
     'RUN_TPOT-BO-AUTO' : False,
     'VERBOSITY' : 2,
     'DATA_DIR' : 'Data',
-    'RESULTS_DIR' : 'Results',
+    'RESULTS_DIR' : 'Results_test',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : [9],
+    'RUNS' : [0],
     'PROBLEMS' : [
-                  # 'quake',
+                   'quake',
 		#'socmob',
                 #'abalone',
-                # 'house_16h',
-                 'brazilian_houses',
+                  # 'house_16h',
+                # 'brazilian_houses',
     #             'diamonds',
-                 #  'elevators',
+                   # 'elevators',
     #             'black_friday'
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
@@ -98,6 +99,10 @@ for problem in test_handler.prob_list:
         # run BO optimiser
         if params['RUN_TPOT-BO-H']:
             test_handler.run_TPOT_BO_H(tpot_data, restricted_hps=False)
+        
+        # run BO optimiser
+        if params['RUN_TPOT-BO-Hs']:
+            test_handler.run_TPOT_BO_Hs(tpot_data)
         
         # run BO optimiser
         if params['RUN_TPOT-BO-ND']:

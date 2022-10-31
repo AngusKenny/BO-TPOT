@@ -79,6 +79,7 @@ class Objective(object):
         self.X = X
         self.y = y
         self.skip_params = skip_params
+        self.n_evals = n_evals
     
     def __call__(self, trial):
         ''' Evaluation call for optuna optimisation
@@ -106,7 +107,7 @@ class Objective(object):
         
         self.vprint.v1(f"[{time.asctime()}] - {u.YELLOW_U}optuna call "
                        + f"{len(self.po.eval_scores[self.ind_idx])+1} "
-                       + f"(arch size {len(self.po.tpot.evaluated_individuals_)})"
+                       + f"(arch size {len(self.po.tpot.evaluated_individuals_)} of {self.n_evals})"
                        + f":{u.OFF}")
         
         self.vprint.v2(f"params: {trial_params}")

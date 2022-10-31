@@ -16,7 +16,7 @@ from shutil import rmtree
 from BO_TPOT.tpot_base import TPOT_Base
 from BO_TPOT.tpot_bo_s import TPOT_BO_S
 from BO_TPOT.tpot_bo_nd import TPOT_BO_ND
-from BO_TPOT.tpot_bo_h import TPOT_BO_H
+from BO_TPOT.tpot_bo_h import TPOT_BO_H, TPOT_BO_Hs
 from BO_TPOT.tpot_bo_alt import TPOT_BO_ALT
 from BO_TPOT.tpot_bo_auto import TPOT_BO_AUTO
 from config.tpot_config import default_tpot_config_dict
@@ -304,6 +304,86 @@ class TestHandler(object):
             f.write("\n")
             f.write(f"\n***** AFTER {n_bo_evals} BAYESIAN OPTIMISATION *****\n")
             f.write(f"Time elapsed:{round(t_tbh_end-t_tbh_start,2)}\n")
+            f.write(f"Best CV:{best_bo_cv}\n")
+            f.write("Best pipeline:\n")
+            f.write(f"{best_bo_pipe}\n")
+            
+            
+    def run_TPOT_BO_Hs(self, init_pipes):
+        run = self.run_path.split("_")[-1]
+        init_tbh_pipes = u.truncate_pop(copy.deepcopy(init_pipes), self.params['STOP_GEN'])
+        tbh_dir = "TPOT-BO-H"
+        tbh_path = os.path.join(self.run_path,tbh_dir)
+        tbhd_path = os.path.join(tbh_path,"discrete")
+        tbhd_pipes = os.path.join(tbhd_path,"TPOT-BO-H.pipes")
+        tbhs_path = os.path.join(tbh_path,"sequential")
+        
+        # load previous pipes
+        init_tbh_pipes = u.load_bhs_pipes(tbhd_pipes)
+        
+        n_tbh_pipes = len([k for k,v in init_tbh_pipes.items() if 'TPOT-BO-H' in v['source']])
+        
+        if not os.path.exists(tbhs_path):
+            os.makedirs(tbhs_path)
+        
+        
+        
+        n_bo_evals = ((self.params['nTOTAL_GENS']-self.params['STOP_GEN']) * self.params['POP_SIZE'] - n_tbh_pipes)
+        
+        
+        try:
+            t_tbhs_start = time.time()
+            self.vprint.v1(f"{u.CYAN_U}****** Running TPOT-BO-Hs - {self.disc_txt} (run {run}) for problem '{self.problem}' ******{u.OFF}\n")
+            # run BO on generated TPOT data
+            tbhs = TPOT_BO_Hs(init_tbh_pipes,
+                            seed=self.seed,
+                            pop_size=self.params['POP_SIZE'],
+                            n_bo_evals=n_bo_evals,
+                            optuna_timeout_trials=self.params['OPTUNA_TIMEOUT_TRIALS'],
+                            config_dict=self.params['TPOT_CONFIG_DICT'],
+                            pipe_eval_timeout=self.params['PIPE_EVAL_TIMEOUT'],
+                            vprint=self.vprint)
+            
+            res_txt = tbhs.optimize(self.X_train, self.y_train, out_path=tbhs_path)
+                
+            t_tbhs_end = time.time()
+            
+            with open(self.fname_prog, 'a') as f:
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} {self.problem} (TPOT-BO-Hs - sequential): {res_txt} ({round(t_tbhs_end-t_tbhs_start,2)}s)\n")
+        except:
+            trace = traceback.format_exc()
+            self.vprint.verr(f"FAILED:\n{trace}")
+            with open(self.fname_prog, 'a') as f:
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - Run {run} {self.problem} (TPOT-BO-Hs - sequential): Failed..\n{trace}\n\n")
+            return
+                
+        fname_bo_prog = os.path.join(tbhs_path,f'TPOT-BO-Hs.progress')
+        
+        best_bo_pipe,best_bo_cv = u.get_best(tbhs.pipes)
+        best_init_pipe, best_init_cv = u.get_best(init_tbh_pipes)
+        
+        # write final results to prog file
+        with open(fname_bo_prog, 'w') as f:
+            # update progress file for validation
+            f.write("TPOT-BO-Hs\n")
+            f.write(f"TIME:{time.asctime()}\n")
+            f.write(f"SEED:{tbhs.seed}\n")
+            f.write(f"TOTAL TPOT GENS:{self.params['nTOTAL_GENS']}\n")
+            f.write(f"TPOT STOP GEN:{self.params['STOP_GEN']}\n")
+            f.write(f"BAYESIAN OPTIMISATION EVALS:{n_bo_evals}\n")
+            f.write(f"DISCRETE_MODE:sequential\n")
+            # f.write(f"BO_PARAMS:{tbh.n_params}\n")
+            # f.write(f"FROZEN:{tbh.n_freeze}\n")
+            
+            f.write("\n")
+            f.write(f"***** AFTER {self.params['STOP_GEN']} INITIAL TPOT " 
+                    + "GENERATIONS *****\n")
+            f.write(f"Best CV:{best_init_cv}\n")
+            f.write("Best pipeline:\n")
+            f.write(f"{best_init_pipe}\n")
+            f.write("\n")
+            f.write(f"\n***** AFTER {n_bo_evals} BAYESIAN OPTIMISATION *****\n")
+            f.write(f"Time elapsed:{round(t_tbhs_end-t_tbhs_start,2)}\n")
             f.write(f"Best CV:{best_bo_cv}\n")
             f.write("Best pipeline:\n")
             f.write(f"{best_bo_pipe}\n")

@@ -24,10 +24,10 @@ SAVE_PLOTS:     Save generated plots to file in ./<RESULTS_DIR>/Plots/
 params = {
     'RESULTS_DIR'       : 'Results',
     'PROBLEMS'          : [
-                            'quake',
+                            # 'abalone',
                             # 'socmob',
-                            'abalone',
-                            # 'brazilian_houses',
+                            # 'abalone',
+                            'brazilian_houses',
                             # 'house_16h',
                             # 'elevators'
                           ],

@@ -241,6 +241,28 @@ def load_unique_pop(fname_pipes, stop_gen=np.inf, config_dict=None):
     return unique_pipes
 
 
+def load_bhs_pipes(fname_pipes, cutoff_pop=1):
+    pop = {}
+    
+    with open(fname_pipes, 'r') as f:
+        for line in f:
+            line_s = line.split(';')
+            pipe = line_s[0]
+            gen = int(line_s[1])
+            n_bo_pop = int(line_s[2])
+            source = line_s[3]
+            cv = float(line_s[4])
+            op_count = len(string_to_ops(pipe))
+            if n_bo_pop > cutoff_pop:
+                pop[pipe] = {'internal_cv_score':cv,
+                             'operator_count':op_count,
+                             'generation':gen,
+                             'source':source,
+                             'n_bo_pop':n_bo_pop}
+                        
+    return pop
+
+
 def truncate_pop(pipes, stop_gen):
     sub_pop = {}
     for k,v in pipes.items():

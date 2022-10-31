@@ -18,17 +18,20 @@ import matplotlib.pyplot as plt
 import matplotlib.colors
 from matplotlib.lines import Line2D
 
-RESULTS_PATH = 'Results (copy)'
-PROBLEM = 'house_16h'
+RESULTS_PATH = 'Results'
+PROBLEM = 'brazilian_houses'
 DISCRETE_MODE = False
-RUNS = [9]
+DISCRETE_MODE = True
+RUNS = [12]
 PRINT_COL = 20
+SAVE_PLOTS = True
 SAVE_PLOTS = False
-WIN_TOL = 1e-6
+WIN_TOL = 1e-8
 ANIMATE = False
 SHOW_TITLE = False
-# YLIM = [4.195,4.273]
 YLIM = None
+# YLIM = [40.76,40.818]
+# LEGEND_POS = 'lower right'
 
 disc_txt = "discrete" if DISCRETE_MODE else "continuous"
 
@@ -160,7 +163,6 @@ data['init TPOT'] = [v['init TPOT'] for k,v in raw_data.items()]
 data['TPOT-BASE'] = [v['TPOT-BASE'] for k,v in raw_data.items()]
 data['TPOT-BO-S'] = [v['TPOT-BO-S'] for k,v in raw_data.items()]
 data['TPOT-BO-H'] = [v['TPOT-BO-H'] for k,v in raw_data.items()]
-
 
 stats = {'best':{},'worst':{},'median':{},'mean':{},'std dev':{}}
 
