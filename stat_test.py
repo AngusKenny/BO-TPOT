@@ -24,17 +24,17 @@ SAVE_PLOTS:     Save generated plots to file in ./<RESULTS_DIR>/Plots/
 params = {
     'RESULTS_DIR'       : 'Results',
     'PROBLEMS'          : [
-                            # 'abalone',
-                            # 'socmob',
-                            # 'abalone',
-                            'brazilian_houses',
+                            'quake',
+                            'socmob',
+                            'abalone',
+                            # 'brazilian_houses',
                             # 'house_16h',
                             # 'elevators'
                           ],
     'METHODS'           : ['TPOT-BO-H'],
     'RUN_LIST'          : [],
     'SAVE_STATS'        : False,
-    'MODE'              : ['discrete','continuous'],
+    'MODE'              : ['discrete','continuous','sequential'],
     # 'MODE'              : ['discrete'],
     # 'MODE'              : ['continuous'],
     'THRESHOLD'         : 1e-8

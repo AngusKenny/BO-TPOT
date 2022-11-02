@@ -19,10 +19,10 @@ import matplotlib.colors
 from matplotlib.lines import Line2D
 
 RESULTS_PATH = 'Results'
-PROBLEM = 'brazilian_houses'
+PROBLEM = 'elevators'
 DISCRETE_MODE = False
 DISCRETE_MODE = True
-RUNS = [12]
+RUNS = range(21)
 PRINT_COL = 20
 SAVE_PLOTS = True
 SAVE_PLOTS = False
