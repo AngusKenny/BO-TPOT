@@ -24,20 +24,20 @@ SAVE_PLOTS:     Save generated plots to file in ./<RESULTS_DIR>/Plots/
 params = {
     'RESULTS_DIR'       : 'Results',
     'PROBLEMS'          : [
-                            'quake',
-                            'socmob',
-                            'abalone',
+                            # 'quake',
+                            # 'socmob',
+                            # 'abalone',
                             # 'brazilian_houses',
                             # 'house_16h',
-                            # 'elevators'
+                            'elevators'
                           ],
     'METHODS'           : ['TPOT-BO-H'],
     'RUN_LIST'          : [],
     'SAVE_STATS'        : False,
-    'MODE'              : ['discrete','continuous','sequential'],
+    'MODE'              : ['discrete','continuous'],
     # 'MODE'              : ['discrete'],
     # 'MODE'              : ['continuous'],
-    'THRESHOLD'         : 1e-8
+    'THRESHOLD'         : 1e-14
     }
 
 cwd = os.getcwd()

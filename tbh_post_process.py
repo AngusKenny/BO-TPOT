@@ -21,16 +21,16 @@ from matplotlib.lines import Line2D
 RESULTS_PATH = 'Results'
 PROBLEM = 'elevators'
 DISCRETE_MODE = False
-DISCRETE_MODE = True
-RUNS = range(21)
+# DISCRETE_MODE = True
+RUNS = [16]
 PRINT_COL = 20
 SAVE_PLOTS = True
 SAVE_PLOTS = False
-WIN_TOL = 1e-8
+WIN_TOL = 1e-14
 ANIMATE = False
 SHOW_TITLE = False
 YLIM = None
-# YLIM = [40.76,40.818]
+YLIM = [3.54e-6,3.685e-6]
 # LEGEND_POS = 'lower right'
 
 disc_txt = "discrete" if DISCRETE_MODE else "continuous"

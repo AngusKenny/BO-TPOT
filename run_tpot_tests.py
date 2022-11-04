@@ -32,11 +32,11 @@ params = {
     'RUN_TPOT-BO-AUTO' : False,
     'VERBOSITY' : 2,               
     'DATA_DIR' : 'Data',
-    'RESULTS_DIR' : 'Results',
+    'RESULTS_DIR' : 'Results_test',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : [0,1,2,3,4],
+    'RUNS' : [1],
     'PROBLEMS' : [
-                   #'quake',
+                   'quake',
 		#'socmob',
                 #'abalone',
                   # 'house_16h',

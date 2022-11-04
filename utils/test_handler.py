@@ -363,6 +363,9 @@ class TestHandler(object):
         best_tbh_pipe, best_tbh_cv = u.get_best(tbhs.pipes, source='TPOT-BO-H')
         best_tbhs_pipe, best_tbhs_cv = u.get_best(tbhs.pipes, source='TPOT-BO-Hs')
         
+        if best_tpot_cv > best_tbh_cv:
+            best_tbh_pipe, best_tbh_cv = best_tpot_pipe, best_tpot_cv
+        
         if best_tbh_cv > best_tbhs_cv:
             best_tbhs_pipe, best_tbhs_cv = best_tbh_pipe, best_tbh_cv
         
