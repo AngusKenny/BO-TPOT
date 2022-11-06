@@ -19,7 +19,7 @@ import matplotlib.colors
 from matplotlib.lines import Line2D
 
 RESULTS_PATH = 'Results'
-PROBLEM = 'quake'
+PROBLEM = 'elevators'
 MODES = ['discrete','continuous']
 WTL = ['TPOT-BASE','TPOT-BO-S','TPOT-BO-H']
 RUNS = range(21)

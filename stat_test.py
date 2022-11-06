@@ -11,7 +11,7 @@ import sys
 import utils.tpot_utils as u
 import numpy as np
 import time
-PRINT_COL = 20
+PRINT_COL = 10
 '''
 ***** Parameter constants *****
 PROBLEM:        String with problem name defined by its filename, and also
@@ -24,20 +24,20 @@ SAVE_PLOTS:     Save generated plots to file in ./<RESULTS_DIR>/Plots/
 params = {
     'RESULTS_DIR'       : 'Results',
     'PROBLEMS'          : [
-                            # 'quake',
-                            # 'socmob',
-                            # 'abalone',
-                            # 'brazilian_houses',
-                            # 'house_16h',
+                            'quake',
+                            'socmob',
+                            'abalone',
+                            'brazilian_houses',
+                            'house_16h',
                             'elevators'
                           ],
-    'METHODS'           : ['TPOT-BO-H'],
+    'METHODS'           : ['TPOT-BASE','TPOT-BO-H'],
     'RUN_LIST'          : [],
     'SAVE_STATS'        : False,
     'MODE'              : ['discrete','continuous'],
     # 'MODE'              : ['discrete'],
     # 'MODE'              : ['continuous'],
-    'THRESHOLD'         : 1e-14
+    'THRESHOLD_DEG'     : 6
     }
 
 cwd = os.getcwd()
@@ -57,7 +57,7 @@ stats = {}
  
 data = {}
 
-results = {mode: {problem: {method: {'win':0, 'loss':0, 'draw':0} for method in params['METHODS']} for problem in prob_list} for mode in params['MODE']} 
+results = {mode: {problem: {method: {'win':0, 'draw':0, 'loss':0} for method in params['METHODS']} for problem in prob_list} for mode in params['MODE']} 
 
 for mode in params['MODE']:
     
@@ -154,12 +154,13 @@ for mode in params['MODE']:
                         
                 if method not in data[mode][problem][run]:
                     print(f"{u.RED}Data read error:{u.OFF} {files[method]} does not contain valid data for {method} for run {run}")
-    
+        
         for method in params['METHODS']:
             for run in data[mode][problem]:
-                if data[mode][problem][run]['TPOT-BASE'] - data[mode][problem][run][method] > params['THRESHOLD']:
+                threshold = np.power(10, np.floor(np.log10(data[mode][problem][run]['TPOT-BASE']))-params['THRESHOLD_DEG'])
+                if data[mode][problem][run]['TPOT-BASE'] - data[mode][problem][run][method] > threshold:
                     results[mode][problem][method]['win'] = results[mode][problem][method]['win'] + 1
-                elif (data[mode][problem][run][method] - data[mode][problem][run]['TPOT-BASE']) > params['THRESHOLD']:
+                elif (data[mode][problem][run][method] - data[mode][problem][run]['TPOT-BASE']) > threshold:
                     results[mode][problem][method]['loss'] = results[mode][problem][method]['loss'] + 1
                 else:
                     results[mode][problem][method]['draw'] = results[mode][problem][method]['draw'] + 1

@@ -400,7 +400,7 @@ class TPOT_BO_Hs(object):
         self.vprint.v1(f"\n{u.YELLOW}* best pipe found by tpot:{u.OFF}")
         self.vprint.v1(f"{best_tpot_pipe}")
         self.vprint.v1(f"{u.GREEN} * score:{u.OFF} {best_tpot_cv}")
-        self.vprint.v1(f"\n{u.YELLOW}best pipe found by BO-H:{u.OFF}")
+        self.vprint.v1(f"\n{u.YELLOW}best pipe found by BO-Hd at {2000-self.n_bo_evals} evals:{u.OFF}")
         self.vprint.v1(f"{best_tbh_pipe}\n{u.GREEN} * score:{u.OFF} {best_tbh_cv}")
         self.vprint.v1(f"\n{u.YELLOW}best pipe found by BO-Hs:{u.OFF}")
         self.vprint.v1(f"{best_tbhs_pipe}\n{u.GREEN} * score:{u.OFF} {best_tbhs_cv}")
