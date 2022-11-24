@@ -17,7 +17,6 @@ proportional to number of structures?
 
 """
 
-from config.tpot_config import default_tpot_config_dict
 from tpot import TPOTRegressor
 import utils.tpot_utils as u
 import copy
