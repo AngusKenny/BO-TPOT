@@ -23,9 +23,10 @@ params = {
     # (will ask for confirmation)
     'CLEAN_DATA': False,
     'RUN_TPOT-BASE' : False,
+    'RUN_dTPOT-BASE': True,
     'RUN_TPOT-BO-S' : False,
     'RUN_TPOT-BO-H' : False,
-    'RUN_TPOT-BO-Hs' : True,
+    'RUN_TPOT-BO-Hs' : False,
     'RUN_TPOT-BO-ND' : False,
     'RUN_TPOT-BO-Sr' : False,
     'RUN_TPOT-BO-ALT' : False,
@@ -34,7 +35,7 @@ params = {
     'DATA_DIR' : 'Data',
     'RESULTS_DIR' : 'Results_test',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : [1],
+    'RUNS' : 5,
     'PROBLEMS' : [
                    'quake',
 		#'socmob',
@@ -48,9 +49,9 @@ params = {
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
     'nJOBS' : 8,
     # toggle between discrete and continuous parameter spaces
-    'DISCRETE_MODE' : False,
+    'DISCRETE_MODE' : True,
     # maximum time allowed for a single pipeline evaluation (mins)
-    'PIPE_EVAL_TIMEOUT' : 1,
+    'PIPE_EVAL_TIMEOUT' : 5,
     #
     # TPOT data generation parameters
     #
@@ -84,6 +85,13 @@ for problem in test_handler.prob_list:
             tpot_data = test_handler.run_TPOT_BASE()
             if tpot_data is None:
                 test_handler.vprint.verr("TPOT data not generated, skipping run..\n\n")
+                test_handler.update_seed()
+                continue
+        elif params['RUN_dTPOT-BASE']:
+            test_handler.set_run()
+            tpot_data = test_handler.run_dTPOT_BASE()
+            if tpot_data is None:
+                test_handler.vprint.verr("dTPOT data not generated, skipping run..\n\n")
                 test_handler.update_seed()
                 continue
         else:

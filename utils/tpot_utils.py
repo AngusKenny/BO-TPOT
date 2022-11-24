@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 # import pygmo as pg
 import copy
+import re
 
 ''' Escape codes for printing coloured text
 '''
@@ -131,19 +132,41 @@ def update_group(group):
     group['internal_cv_score'] = np.max(group_cvs)
     group['cv_worst'] = np.min(group_cvs)
     group['cv_sigma'] = np.std(group_cvs)
-    group['n_root'] = np.power(len(group['matching']),1/len(group['bo_params']))
+    # group['n_root'] = np.power(len(group['matching']),1/len(group['bo_params']))
     
     return group
+
+def make_new_group(pipe, vals, config_dict=None):
+    new_group = {
+        'best_pipe' : pipe,
+        'cv_mu' : vals['internal_cv_score'],
+        'cv_sigma' : 0,
+        'cv_best' : vals['internal_cv_score'],
+        'internal_cv_score' : vals['internal_cv_score'],
+        'cv_worst' :vals['internal_cv_score'],
+        'matching' : {pipe: copy.deepcopy(vals)},
+        'params' : string_to_params(pipe),
+        'operators' : string_to_ops(pipe),
+        'n_operators' : len(string_to_ops(pipe)),
+        'structure' : string_to_structure(pipe),
+        'bo_params' : string_to_params(pipe,config_dict=config_dict),
+        'n_bo_params' : len(string_to_params(pipe,config_dict=config_dict))
+        }
+    return new_group
 
 def get_unique_groups(pipes, stop_gen=np.inf, config_dict=None):
     strucs = {}
     
     for k,v in pipes.items():
-        struc = string_to_structure(k)
-        struc_str = str(struc)
+        # struc = string_to_structure(k)
+        # struc_str = str(struc)
+        
+        struc_str = string_to_bracket(k)
 
+        v['group'] = struc_str
+        
         # skip invalid or past stop_gen
-        if v['generation'] > stop_gen or v['internal_cv_score'] == -np.inf or len(string_to_params(k,config_dict=config_dict)) == 0:
+        if v['generation'] > stop_gen:# or v['internal_cv_score'] == -np.inf or len(string_to_params(k,config_dict=config_dict)) == 0:
             continue
         
         if struc_str in strucs:
@@ -166,6 +189,7 @@ def get_unique_groups(pipes, stop_gen=np.inf, config_dict=None):
         best_pipe = v['matching_keys'][best_idx]
         unique_groups[s]['best_pipe'] = best_pipe
         unique_groups[s]['cv_mu'] = np.mean(v['matching_cv'])
+        # unique_groups[s]['bracket'] = string_to_bracket(best_pipe)
         unique_groups[s]['cv_sigma'] = np.std(v['matching_cv'])
         unique_groups[s]['cv_best'] = np.max(v['matching_cv'])
         unique_groups[s]['internal_cv_score'] = np.max(v['matching_cv'])
@@ -173,11 +197,11 @@ def get_unique_groups(pipes, stop_gen=np.inf, config_dict=None):
         unique_groups[s]['matching'] = copy.deepcopy(v['matching_pipes'])
         unique_groups[s]['params'] = string_to_params(best_pipe)
         unique_groups[s]['operators'] = string_to_ops(best_pipe)
-        unique_groups[s]['n_operators'] = len(string_to_ops(best_pipe))
+        unique_groups[s]['n_operators'] = len(string_to_ops(best_pipe)) 
         unique_groups[s]['structure'] = string_to_structure(best_pipe)
         unique_groups[s]['bo_params'] = string_to_params(best_pipe,config_dict=config_dict)
         unique_groups[s]['n_bo_params'] = len(unique_groups[s]['bo_params'])
-        unique_groups[s]['n_root'] = np.power(len(unique_groups[s]['matching']),1/len(unique_groups[s]['bo_params']))
+        # unique_groups[s]['n_root'] = np.power(len(unique_groups[s]['matching']),1/len(unique_groups[s]['bo_params']))
     
     return unique_groups
 
@@ -191,10 +215,71 @@ def load_unique_pop(fname_pipes, stop_gen=np.inf, config_dict=None):
             line_s = line.split(';')
             pipe_str = line_s[0]
             gen = int(line_s[1])
-            cv = float(line_s[2])
+            cv = float(line_s[-1])
             op_count = len(string_to_ops(pipe_str))
-            struc = string_to_structure(pipe_str)
-            struc_str = str(struc)
+            # struc = string_to_structure(pipe_str)
+            # struc_str = str(struc)
+            
+            struc_str = string_to_bracket(pipe_str)
+            
+            # skip invalid or past stop_gen
+            if gen > stop_gen or cv == -np.inf:
+                continue
+            
+            if cv > total_best_cv:
+                total_best_cv = cv
+                total_best_pipe = pipe_str
+            
+            if struc_str in strucs:
+                strucs[struc_str]['matching_pipes'][pipe_str] = {'internal_cv_score':cv,
+                                                                 'operator_count':op_count,
+                                                                 'generation':gen}
+                strucs[struc_str]['matching_cv'].append(cv)
+                strucs[struc_str]['matching_keys'].append(pipe_str)
+            else:            
+                strucs[struc_str] = {'matching_pipes': 
+                                    {pipe_str: {'internal_cv_score':cv,
+                                                'operator_count':op_count,
+                                                'generation':gen}},
+                                    'matching_cv': [cv],
+                                    'matching_keys': [pipe_str]}
+
+    unique_pipes = {}
+    for s,v in strucs.items():
+        best_idx = np.argmax(v['matching_cv'])
+        best_pipe = v['matching_keys'][best_idx]
+        unique_pipes[s] = v['matching_pipes'][best_pipe]
+        unique_pipes[s]['selected?'] = True if best_pipe == total_best_pipe else False
+        # unique_pipes[best_pipe]['bracket'] = string_to_bracket(best_pipe)
+        unique_pipes[s]['cv_mu'] = np.mean(v['matching_cv'])
+        unique_pipes[s]['cv_sigma'] = np.std(v['matching_cv'])
+        unique_pipes[s]['cv_best'] = np.max(v['matching_cv'])
+        unique_pipes[s]['internal_cv_score'] = np.max(v['matching_cv'])
+        unique_pipes[s]['cv_worst'] = np.min(v['matching_cv'])
+        unique_pipes[s]['matching'] = v['matching_pipes']
+        unique_pipes[s]['params'] = string_to_params(best_pipe)
+        unique_pipes[s]['operators'] = string_to_ops(best_pipe)
+        unique_pipes[s]['n_operators'] = len(string_to_ops(best_pipe))
+        unique_pipes[s]['bo_params'] = string_to_params(best_pipe,config_dict=config_dict)
+    
+    return unique_pipes
+
+def load_unique_auto_pop(fname_pipes, stop_gen=np.inf, config_dict=None):
+    '''havent done anything with type string but probably fix that up when its standardised'''
+    strucs = {}
+    total_best_pipe = None
+    total_best_cv = -np.inf
+    with open(fname_pipes, 'r') as f:
+        for line in f:
+            line_s = line.split(';')
+            pipe_str = line_s[0]
+            gen = int(line_s[1])
+            cv = float(line_s[-2])
+            op_count = len(string_to_ops(pipe_str))
+            # struc = string_to_structure(pipe_str)
+            # struc_str = str(struc)
+            
+            struc_str = string_to_bracket(pipe_str)
             
             # skip invalid or past stop_gen
             if gen > stop_gen or cv == -np.inf:
@@ -225,18 +310,19 @@ def load_unique_pop(fname_pipes, stop_gen=np.inf, config_dict=None):
     for s,v in strucs.items():
         best_idx = np.argmax(v['matching_cv'])
         best_pipe = v['matching_keys'][best_idx]
-        unique_pipes[best_pipe] = v['matching_pipes'][best_pipe]
-        unique_pipes[best_pipe]['selected?'] = True if best_pipe == total_best_pipe else False
-        unique_pipes[best_pipe]['cv_mu'] = np.mean(v['matching_cv'])
-        unique_pipes[best_pipe]['cv_sigma'] = np.std(v['matching_cv'])
-        unique_pipes[best_pipe]['cv_best'] = np.max(v['matching_cv'])
-        unique_pipes[best_pipe]['internal_cv_score'] = np.max(v['matching_cv'])
-        unique_pipes[best_pipe]['cv_worst'] = np.min(v['matching_cv'])
-        unique_pipes[best_pipe]['matching'] = v['matching_pipes']
-        unique_pipes[best_pipe]['params'] = string_to_params(best_pipe)
-        unique_pipes[best_pipe]['operators'] = string_to_ops(best_pipe)
-        unique_pipes[best_pipe]['n_operators'] = len(string_to_ops(best_pipe))
-        unique_pipes[best_pipe]['bo_params'] = string_to_params(best_pipe,config_dict=config_dict)
+        unique_pipes[s] = v['matching_pipes'][best_pipe]
+        unique_pipes[s]['selected?'] = True if best_pipe == total_best_pipe else False
+        # unique_pipes[best_pipe]['bracket'] = string_to_bracket(best_pipe)
+        unique_pipes[s]['cv_mu'] = np.mean(v['matching_cv'])
+        unique_pipes[s]['cv_sigma'] = np.std(v['matching_cv'])
+        unique_pipes[s]['cv_best'] = np.max(v['matching_cv'])
+        unique_pipes[s]['internal_cv_score'] = np.max(v['matching_cv'])
+        unique_pipes[s]['cv_worst'] = np.min(v['matching_cv'])
+        unique_pipes[s]['matching'] = v['matching_pipes']
+        unique_pipes[s]['params'] = string_to_params(best_pipe)
+        unique_pipes[s]['operators'] = string_to_ops(best_pipe)
+        unique_pipes[s]['n_operators'] = len(string_to_ops(best_pipe))
+        unique_pipes[s]['bo_params'] = string_to_params(best_pipe,config_dict=config_dict)
     
     return unique_pipes
 
@@ -280,6 +366,18 @@ def string_to_structure(pipe_str):
     ps = [v.split("=")[0] for v in ps]
     return ps
 
+def string_to_bracket(pipe_str):
+    ps = ""
+    
+    for p in pipe_str.replace("(","{").replace(")","}").split(" "):
+        if "=" not in p:
+            ps = ps + "{" + p.replace(",", "}")
+        else:
+            if "}" not in p:
+                continue
+            ps = ps + re.sub(r"[^}]", "", p)
+    
+    return ps
 
 def string_to_ops(pipe_str):
     ''' Extract operators from pipeline string

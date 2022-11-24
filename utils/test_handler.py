@@ -14,6 +14,7 @@ import traceback
 import utils.tpot_utils as u
 from shutil import rmtree
 from BO_TPOT.tpot_base import TPOT_Base
+from BO_TPOT.dtpot_base import dTPOT_Base
 from BO_TPOT.tpot_bo_s import TPOT_BO_S
 from BO_TPOT.tpot_bo_nd import TPOT_BO_ND
 from BO_TPOT.tpot_bo_h import TPOT_BO_H, TPOT_BO_Hs
@@ -27,7 +28,7 @@ class TestHandler(object):
         
         self.t_start = time.time()
         
-        if params['RUN_TPOT-BASE'] and type(params['RUNS']) is not int:
+        if (params['RUN_TPOT-BASE'] or params['RUN_dTPOT-BASE']) and type(params['RUNS']) is not int:
             sys.exit('Cannot specify list of runs when generating new TPOT data')       
         
         self.run_list = range(params['RUNS']) if type(params['RUNS']) is int else params['RUNS']
@@ -53,7 +54,7 @@ class TestHandler(object):
                     
         # if CLEAN_DATA flag is set, confirm and delete data
         if params['CLEAN_DATA']: 
-            if not params['RUN_TPOT-BASE']:
+            if not params['RUN_TPOT-BASE'] and not params['RUN_TPOT-BASE']:
                 rmv_txt = []
                 if params['RUN_TPOT-BO-S']: rmv_txt.append("TPOT-BO-S")
                 if params['RUN_TPOT-BO-H']: rmv_txt.append("TPOT-BO-H")
@@ -155,6 +156,54 @@ class TestHandler(object):
             f.write(f"Time elapsed:{round(t_tpot_end-t_tpot_start,2)}\n")
             f.write(f"Best full TPOT CV:{best_tpot_cv}\n")
             f.write("Best full TPOT pipeline:\n")
+            f.write(f"{best_tpot_pipe}\n")
+        
+        return tb.pipes
+
+    def run_dTPOT_BASE(self):
+        run = self.run_path.split("_")[-1]
+        tpot_path = os.path.join(self.run_path,'dTPOT-BASE')
+        if not os.path.exists(tpot_path):
+            os.makedirs(tpot_path)
+        try:
+            t_tpot_start = time.time()
+            self.vprint.v1(f"{u.CYAN_U}****** Generating dTPOT data for problem '{self.problem}' ******{u.OFF}\n")
+            
+            tb = dTPOT_Base(n_gens=self.params['nTOTAL_GENS'],
+                           pop_size=self.params['POP_SIZE'],
+                           seed=self.seed,
+                           config_dict=self.params['TPOT_CONFIG_DICT'],
+                           n_jobs=self.params['nJOBS'],
+                           pipe_eval_timeout=self.params['PIPE_EVAL_TIMEOUT'],
+                           vprint=self.vprint)
+            
+            res_txt = tb.optimize(self.X_train, self.y_train, out_path=tpot_path)
+            t_tpot_end = time.time()
+            
+            with open(self.fname_prog, 'a') as f:
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - dTPOT-BASE (run {run}): {res_txt} ({round(t_tpot_end-t_tpot_start,2)}s)\n")
+        except:
+            trace = traceback.format_exc()
+            self.vprint.verr(f"FAILED:\n{trace}")
+            with open(self.fname_prog, 'a') as f:
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - dTPOT-BASE (run {run}): Failed..\n{trace}\n\n")
+            return None
+        
+        fname_tpot_prog = os.path.join(tpot_path,'dTPOT-BASE.progress')
+        best_tpot_pipe,best_tpot_cv = u.get_best(tb.pipes)
+        
+        # write progress to file
+        with open(fname_tpot_prog, 'w') as f:
+            f.write("dTPOT-BASE\n")
+            f.write(f"TIME:{time.asctime()}\n")
+            f.write(f"SEED:{tb.seed}\n")
+            f.write(f"POP SIZE:{tb.pop_size}\n")
+            f.write(f"TOTAL dTPOT GENS:{tb.n_gens}\n")
+            f.write("\n")
+            f.write(f"***** AFTER {tb.n_gens} dTPOT-BASE GENERATIONS *****\n")
+            f.write(f"Time elapsed:{round(t_tpot_end-t_tpot_start,2)}\n")
+            f.write(f"Best full dTPOT CV:{best_tpot_cv}\n")
+            f.write("Best full dTPOT pipeline:\n")
             f.write(f"{best_tpot_pipe}\n")
         
         return tb.pipes

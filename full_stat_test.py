@@ -11,6 +11,7 @@ import sys
 import utils.tpot_utils as u
 import numpy as np
 import time
+from scipy.stats import ranksums
 PRINT_COL = 15
 '''
 ***** Parameter constants *****
@@ -25,18 +26,23 @@ params = {
     'RESULTS_DIR'       : 'Results',
     'PROBLEMS'          : [
                             'quake',
-                            'abalone',
                             'socmob',
+                            'abalone',
                             'brazilian_houses',
                             'house_16h',
                             'elevators'
                           ],
-    'METHODS'           : ['TPOT-BASE','TPOT-BO-Sd','TPOT-BO-Sc','TPOT-BO-Hd','TPOT-BO-Hc'],
+    'METHODS'           : ['TPOT-BASE',
+                           'TPOT-BO-Sd','TPOT-BO-Sc',
+                            'TPOT-BO-ALTd','TPOT-BO-ALTc',
+                           # 'TPOT-BO-AUTOd','TPOT-BO-AUTOc',
+                           'TPOT-BO-Hd','TPOT-BO-Hc',
+                           'TPOT-BO-Hs'],
     'RUN_LIST'          : [],
     'SAVE_STATS'        : False,
     # 'MODE'              : ['discrete'],
     # 'MODE'              : ['continuous'],
-    'THRESHOLD_DEG'     : 8
+    'CONFIDENCE_LEVEL'  : 0.1
     }
 
 cwd = os.getcwd()
@@ -87,10 +93,10 @@ for problem in prob_list:
         data[problem][run] = {}
     
         for method in params['METHODS']:
-            mode = '' if method == 'TPOT-BASE' else 'discrete' if 'd' in method else 'continuous'
-            raw_method = method.strip('dc')
+            mode = '' if method == 'TPOT-BASE' else 'discrete' if 'd' in method else 'continuous' if 'c' in method else 'sequential'
+            raw_method = method.strip('dcs')
             
-            f_prog = os.path.join(run_path,raw_method,mode,f'{raw_method}.progress')
+            f_prog = os.path.join(run_path,raw_method,mode,f'{method}.progress') if 's' in method else os.path.join(run_path,raw_method,mode,f'{raw_method}.progress')
             
             if not os.path.exists(f_prog):
                 print(f"{u.RED}Missing file error:{u.OFF} Run {run} of " 
@@ -105,7 +111,7 @@ for problem in prob_list:
                         if 'Best full TPOT CV' in line:
                             data[problem][run][method] = -float(line.split(":")[-1])
             
-                if raw_method == 'TPOT-BO-S' or raw_method == 'TPOT-BO-H':
+                if raw_method == 'TPOT-BO-S' or (raw_method == 'TPOT-BO-H' and method != 'TPOT-BO-Hs'):
                     read_data = False
                     n_evals = 0
                     for line in f:
@@ -115,6 +121,13 @@ for problem in prob_list:
                             read_data = True
                         if 'Best CV' in line and read_data:
                             data[problem][run][method] = -float(line.split(":")[-1])
+                            
+                if method == 'TPOT-BO-Hs':
+                    for line in f:
+                        if 'AFTER' in line and 'TPOT-BO-Hs' in line:
+                            next(f)
+                            cv_line = next(f)
+                            data[problem][run][method] = -float(cv_line.split(":")[-1])
                             
                 if raw_method == 'TPOT-BO-ALT':
                     read_data = False
@@ -145,25 +158,27 @@ for problem in prob_list:
         if run in skipped_runs:
             continue            
 
-    for base_method in params['METHODS']:
-        for tgt_method in params['METHODS']:
-            for run in data[problem]:
-                threshold = np.power(10, np.floor(np.log10(data[problem][run][base_method]))-params['THRESHOLD_DEG'])
-                if data[problem][run][base_method] - data[problem][run][tgt_method] > threshold:
-                    results[problem][base_method][tgt_method]['win'] = results[problem][base_method][tgt_method]['win'] + 1
-                elif (data[problem][run][tgt_method] - data[problem][run][base_method]) > threshold:
-                    results[problem][base_method][tgt_method]['loss'] = results[problem][base_method][tgt_method]['loss'] + 1
-                else:
-                    results[problem][base_method][tgt_method]['draw'] = results[problem][base_method][tgt_method]['draw'] + 1
+    # for base_method in params['METHODS']:
+    #     for tgt_method in params['METHODS']:
+    #         for run in data[problem]:
+    #             threshold = np.power(10, np.floor(np.log10(data[problem][run][base_method]))-params['THRESHOLD_DEG'])
+    #             if data[problem][run][base_method] - data[problem][run][tgt_method] > threshold:
+    #                 results[problem][base_method][tgt_method]['win'] = results[problem][base_method][tgt_method]['win'] + 1
+    #             elif (data[problem][run][tgt_method] - data[problem][run][base_method]) > threshold:
+    #                 results[problem][base_method][tgt_method]['loss'] = results[problem][base_method][tgt_method]['loss'] + 1
+    #             else:
+    #                 results[problem][base_method][tgt_method]['draw'] = results[problem][base_method][tgt_method]['draw'] + 1
 
-for prob,data in results.items():
+    
+
+for prob,d in results.items():
     print(f'{prob}:')
     print('='*(len(prob)+1))
     print(f"{str(''):>{PRINT_COL}}",end="")
-    for method in data.keys():
+    for method in d.keys():
         print(f"{method:>{PRINT_COL}}",end="")
     print()
-    for method,vals in data.items():
+    for method,vals in d.items():
         print(f"{method:>{PRINT_COL}}",end="")
         for v in vals.values():
             wdl = f"{v['win']}/{v['draw']}/{v['loss']}"
@@ -171,7 +186,61 @@ for prob,data in results.items():
         print()
     print()
     
+    
+stat_data = {problem: {method: np.array([data[problem][run][method] for run in data[problem]]) for method in params['METHODS']} for problem in params['PROBLEMS']}
 
+med_data = {problem: {method: np.median(stat_data[problem][method]) for method in params['METHODS']} for problem in params['PROBLEMS']}
+
+print("\n\n")
+
+wtl_overall = {tgt: {src:{'W':0, 'T': 0, 'L':0} for src in params['METHODS']} for tgt in params['METHODS']}
+
+for prob,d in stat_data.items():
+    print(f'{prob}:')
+    print('='*(len(prob)+1))
+    print(f"{str('.'):>{PRINT_COL}}",end="")
+    for src_method in params['METHODS']:
+        print(f"{src_method:>{PRINT_COL}}",end="")
+    print()
+    for tgt_method in params['METHODS']:
+        print(f"{tgt_method:>{PRINT_COL}}",end="")
+        for src_method in params['METHODS']:
+            res = ranksums(stat_data[prob][src_method],stat_data[prob][tgt_method])
+            wtl_res = 'T'
+            if res.pvalue <= params['CONFIDENCE_LEVEL']:
+                wtl_res = 'W' if med_data[prob][src_method] < med_data[prob][tgt_method] else 'L'
+            
+            wtl_overall[tgt_method][src_method][wtl_res] = wtl_overall[tgt_method][src_method][wtl_res] + 1
+            
+            res_txt = f"{wtl_res}(p={res.pvalue:.4f})"
+            
+            print(f"{res_txt:>{PRINT_COL}}",end="")
+        print()
+    print()
+        
+        
+print(f"\n\nover all (confidence level {int(params['CONFIDENCE_LEVEL']*100)}%):")
+print(f"{str('.'):>{PRINT_COL}}",end="")
+for src_method in params['METHODS']:
+    print(f"{src_method:>{PRINT_COL}}",end="")
+print()
+for tgt_method in params['METHODS']:
+    print(f"{tgt_method:>{PRINT_COL}}",end="")
+    for src_method in params['METHODS']:
+        wtl_txt = f"{wtl_overall[tgt_method][src_method]['W']}/{wtl_overall[tgt_method][src_method]['T']}/{wtl_overall[tgt_method][src_method]['L']}"
+        print(f"{wtl_txt:>{PRINT_COL}}",end="")
+    print()
+print()
+
+print("x = {",end="")
+for i,prob in enumerate(stat_data):
+    print(f"{stat_data[prob]['TPOT-BASE']},",end="")
+print("}")
+
+print("z = {",end="")
+for i,prob in enumerate(stat_data):
+    print(f"{stat_data[prob]['TPOT-BO-Hs']},",end="")
+print("}")
 
 
 # for mode in params['MODE']:
