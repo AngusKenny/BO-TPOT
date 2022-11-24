@@ -15,7 +15,7 @@ NOTES:
 add unique ND
 add ND n_ops as well
 """
-
+from pymoo.util.nds.non_dominated_sorting import NonDominatedSorting, find_non_dominated
 from config.tpot_config import default_tpot_config_dict
 from tpot import TPOTRegressor
 import utils.tpot_utils as u
@@ -26,11 +26,11 @@ import numpy as np
 import pygmo as pg
 
 POP_SIZE = 100
-nGENS = 100
+nGENS = 10
 OUT_PATH = "Results_test"
 PROBLEM = "quake"
 DATA_DIR = "Data"
-SEED = 142
+SEED = 442
 
 cwd = os.getcwd()
 
@@ -126,6 +126,14 @@ for gen in range(nGENS):
     u_ndf_params, u_dl_params, u_dc_params, u_ndr_params = pg.fast_non_dominated_sorting(points=u_params)
     ndf_ops, dl_ops, dc_ops, ndr_ops = pg.fast_non_dominated_sorting(points=p_ops)
     u_ndf_ops, u_dl_ops, u_dc_ops, u_ndr_ops = pg.fast_non_dominated_sorting(points=u_ops)
+    
+    print(f"\n{ndf_params[0]}\n{find_non_dominated(p_params)}")
+    
+    nd_fronts = NonDominatedSorting().do(p_params)
+    
+    nd_flat = np.concatenate(nd_fronts)
+    
+    print(f"\n{nd_fronts}\n\n{nd_flat}")
     
     print(f"\n{n_new_pipes} new pipelines added, with {n_new_groups} new structures")
     

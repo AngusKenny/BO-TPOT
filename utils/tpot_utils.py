@@ -8,7 +8,7 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
-# import pygmo as pg
+from pymoo.util.nds.non_dominated_sorting import NonDominatedSorting, find_non_dominated
 import copy
 import re
 

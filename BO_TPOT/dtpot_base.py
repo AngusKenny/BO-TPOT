@@ -16,7 +16,7 @@ proportional to number of structures?
 
 
 """
-
+from config.tpot_config import default_tpot_config_dict
 from tpot import TPOTRegressor
 import utils.tpot_utils as u
 import copy
@@ -26,7 +26,7 @@ import numpy as np
 import apted as at
 from sklearn.metrics import silhouette_score
 import kmedoids
-import pygmo as pg
+from pymoo.util.nds.non_dominated_sorting import NonDominatedSorting, find_non_dominated
 from deap import creator
 
 class dTPOT_Base(object):
@@ -166,7 +166,9 @@ class dTPOT_Base(object):
                                 np.array([grps[v['group']]['n_bo_params'] for v in tpot.evaluated_individuals_.values()]).reshape(-1,1)))
             
             # ndf, dl, dc, ndr = pg.fast_non_dominated_sorting(points=points)
-            nd_idxs = pg.sort_population_mo(points=points).tolist()
+            # nd_idxs = pg.sort_population_mo(points=points).tolist()
+            
+            nd_idxs = np.concatenate(NonDominatedSorting().do(points))
             
             # print(f"nd_idxs: {nd_idxs}\n\n")
             
