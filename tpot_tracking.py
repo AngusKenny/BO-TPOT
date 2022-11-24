@@ -23,7 +23,6 @@ import copy
 import os
 import time
 import numpy as np
-import pygmo as pg
 
 POP_SIZE = 100
 nGENS = 10
@@ -122,33 +121,25 @@ for gen in range(nGENS):
     u_ops,u_ops_ids = np.unique(p_ops,return_index=True,axis=0)
     
     # do non-dominated sorts
-    ndf_params, dl_params, dc_params, ndr_params = pg.fast_non_dominated_sorting(points=p_params)
-    u_ndf_params, u_dl_params, u_dc_params, u_ndr_params = pg.fast_non_dominated_sorting(points=u_params)
-    ndf_ops, dl_ops, dc_ops, ndr_ops = pg.fast_non_dominated_sorting(points=p_ops)
-    u_ndf_ops, u_dl_ops, u_dc_ops, u_ndr_ops = pg.fast_non_dominated_sorting(points=u_ops)
-    
-    print(f"\n{ndf_params[0]}\n{find_non_dominated(p_params)}")
-    
-    nd_fronts = NonDominatedSorting().do(p_params)
-    
-    nd_flat = np.concatenate(nd_fronts)
-    
-    print(f"\n{nd_fronts}\n\n{nd_flat}")
+    ndf_params = find_non_dominated(p_params)
+    u_ndf_params = find_non_dominated(u_params)
+    ndf_ops = find_non_dominated(p_ops)
+    u_ndf_ops = find_non_dominated(u_ops)
     
     print(f"\n{n_new_pipes} new pipelines added, with {n_new_groups} new structures")
     
-    print(f"archive contains {len(ndf_params[0])} non-dominated solutions, {len(u_ndf_params[0])} of which are unique\n")
+    print(f"archive contains {len(ndf_params)} non-dominated solutions, {len(u_ndf_params)} of which are unique\n")
     
     p_keys = list(tpot.evaluated_individuals_.keys())
     
     u_grp_params = {}
     u_grp_ops = {}
     
-    for idx in ndf_params[0]:
+    for idx in ndf_params:
         u_grp_params[tpot.evaluated_individuals_[p_keys[idx]]['group']] = 0
     
-    for idx in ndf_params[0]:
+    for idx in ndf_params:
         u_grp_ops[tpot.evaluated_individuals_[p_keys[idx]]['group']] = 0
     
     with open(f_track, 'a') as f:
-        f.write(f"{gen};{len(tpot.evaluated_individuals_)};{len(g_keys)};{len(ndf_params[0])};{len(u_ndf_params[0])};{len(u_grp_params)};{len(ndf_ops[0])};{len(u_ndf_ops[0])};{len(u_grp_ops)}\n")
+        f.write(f"{gen};{len(tpot.evaluated_individuals_)};{len(g_keys)};{len(ndf_params)};{len(u_ndf_params)};{len(u_grp_params)};{len(ndf_ops)};{len(u_ndf_ops)};{len(u_grp_ops)}\n")
