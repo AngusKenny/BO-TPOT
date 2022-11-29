@@ -600,6 +600,8 @@ class TestHandler(object):
             os.makedirs(auto_path)
         auto_init_pipes = u.truncate_pop(init_pipes, 0)
         
+        d_flag = "d" if self.params['DISCRETE_MODE'] else "c"
+        
         try:
             t_auto_start = time.time()
             self.vprint.v1(f"{u.CYAN_U}****** Running TPOT-BO-AUTO (run {run}) for problem '{self.problem}' ******{u.OFF}\n")
@@ -619,12 +621,12 @@ class TestHandler(object):
             
             t_auto_end = time.time()
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} (TPOT-BO-AUTO): {res_txt} ({round(t_auto_end-t_auto_start,2)}s)\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} (TPOT-BO-AUTO{d_flag}): {res_txt} ({round(t_auto_end-t_auto_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - Run {run} (TPOT-BO-AUTO): Failed..\n{trace}\n\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - Run {run} (TPOT-BO-AUTO{d_flag}): Failed..\n{trace}\n\n")
             return
         
         fname_auto_prog = os.path.join(auto_path,'TPOT-BO-AUTO.progress')
