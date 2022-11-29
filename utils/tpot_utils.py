@@ -5,6 +5,7 @@
 import sys
 import numpy as np
 import pandas as pd
+from utils.data_structures import StructureCollection
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
@@ -153,6 +154,19 @@ def make_new_group(pipe, vals, config_dict=None):
         'n_bo_params' : len(string_to_params(pipe,config_dict=config_dict))
         }
     return new_group
+
+def get_structures(pipes, stop_gen=np.inf, config_dict=None):
+    strucs = StructureCollection(config_dict=config_dict)
+    
+    for p,v in pipes.items():        
+        if v['generation'] > stop_gen:
+            continue
+        
+        struc_str = string_to_bracket(p)
+        strucs.add(p,v)
+
+    return strucs
+
 
 def get_unique_groups(pipes, stop_gen=np.inf, config_dict=None):
     strucs = {}
