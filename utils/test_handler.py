@@ -138,7 +138,7 @@ class TestHandler(object):
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - TPOT-BASE (run {run}): Failed..\n{trace}\n\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - TPOT-BASE (run {run}): Failed..\n{trace}\n\n")
             return None
         
         fname_tpot_prog = os.path.join(tpot_path,'TPOT-BASE.progress')
@@ -186,7 +186,7 @@ class TestHandler(object):
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - dTPOT-BASE (run {run}): Failed..\n{trace}\n\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - dTPOT-BASE (run {run}): Failed..\n{trace}\n\n")
             return None
         
         fname_tpot_prog = os.path.join(tpot_path,'dTPOT-BASE.progress')
@@ -247,7 +247,7 @@ class TestHandler(object):
                 trace = traceback.format_exc()
                 self.vprint.verr(f"FAILED:\n{trace}")
                 with open(self.fname_prog, 'a') as f:
-                    f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - Run {run} (TPOT-BO-S{r_txt}): Failed..\n{trace}\n\n")
+                    f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} (TPOT-BO-S{r_txt}): Failed..\n{trace}\n\n")
                 return
                     
             fname_bo_prog = os.path.join(bo_path,f'TPOT-BO-S{r_txt}.progress')
@@ -322,7 +322,7 @@ class TestHandler(object):
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - Run {run} {self.problem} (TPOT-BO-H{r_txt} - {self.disc_txt}): Failed..\n{trace}\n\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} {self.problem} (TPOT-BO-H{r_txt} - {self.disc_txt}): Failed..\n{trace}\n\n")
             return
                 
         fname_bo_prog = os.path.join(tbh_path,f'TPOT-BO-H{r_txt}.progress')
@@ -400,7 +400,7 @@ class TestHandler(object):
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - Run {run} {self.problem} (TPOT-BO-Hs - sequential): Failed..\n{trace}\n\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} {self.problem} (TPOT-BO-Hs - sequential): Failed..\n{trace}\n\n")
             return
                 
         fname_bo_prog = os.path.join(tbhs_path,f'TPOT-BO-Hs.progress')
@@ -490,7 +490,7 @@ class TestHandler(object):
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - Run {run} (TPOT-BO-ND{r_txt}): Failed..\n{trace}\n\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} (TPOT-BO-ND{r_txt}): Failed..\n{trace}\n\n")
             return
                 
         fname_bo_prog = os.path.join(bnd_path,f'TPOT-BO-ND{r_txt}.progress')
@@ -567,7 +567,7 @@ class TestHandler(object):
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - Run {run} (TPOT-BO-ALT): Failed..\n{trace}\n\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} (TPOT-BO-ALT): Failed..\n{trace}\n\n")
             return
         
         fname_alt_prog = os.path.join(alt_path,'TPOT-BO-ALT.progress')
@@ -626,7 +626,7 @@ class TestHandler(object):
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - Run {run} (TPOT-BO-AUTO{d_flag}): Failed..\n{trace}\n\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} (TPOT-BO-AUTO{d_flag}): Failed..\n{trace}\n\n")
             return
         
         fname_auto_prog = os.path.join(auto_path,'TPOT-BO-AUTO.progress')
