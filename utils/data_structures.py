@@ -4,21 +4,14 @@ import utils.tpot_utils as u
 import numpy as np
 
 class PipeStructure(object):
-    pipes = {}
-    cv = -1e20
-    params = []
-    bo_params = []
-    operators = []
-    structure = ""
-    best = ""
-    
-    def __init__(self, pipe, data, config_dict=None) -> None:
+    def __init__(self, pipe, config_dict=None) -> None:
+        self.pipes = {}
         self.best = pipe
+        self.cv = -1e20
         self.structure = u.string_to_bracket(pipe)
         self.params = u.string_to_params(pipe)
         self.bo_params = u.string_to_params(pipe,config_dict=config_dict)
         self.operators = u.string_to_ops(pipe)
-        self.add(pipe,data)
         
     def __getitem__(self, key):
         return self.pipes[key]
@@ -48,11 +41,9 @@ class PipeStructure(object):
                     self.cv = v['internal_cv_score']
                     self.best = p
 
-class StructureCollection(object):
-    structures = {}
-    config_dict = None
-    
+class StructureCollection(object):    
     def __init__(self, config_dict=None) -> None:
+        self.structures = {}
         self.config_dict = config_dict
 
     def __getitem__(self, key):
@@ -73,6 +64,9 @@ class StructureCollection(object):
     
     def items(self):
         return self.structures.items()
+    
+    def values(self):
+        return self.structures.values()
 
     def index(self, struc_str):
         return list(self.structures.keys()).index(struc_str)
@@ -81,11 +75,9 @@ class StructureCollection(object):
         '''returns 1 if new group created'''
         struc_str = u.string_to_bracket(pipe_str)
         if struc_str not in self.structures:
-            self.structures[struc_str] = PipeStructure(pipe_str,data,self.config_dict)
-            return 1
-        else:
-            self.structures[struc_str].add(pipe_str,data)
-            return 0
+            self.structures[struc_str] = PipeStructure(pipe_str,self.config_dict)
+        
+        self.structures[struc_str].add(pipe_str,data)
             
     def has_pipe(self, pipe_str):
         struc_str = u.string_to_bracket(pipe_str)

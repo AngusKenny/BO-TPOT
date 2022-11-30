@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors
 from matplotlib.lines import Line2D
 
-RESULTS_PATH = 'Results'
+RESULTS_PATH = 'Results_test'
 PROBLEMS = [            
     'quake',
     # 'socmob',
@@ -142,15 +142,18 @@ for PROBLEM in PROBLEMS:
             
             best_cvs = {}
             
+            print(f_tbh_pipes)
+            
             with open(f_tbh_pipes, 'r') as f:
                 for line in f:
                     ls = line.split(";")
                     pipe = ls[0]
-                    gen = int(ls[1])
-                    n_nd = int(ls[2])
-                    struc = ls[3].split("(")[-1].strip(")")
-                    cv = -float(ls[4])
-                    
+                    struc = ls[1]
+                    gen = int(ls[2])
+                    n_nd = int(ls[3])
+                    source = ls[4]
+                    cv = -float(ls[5])
+                           
                     if struc not in best_cvs:
                         best_cvs[struc] = cv
                     else:
@@ -160,7 +163,7 @@ for PROBLEM in PROBLEMS:
                         raw_tbh_pipes[run][gen] = {}
                         
                     if struc not in raw_tbh_pipes[run][gen]:
-                        raw_tbh_pipes[run][gen][struc] = {'pipe':pipe}
+                        raw_tbh_pipes[run][gen][struc] = {'pipe':pipe,'n_hp': len(u.string_to_params(pipe,config_dict=default_tpot_config_dict))}
                     
                     raw_tbh_pipes[run][gen][struc]['cv'] = copy.deepcopy(best_cvs[struc])
                     
@@ -169,13 +172,13 @@ for PROBLEM in PROBLEMS:
                 for line in f:
                     ls = line.split(";")
                     pipe = ls[0]
-                    cv = -float(ls[1])
+                    cv = -float(ls[-1])
                     
                     if not raw_tbs_pipes[run]['n_bo_hp']:
-                        raw_tbs_pipes[run]['n_bo_hp'] = len(u.string_to_params(pipe,default_tpot_config_dict))
+                        raw_tbs_pipes[run]['n_bo_hp'] = len(u.string_to_params(pipe,config_dict=default_tpot_config_dict))
                         raw_tbs_pipes[run]['cv_best'].append(cv)
                         raw_tbs_pipes[run]['pipe'] = pipe
-                        raw_tbs_pipes[run]['struc'] = str(u.string_to_structure(pipe))
+                        raw_tbs_pipes[run]['struc'] = str(u.string_to_bracket(pipe))
                     else:
                         raw_tbs_pipes[run]['cv_best'].append(min(raw_tbs_pipes[run]['cv_best'][-1],cv))
                         
@@ -206,16 +209,22 @@ for PROBLEM in PROBLEMS:
         # find median run index (closest to median value)
         med_auto_run_idx = np.abs(data['TPOT-BO-H'] - np.median(data['TPOT-BO-H'])).argmin()
         med_run = list(raw_data.keys())[med_auto_run_idx]
-                
+        
+        # print(len(raw_tbh_pipes[med_run][0].keys()))
+        
         struc_idxs = {struc:i for i,struc in enumerate(raw_tbh_pipes[med_run][0].keys()) if i < 50}
-                
-        struc_hps = {struc:len(u.string_to_params(v['pipe'],default_tpot_config_dict)) for struc,v in raw_tbh_pipes[med_run][0].items() if struc in struc_idxs}
         
+        # for struc in struc_idxs:
+        #     print(struc)
         
+        struc_hps = {struc:v['n_hp'] for struc,v in raw_tbh_pipes[med_run][0].items() if struc in struc_idxs}
+               
         if raw_tbs_pipes[med_run]['struc'] not in struc_idxs:
             struc_idxs[raw_tbs_pipes[med_run]['struc']] = len(struc_idxs)
         
         idx_plots = {gen:np.array([[struc_idxs[struc],raw_tbh_pipes[med_run][gen][struc]['cv']] for struc in raw_tbh_pipes[med_run][gen] if struc in struc_idxs]) for gen in raw_tbh_pipes[med_run]}
+        
+        # print([[struc_hps[struc],raw_tbh_pipes[med_run][gen][struc]['cv']] for struc in raw_tbh_pipes[med_run][gen] if struc in struc_idxs])
         
         hp_plots = {gen:np.array([[struc_hps[struc],raw_tbh_pipes[med_run][gen][struc]['cv']] for struc in raw_tbh_pipes[med_run][gen] if struc in struc_idxs]) for gen in raw_tbh_pipes[med_run]}
         
@@ -223,6 +232,8 @@ for PROBLEM in PROBLEMS:
         
         if len(idx_plots[list(idx_plots.keys())[-1]]) == 0:
             idx_plots.pop(list(idx_plots.keys())[-1])
+        
+        # print(f"\n{idx_plots}\n")
         
         ymax = np.max(idx_plots[0][:,1])
         ymin = np.min(idx_plots[list(idx_plots.keys())[-1]][:,1])

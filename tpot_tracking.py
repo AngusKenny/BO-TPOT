@@ -103,7 +103,7 @@ for problem in PROBLEMS:
                 
                 # v['structure'] = u.string_to_bracket(p)
                 v['generation'] = gen
-                n_new_groups = n_new_groups + strucs.add(p,v)
+                n_new_groups = n_new_groups + strucs.add_pipe(p,v)
                 n_hps = len(u.string_to_params(p,config_dict=default_tpot_config_dict))
                 
                 # # if group already exists, add to existing group

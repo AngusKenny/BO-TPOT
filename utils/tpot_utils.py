@@ -158,13 +158,13 @@ def make_new_group(pipe, vals, config_dict=None):
 def get_structures(pipes, stop_gen=np.inf, config_dict=None):
     strucs = StructureCollection(config_dict=config_dict)
     
-    for p,v in pipes.items():        
+    for i,(p,v) in enumerate(pipes.items()):        
         if v['generation'] > stop_gen:
             continue
         
-        struc_str = string_to_bracket(p)
+        # struc_str = string_to_bracket(p)
         strucs.add(p,v)
-
+        
     return strucs
 
 
@@ -362,6 +362,28 @@ def load_bhs_pipes(fname_pipes, cutoff_pop=1):
                         
     return pop
 
+def load_bhd_pipes(fname_pipes, cutoff_pop=1):
+    pop = {}
+    
+    with open(fname_pipes, 'r') as f:
+        for line in f:
+            line_s = line.split(';')
+            pipe = line_s[0]
+            struct_str = line_s[1]
+            gen = int(line_s[2])
+            n_bo_pop = int(line_s[3])
+            source = line_s[4]
+            cv = float(line_s[5])
+            op_count = len(string_to_ops(pipe))
+            if n_bo_pop > cutoff_pop:
+                pop[pipe] = {'internal_cv_score':cv,
+                             'operator_count':op_count,
+                             'generation':gen,
+                             'source':source,
+                             'n_bo_pop':n_bo_pop,
+                             'structure':struct_str}
+                        
+    return pop
 
 def truncate_pop(pipes, stop_gen):
     sub_pop = {}
@@ -524,7 +546,13 @@ def load_data(fpath):
     
     return X_train, X_test, y_train, y_test
 
-
+def get_best_structures(strucs, size=1):
+    cvs = np.array([-v.cv for v in strucs.values()])
+    sorted_idx = np.argsort(cvs)
+    sk = list(strucs.keys())
+    best_set = [sk[i] for i in sorted_idx[:size]]
+    return best_set
+            
 def get_best(pipes, source=None, size=None):
     '''
     TODO: implement source for size > 1
@@ -541,7 +569,7 @@ def get_best(pipes, source=None, size=None):
         best_cv = -1e20
         for k,v in pipes.items():
             if not source is None:
-                if v['internal_cv_score'] > best_cv and f"{source}(" in v['source']:
+                if v['internal_cv_score'] > best_cv and source == v['source']:
                     best_pipe = k
                     best_cv = v['internal_cv_score']
             elif v['internal_cv_score'] > best_cv:

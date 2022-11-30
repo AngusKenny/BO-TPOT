@@ -23,10 +23,10 @@ params = {
     # (will ask for confirmation)
     'CLEAN_DATA': False,
     'RUN_TPOT-BASE' : False,
-    'RUN_dTPOT-BASE': True,
+    'RUN_dTPOT-BASE': False,
     'RUN_TPOT-BO-S' : False,
-    'RUN_TPOT-BO-H' : False,
-    'RUN_TPOT-BO-Hs' : False,
+    'RUN_TPOT-BO-H' : True,
+    'RUN_TPOT-BO-Hs' : True,
     'RUN_TPOT-BO-ND' : False,
     'RUN_TPOT-BO-Sr' : False,
     'RUN_TPOT-BO-ALT' : False,
@@ -35,7 +35,7 @@ params = {
     'DATA_DIR' : 'Data',
     'RESULTS_DIR' : 'Results_test',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : 5,
+    'RUNS' : [0],
     'PROBLEMS' : [
                    'quake',
 		#'socmob',

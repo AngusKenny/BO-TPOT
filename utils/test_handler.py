@@ -367,7 +367,8 @@ class TestHandler(object):
         tbhs_path = os.path.join(tbh_path,"sequential")
         
         # load previous pipes
-        init_tbh_pipes = u.load_bhs_pipes(tbhd_pipes)
+        # init_tbh_pipes = u.load_bhs_pipes(tbhd_pipes)
+        init_tbh_pipes = u.load_bhd_pipes(tbhd_pipes)
         
         n_tbh_pipes = len([k for k,v in init_tbh_pipes.items() if 'TPOT-BO-H' in v['source']])
         
