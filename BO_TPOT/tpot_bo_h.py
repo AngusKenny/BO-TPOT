@@ -26,9 +26,7 @@ import os
 import time
 import numpy as np
 
-class TPOT_BO_H(object):
-    pipes = {}
-    
+class TPOT_BO_H(object):    
     def __init__(self,  
                  init_pipes,
                  seed=42,
@@ -245,9 +243,7 @@ class TPOT_BO_H(object):
         return f"Successful{early_finish}"
                     
     
-class TPOT_BO_Hs(object):
-    pipes = {}
-    
+class TPOT_BO_Hs(object):    
     def __init__(self,  
                  tbh_pipes,
                  seed=42,
@@ -259,6 +255,7 @@ class TPOT_BO_Hs(object):
                  pipe_eval_timeout=5,
                  vprint=u.Vprint(1)):
         
+        self.pipes = {}
         self.pop_size = pop_size
         self.n_bo_evals=n_bo_evals
         self.tbh_pipes=copy.deepcopy(tbh_pipes)

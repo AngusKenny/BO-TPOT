@@ -12,7 +12,7 @@ import copy
 from utils import tpot_utils as u
 from config.tpot_config import default_tpot_config_dict
 import numpy as np
-import pygmo as pg
+# import pygmo as pg
 import optuna
 import matplotlib.pyplot as plt
 import matplotlib.colors

@@ -16,9 +16,7 @@ import os
 import time
 
 
-class TPOT_BO_ALT(object):
-    pipes = {}
-    
+class TPOT_BO_ALT(object):   
     def __init__(self,
                  init_pipes={},
                  n_iters=10,
@@ -33,6 +31,7 @@ class TPOT_BO_ALT(object):
                  pipe_eval_timeout=5,
                  vprint=u.Vprint(1)):
         
+        self.pipes = {}
         self.n_iters = n_iters
         self.pop_size = pop_size
         self.seed=seed

@@ -15,7 +15,6 @@ import os
 import time
 
 class TPOT_BO_S(object):
-    pipes = {}
     
     def __init__(self,  
                  init_pipes,
@@ -28,6 +27,7 @@ class TPOT_BO_S(object):
                  pipe_eval_timeout=5,
                  vprint=u.Vprint(1)):
         
+        self.pipes = {}
         self.n_bo_evals=n_bo_evals
         self.tpot_pipes=copy.deepcopy(init_pipes)
         self.config_dict=copy.deepcopy(config_dict)

@@ -16,9 +16,7 @@ import os
 import time
 
 
-class TPOT_BO_AUTO(object):
-    pipes = {}
-    
+class TPOT_BO_AUTO(object):    
     def __init__(self,
                  init_pipes={},
                  pop_size=100,
@@ -31,6 +29,7 @@ class TPOT_BO_AUTO(object):
                  pipe_eval_timeout=5,
                  vprint=u.Vprint(1)):
         
+        self.pipes = {}
         self.pop_size = pop_size
         self.n_gens = n_gens
         self.seed=seed

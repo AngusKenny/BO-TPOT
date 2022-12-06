@@ -13,9 +13,7 @@ import copy
 import os
 import time
 
-class TPOT_Base(object):
-    pipes = None
-    
+class TPOT_Base(object):    
     def __init__(self,
                  n_gens=100,
                  pop_size=100,
@@ -25,6 +23,7 @@ class TPOT_Base(object):
                  pipe_eval_timeout=5,
                  vprint=u.Vprint(1)):
         
+        self.pipes = {}
         self.n_gens=n_gens
         self.pop_size=pop_size
         self.vprint=vprint

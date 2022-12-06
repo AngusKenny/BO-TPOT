@@ -29,9 +29,7 @@ import kmedoids
 from pymoo.util.nds.non_dominated_sorting import NonDominatedSorting, find_non_dominated
 from deap import creator
 
-class dTPOT_Base(object):
-    pipes = {}
-    
+class dTPOT_Base(object):   
     def __init__(self,
                  n_gens=100,
                  pop_size=100,
@@ -41,6 +39,7 @@ class dTPOT_Base(object):
                  pipe_eval_timeout=5,
                  vprint=u.Vprint(1)):
         
+        self.pipes = {}
         self.n_gens=n_gens
         self.pop_size=pop_size
         self.vprint=vprint

@@ -16,6 +16,7 @@ from shutil import rmtree
 from BO_TPOT.tpot_base import TPOT_Base
 from BO_TPOT.dtpot_base import dTPOT_Base
 from BO_TPOT.tpot_bo_s import TPOT_BO_S
+from BO_TPOT.tpot_bo_o import TPOT_BO_O
 from BO_TPOT.tpot_bo_nd import TPOT_BO_ND
 from BO_TPOT.tpot_bo_h import TPOT_BO_H, TPOT_BO_Hs
 from BO_TPOT.tpot_bo_alt import TPOT_BO_ALT
@@ -208,79 +209,78 @@ class TestHandler(object):
         
         return tb.pipes
 
-        def run_TPOT_BO_S(self, init_pipes, restricted_hps=False):
-            run = self.run_path.split("_")[-1]
-            init_bo_pipes = u.truncate_pop(init_pipes, self.params['STOP_GEN'])        
+    def run_TPOT_BO_S(self, init_pipes, restricted_hps=False):
+        run = self.run_path.split("_")[-1]
+        init_bo_pipes = u.truncate_pop(init_pipes, self.params['STOP_GEN'])        
+        
+        r_txt = "r" if restricted_hps else ""
+        
+        bo_dir = f"TPOT-BO-S{r_txt}"
+        bo_path = os.path.join(self.run_path,bo_dir,self.disc_txt)
+        
+        if not os.path.exists(bo_path):
+            os.makedirs(bo_path)
+        
+        n_bo_evals = ((self.params['nTOTAL_GENS'] - self.params['STOP_GEN']) 
+                        * self.params['POP_SIZE'])
+        
+        try:
+            t_bo_start = time.time()
+            self.vprint.v1(f"{u.CYAN_U}****** Running TPOT-BO-S{r_txt} (run {run}) for problem '{self.problem}' ******{u.OFF}\n")
+            # run BO on generated TPOT data
+            tbs = TPOT_BO_S(init_bo_pipes,
+                            seed=self.seed,
+                            n_bo_evals=n_bo_evals,
+                            discrete_mode=self.params['DISCRETE_MODE'],
+                            restricted_hps=restricted_hps,
+                            optuna_timeout_trials=self.params['OPTUNA_TIMEOUT_TRIALS'],
+                            config_dict=self.params['TPOT_CONFIG_DICT'],
+                            pipe_eval_timeout=self.params['PIPE_EVAL_TIMEOUT'],
+                            vprint=self.vprint)
             
-            r_txt = "r" if restricted_hps else ""
-            
-            bo_dir = f"TPOT-BO-S{r_txt}"
-            bo_path = os.path.join(self.run_path,bo_dir,self.disc_txt)
-            
-            if not os.path.exists(bo_path):
-                os.makedirs(bo_path)
-            
-            n_bo_evals = ((self.params['nTOTAL_GENS'] - self.params['STOP_GEN']) 
-                          * self.params['POP_SIZE'])
-            
-            try:
-                t_bo_start = time.time()
-                self.vprint.v1(f"{u.CYAN_U}****** Running TPOT-BO-S{r_txt} (run {run}) for problem '{self.problem}' ******{u.OFF}\n")
-                # run BO on generated TPOT data
-                tbs = TPOT_BO_S(init_bo_pipes,
-                                seed=self.seed,
-                                n_bo_evals=n_bo_evals,
-                                discrete_mode=self.params['DISCRETE_MODE'],
-                                restricted_hps=restricted_hps,
-                                optuna_timeout_trials=self.params['OPTUNA_TIMEOUT_TRIALS'],
-                                config_dict=self.params['TPOT_CONFIG_DICT'],
-                                pipe_eval_timeout=self.params['PIPE_EVAL_TIMEOUT'],
-                                vprint=self.vprint)
+            res_txt = tbs.optimize(self.X_train, self.y_train, out_path=bo_path)
                 
-                res_txt = tbs.optimize(self.X_train, self.y_train, out_path=bo_path)
-                    
-                t_bo_end = time.time()
-                
-                with open(self.fname_prog, 'a') as f:
-                    f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} (TPOT-BO-S{r_txt}): {res_txt} ({round(t_bo_end-t_bo_start,2)}s)\n")
-            except:
-                trace = traceback.format_exc()
-                self.vprint.verr(f"FAILED:\n{trace}")
-                with open(self.fname_prog, 'a') as f:
-                    f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} (TPOT-BO-S{r_txt}): Failed..\n{trace}\n\n")
-                return
-                    
-            fname_bo_prog = os.path.join(bo_path,f'TPOT-BO-S{r_txt}.progress')
-            best_bo_pipe,best_bo_cv = u.get_best(tbs.pipes)
-            best_init_pipe, best_init_cv = u.get_best(init_bo_pipes)
+            t_bo_end = time.time()
             
-            # write final results to prog file
-            with open(fname_bo_prog, 'w') as f:
-                # update progress file for validation
-                f.write(f"TPOT-BO-S{r_txt}\n")
-                f.write(f"TIME:{time.asctime()}\n")
-                f.write(f"SEED:{tbs.seed}\n")
-                f.write(f"TOTAL TPOT GENS:{self.params['nTOTAL_GENS']}\n")
-                f.write(f"TPOT STOP GEN:{self.params['STOP_GEN']}\n")
-                f.write(f"BAYESIAN OPTIMISATION EVALS:{n_bo_evals}\n")
-                f.write(f"DISCRETE_MODE:{tbs.discrete_mode}\n")
-                f.write(f"RESTRICTED:{restricted_hps}\n")
-                f.write(f"BO_PARAMS:{tbs.n_params}\n")
-                f.write(f"FROZEN:{tbs.n_freeze}\n")
+            with open(self.fname_prog, 'a') as f:
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} (TPOT-BO-S{r_txt}): {res_txt} ({round(t_bo_end-t_bo_start,2)}s)\n")
+        except:
+            trace = traceback.format_exc()
+            self.vprint.verr(f"FAILED:\n{trace}")
+            with open(self.fname_prog, 'a') as f:
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} (TPOT-BO-S{r_txt}): Failed..\n{trace}\n\n")
+            return
                 
-                f.write("\n")
-                f.write(f"***** AFTER {self.params['STOP_GEN']} INITIAL TPOT " 
-                        + "GENERATIONS *****\n")
-                f.write(f"Best CV:{best_init_cv}\n")
-                f.write("Best pipeline:\n")
-                f.write(f"{best_init_pipe}\n")
-                f.write("\n")
-                f.write(f"\n***** AFTER {n_bo_evals} BAYESIAN OPTIMISATION *****\n")
-                f.write(f"Time elapsed:{round(t_bo_end-t_bo_start,2)}\n")
-                f.write(f"Best CV:{best_bo_cv}\n")
-                f.write("Best pipeline:\n")
-                f.write(f"{best_bo_pipe}\n")
-    
+        fname_bo_prog = os.path.join(bo_path,f'TPOT-BO-S{r_txt}.progress')
+        best_bo_pipe,best_bo_cv = u.get_best(tbs.pipes)
+        best_init_pipe, best_init_cv = u.get_best(init_bo_pipes)
+        
+        # write final results to prog file
+        with open(fname_bo_prog, 'w') as f:
+            # update progress file for validation
+            f.write(f"TPOT-BO-S{r_txt}\n")
+            f.write(f"TIME:{time.asctime()}\n")
+            f.write(f"SEED:{tbs.seed}\n")
+            f.write(f"TOTAL TPOT GENS:{self.params['nTOTAL_GENS']}\n")
+            f.write(f"TPOT STOP GEN:{self.params['STOP_GEN']}\n")
+            f.write(f"BAYESIAN OPTIMISATION EVALS:{n_bo_evals}\n")
+            f.write(f"DISCRETE_MODE:{tbs.discrete_mode}\n")
+            f.write(f"RESTRICTED:{restricted_hps}\n")
+            f.write(f"BO_PARAMS:{tbs.n_params}\n")
+            f.write(f"FROZEN:{tbs.n_freeze}\n")
+            
+            f.write("\n")
+            f.write(f"***** AFTER {self.params['STOP_GEN']} INITIAL TPOT " 
+                    + "GENERATIONS *****\n")
+            f.write(f"Best CV:{best_init_cv}\n")
+            f.write("Best pipeline:\n")
+            f.write(f"{best_init_pipe}\n")
+            f.write("\n")
+            f.write(f"\n***** AFTER {n_bo_evals} BAYESIAN OPTIMISATION *****\n")
+            f.write(f"Time elapsed:{round(t_bo_end-t_bo_start,2)}\n")
+            f.write(f"Best CV:{best_bo_cv}\n")
+            f.write("Best pipeline:\n")
+            f.write(f"{best_bo_pipe}\n")    
     
     def run_TPOT_BO_H(self, init_pipes, restricted_hps=False):
         run = self.run_path.split("_")[-1]
@@ -450,6 +450,76 @@ class TestHandler(object):
             f.write("Best pipeline:\n")
             f.write(f"{best_tbhs_pipe}\n")
     
+    def run_TPOT_BO_O(self, init_pipes):
+        run = self.run_path.split("_")[-1]
+        init_tbo_pipes = u.truncate_pop(copy.deepcopy(init_pipes), self.params['STOP_GEN'])        
+        d_flag = "d" if self.params['DISCRETE_MODE'] else "c"
+        tbo_dir = f"TPOT-BO-O"
+        tbo_path = os.path.join(self.run_path,tbo_dir,self.disc_txt)
+        
+        if not os.path.exists(tbo_path):
+            os.makedirs(tbo_path)
+        
+        n_bo_evals = ((self.params['nTOTAL_GENS'] - self.params['STOP_GEN']) 
+                        * self.params['POP_SIZE'])
+        
+        try:
+            t_tbo_start = time.time()
+            self.vprint.v1(f"{u.CYAN_U}****** Running TPOT-BO-O{d_flag} (run {run}) for problem '{self.problem}' ******{u.OFF}\n")
+            # run BO on generated TPOT data
+            tbo = TPOT_BO_O(init_tbo_pipes,
+                            seed=self.seed,
+                            pop_size=self.params['POP_SIZE'],
+                            n_bo_evals=n_bo_evals,
+                            discrete_mode=self.params['DISCRETE_MODE'],
+                            optuna_timeout_trials=self.params['OPTUNA_TIMEOUT_TRIALS'],
+                            config_dict=self.params['TPOT_CONFIG_DICT'],
+                            pipe_eval_timeout=self.params['PIPE_EVAL_TIMEOUT'],
+                            vprint=self.vprint)
+            
+            res_txt = tbo.optimize(self.X_train, self.y_train, out_path=tbo_path)
+                
+            t_tbo_end = time.time()
+            
+            with open(self.fname_prog, 'a') as f:
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} {self.problem} (TPOT-BO-O{d_flag}): {res_txt} ({round(t_tbo_end-t_tbo_start,2)}s)\n")
+        except:
+            trace = traceback.format_exc()
+            self.vprint.verr(f"FAILED:\n{trace}")
+            with open(self.fname_prog, 'a') as f:
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Run {run} {self.problem} (TPOT-BO-O{d_flag}): Failed..\n{trace}\n\n")
+            return
+                
+        fname_bo_prog = os.path.join(tbo_path,f'TPOT-BO-O.progress')
+        
+        best_bo_pipe,best_bo_cv = u.get_best(tbo.pipes)
+        best_init_pipe, best_init_cv = u.get_best(init_tbo_pipes)
+        
+        # write final results to prog file
+        with open(fname_bo_prog, 'w') as f:
+            # update progress file for validation
+            f.write(f"TPOT-BO-O - {res_txt}\n")
+            f.write(f"TIME:{time.asctime()}\n")
+            f.write(f"SEED:{tbo.seed}\n")
+            f.write(f"TOTAL TPOT GENS:{self.params['nTOTAL_GENS']}\n")
+            f.write(f"TPOT STOP GEN:{self.params['STOP_GEN']}\n")
+            f.write(f"BAYESIAN OPTIMISATION EVALS:{n_bo_evals}\n")
+            f.write(f"DISCRETE_MODE:{tbo.discrete_mode}\n")
+            # f.write(f"BO_PARAMS:{tbh.n_params}\n")
+            # f.write(f"FROZEN:{tbh.n_freeze}\n")
+            
+            f.write("\n")
+            f.write(f"***** AFTER {self.params['STOP_GEN']} INITIAL TPOT " 
+                    + "GENERATIONS *****\n")
+            f.write(f"Best CV:{best_init_cv}\n")
+            f.write("Best pipeline:\n")
+            f.write(f"{best_init_pipe}\n")
+            f.write("\n")
+            f.write(f"\n***** AFTER {n_bo_evals} BAYESIAN OPTIMISATION *****\n")
+            f.write(f"Time elapsed:{round(t_tbo_end-t_tbo_start,2)}\n")
+            f.write(f"Best CV:{best_bo_cv}\n")
+            f.write("Best pipeline:\n")
+            f.write(f"{best_bo_pipe}\n")
     
     def run_TPOT_BO_ND(self, init_pipes, restricted_hps=False):
         run = self.run_path.split("_")[-1]

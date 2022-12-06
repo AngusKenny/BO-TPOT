@@ -27,7 +27,6 @@ import time
 import numpy as np
 
 class TPOT_BO_ND(object):
-    pipes = {}
     
     def __init__(self,  
                  init_pipes,

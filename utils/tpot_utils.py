@@ -55,6 +55,42 @@ class Vprint(object):
         print(f"{RED}Warning:{OFF}",*args, **kwargs)
 
 
+def disp_ocba_tracking(tracking, Deltas, colours=True):
+    cols = [CYAN,RED] if colours else ["",""]
+    off = OFF if colours else ""
+    
+    out = ""
+    for g in range(len(tracking)):
+        title = f"{cols[g%2]}Generation {g} (Delta = {Deltas[g]}):" 
+        out += f"{title}\n"
+        out += f"{'='*len(title)}\n"
+        max_val = max(tracking[g])
+        while max_val > 0:
+            out += f"      "
+            for i in range(len(tracking[g])):
+                track = f" * " if tracking[g][i] >= max_val else "   "
+                out += track
+            out += "\n"
+            max_val -= 1
+        n_gen_evals = np.sum([tracking[g][j] > 0 for j in range(len(tracking[g]))])
+        out += "      "
+        for i in range(len(tracking[g])):
+            track = f"{cols[i%2]}{tracking[g][i]:^3}{off}"
+            out += track
+        out += f" -> {sum(tracking[g])} total, {n_gen_evals} unique\n\n"
+    
+                            
+    # out += f"{off}\n"
+    # for i in range(len(tracking)):
+    #     out += f"   {i}: "
+    #     for j in range(len(tracking[i])):
+    #         track = f"{cols[j%2]}{tracking[i][j]:^3}{off}" if tracking[i][j] else "   "
+    #         out += track
+    #     n_gen_evals = np.sum([tracking[i][j] > 0 for j in range(len(tracking[i]))])
+    #     out += f" {n_gen_evals:>2} (m = {m_strucs[i]})\n"
+
+    return out
+
 def flatten(A):
     rt = []
     for i in A:
