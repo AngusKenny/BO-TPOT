@@ -108,62 +108,65 @@ class TPOT_BO_O(object):
 
         tracking = [[0 for k in self.bo_struc_keys]]
 
+        tpots = []
+        handlers = []
+        
         # perform extra evaluations to initialise
         for i,k in enumerate(self.bo_struc_keys):
-            if len(self.strucs[k]) < self.n_0:
-                extra_bo = self.n_0 - len(self.strucs[k])
-                self.vprint.v2(f"{u.CYAN}Performing {extra_bo} initial evaluations on structure ({i}/{len(self.bo_struc_keys)}): {k}..{u.OFF}\n")
+            # if len(self.strucs[k]) < self.n_0:
+            extra_bo = max(self.n_0 - len(self.strucs[k]),0)
+            self.vprint.v2(f"{u.CYAN}Performing {extra_bo} initial evaluations on structure ({i}/{len(self.bo_struc_keys)}): {k}..{u.OFF}\n")
+            
+            tpots.append(TPOTRegressor(generations=0,
+                                    population_size=1, 
+                                    mutation_rate=0.9, 
+                                    crossover_rate=0.1, 
+                                    cv=5,
+                                    verbosity=self.tpot_verb, 
+                                    config_dict=copy.deepcopy(self.config_dict),
+                                    random_state=self.seed, 
+                                    n_jobs=1,
+                                    warm_start=True,
+                                    max_eval_time_mins=self.pipe_eval_timeout))
                 
-                tpot = TPOTRegressor(generations=0,
-                                     population_size=1, 
-                                     mutation_rate=0.9, 
-                                     crossover_rate=0.1, 
-                                     cv=5,
-                                     verbosity=self.tpot_verb, 
-                                     config_dict=copy.deepcopy(self.config_dict),
-                                     random_state=self.seed, 
-                                     n_jobs=1,
-                                     warm_start=True,
-                                     max_eval_time_mins=self.pipe_eval_timeout)            
-                    
-                # initialise tpot object to generate pset
-                tpot._fit_init()
+            # initialise tpot object to generate pset
+            tpots[i]._fit_init()
+            
+            tpots[i].evaluated_individuals_ = self.strucs[k].pipes
+            
+            # initialise tpot bo handler
+            handlers.append(TPOT_BO_Handler(tpots[i], vprint=self.vprint, discrete_mode=self.discrete_mode))
+            new_params = u.string_to_params(self.strucs[k].best)
+            
+            # update pset of BO tpot object
+            for (p,val) in new_params:
+                handlers[i].add_param_to_pset(p, val)
+            
+            # remove generated pipeline and transplant saved from before
+            tpots[i]._pop = [creator.Individual.from_string(self.strucs[k].best, tpots[i]._pset)]
+            
+            tpots[i].fit(X_train, y_train)
+            
+            # re-initialise tpot bo handler
+            handlers[i] = TPOT_BO_Handler(tpots[i], vprint=self.vprint, discrete_mode=self.discrete_mode)
+            
+            while len(self.strucs[k]) < self.n_0:
+                # run bayesian optimisation with seed_dicts as initial samples
+                handlers[i].optimise(0, X_train, y_train, n_evals=extra_bo,
+                                seed_samples=self.strucs[k].get_seed_samples(), 
+                                discrete_mode=self.discrete_mode,
+                                skip_params=[],
+                                timeout_trials=self.optuna_timeout_trials)
                 
-                tpot.evaluated_individuals_ = self.strucs[k].pipes
                 
-                # initialise tpot bo handler
-                handler = TPOT_BO_Handler(tpot, vprint=self.vprint, discrete_mode=self.discrete_mode)
-                new_params = u.string_to_params(self.strucs[k].best)
-                
-                # update pset of BO tpot object
-                for (p,val) in new_params:
-                    handler.add_param_to_pset(p, val)
-                
-                # remove generated pipeline and transplant saved from before
-                tpot._pop = [creator.Individual.from_string(self.strucs[k].best, tpot._pset)]
-                
-                tpot.fit(X_train, y_train)
-                
-                # re-initialise tpot bo handler
-                handler = TPOT_BO_Handler(tpot, vprint=self.vprint, discrete_mode=self.discrete_mode)
-                
-                while len(self.strucs[k]) < self.n_0:
-                    # run bayesian optimisation with seed_dicts as initial samples
-                    handler.optimise(0, X_train, y_train, n_evals=extra_bo,
-                                    seed_samples=self.strucs[k].get_seed_samples(), 
-                                    discrete_mode=self.discrete_mode,
-                                    skip_params=[],
-                                    timeout_trials=self.optuna_timeout_trials)
-                    
-                    
-                    # add new pipes to list
-                    for p,v in tpot.evaluated_individuals_.items():
-                        if 'source' not in v:
-                            v['source'] = f'TPOT-BO-O{self.d_flag}'
-                            self.strucs.add(p,v)
-                            self.pipes[p] = v
-                            n_extra_bo += 1
-                            tracking[gen][i] += 1
+                # add new pipes to list
+                for p,v in tpots[i].evaluated_individuals_.items():
+                    if 'source' not in v:
+                        v['source'] = f'TPOT-BO-O{self.d_flag}'
+                        self.strucs.add(p,v)
+                        self.pipes[p] = v
+                        n_extra_bo += 1
+                        tracking[gen][i] += 1
 
         if out_path:
             if not os.path.exists(out_path):
@@ -233,41 +236,41 @@ class TPOT_BO_O(object):
                     self.vprint.v2(f"\n{u.CYAN}{len(self.pipes)-self.starting_size+n_extra_bo} total evaluations of {self.n_bo_evals+n_extra_bo} performed, {B_r-n_evals} remaining{u.OFF}")
                     self.vprint.v2(f"{u.CYAN}{n_evals} evaluations of {B_g} performed, with {B_g-n_evals} remaning in generation {gen} (Delta = {Deltas[-1]})\nPerforming {alloc} evaluations on structure ({n_allocs} allocs):\n{struc}..{u.OFF}\n")
                     
-                    tpot = TPOTRegressor(generations=0,
-                                        population_size=1, 
-                                        mutation_rate=0.9, 
-                                        crossover_rate=0.1, 
-                                        cv=5,
-                                        verbosity=self.tpot_verb, 
-                                        config_dict=copy.deepcopy(self.config_dict),
-                                        random_state=self.seed, 
-                                        n_jobs=1,
-                                        warm_start=True,
-                                        max_eval_time_mins=self.pipe_eval_timeout)            
+                    # tpot = TPOTRegressor(generations=0,
+                    #                     population_size=1, 
+                    #                     mutation_rate=0.9, 
+                    #                     crossover_rate=0.1, 
+                    #                     cv=5,
+                    #                     verbosity=self.tpot_verb, 
+                    #                     config_dict=copy.deepcopy(self.config_dict),
+                    #                     random_state=self.seed, 
+                    #                     n_jobs=1,
+                    #                     warm_start=True,
+                    #                     max_eval_time_mins=self.pipe_eval_timeout)            
                         
-                    # initialise tpot object to generate pset
-                    tpot._fit_init()
+                    # # initialise tpot object to generate pset
+                    # tpot._fit_init()
                     
-                    tpot.evaluated_individuals_ = struc.pipes
+                    # tpot.evaluated_individuals_ = struc.pipes
                     
-                    # initialise tpot bo handler
-                    handler = TPOT_BO_Handler(tpot, vprint=self.vprint, discrete_mode=self.discrete_mode)
-                    new_params = u.string_to_params(struc.best)
+                    # # initialise tpot bo handler
+                    # handler = TPOT_BO_Handler(tpot, vprint=self.vprint, discrete_mode=self.discrete_mode)
+                    # new_params = u.string_to_params(struc.best)
                     
-                    # update pset of BO tpot object
-                    for (p,val) in new_params:
-                        handler.add_param_to_pset(p, val)
+                    # # update pset of BO tpot object
+                    # for (p,val) in new_params:
+                    #     handler.add_param_to_pset(p, val)
                     
-                    # remove generated pipeline and transplant saved from before
-                    tpot._pop = [creator.Individual.from_string(struc.best, tpot._pset)]
+                    # # remove generated pipeline and transplant saved from before
+                    # tpot._pop = [creator.Individual.from_string(struc.best, tpot._pset)]
                     
-                    tpot.fit(X_train, y_train)
+                    # tpot.fit(X_train, y_train)
                     
                     # re-initialise tpot bo handler
-                    handler = TPOT_BO_Handler(tpot, vprint=self.vprint, discrete_mode=self.discrete_mode)
+                    # handler = TPOT_BO_Handler(tpot, vprint=self.vprint, discrete_mode=self.discrete_mode)
                     
                     # run bayesian optimisation with seed_dicts as initial samples
-                    handler.optimise(0, X_train, y_train, n_evals=alloc,
+                    handlers[i].optimise(0, X_train, y_train, n_evals=alloc,
                                     seed_samples=struc.get_seed_samples(), 
                                     discrete_mode=self.discrete_mode,
                                     skip_params=[],
@@ -277,7 +280,7 @@ class TPOT_BO_O(object):
                         f = open(fname_h_pipes,'a')
                     
                     # add new pipes to list
-                    for p,v in tpot.evaluated_individuals_.items():
+                    for p,v in tpots[i].evaluated_individuals_.items():
                         if 'source' not in v:
                             v['source'] = f'TPOT-BO-O{self.d_flag}'
                             v['generation'] = gen
@@ -291,8 +294,8 @@ class TPOT_BO_O(object):
                     if out_path:
                         f.close()              
                 
-                print("")
-                print(u.disp_ocba_tracking(tracking,Deltas))
+                # print("")
+                # print(u.disp_ocba_tracking(tracking,Deltas))
                 
                 if out_path:
                     fname_o_track = os.path.join(out_path,"TPOT-BO-O.tracking")

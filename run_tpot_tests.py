@@ -38,13 +38,13 @@ params = {
     # if not generating TPOT data, RUNS can be a list of runs
     'RUNS' : [0,1,2],
     'PROBLEMS' : [
-                   'quake',
-		'socmob',
-                'abalone',
-                  # 'house_16h',
+                #    'quake',
+		# 'socmob',
+                # 'abalone',
+                  'house_16h',
                 # 'brazilian_houses',
     #             'diamonds',
-                   # 'elevators',
+                #    'elevators',
     #             'black_friday'
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
@@ -52,7 +52,7 @@ params = {
     # toggle between discrete and continuous parameter spaces
     'DISCRETE_MODE' : True,
     # maximum time allowed for a single pipeline evaluation (mins)
-    'PIPE_EVAL_TIMEOUT' : 5,
+    'PIPE_EVAL_TIMEOUT' : 1,
     #
     # TPOT data generation parameters
     #
