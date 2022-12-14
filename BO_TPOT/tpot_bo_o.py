@@ -85,7 +85,16 @@ class TPOT_BO_O(object):
         # get keys by CV ranking
         cvs = np.array([-self.strucs[k].cv for k in self.strucs.keys()])
         cv_idxs = np.argsort(cvs)        
-        key_list = list(self.strucs.keys())                
+        key_list = list(self.strucs.keys())
+        
+        remove_ids = []                
+        # check key_list for any structures that cannot be used
+        for i in range(cv_idxs.shape[0]):
+            if self.strucs[key_list[cv_idxs[i]]].n_bo_params < 1:
+                remove_ids.append(i)
+
+        cv_idxs = np.delete(cv_idxs, remove_ids)
+                        
         self.bo_struc_keys = [key_list[i] for i in cv_idxs[:int(pop_size*bo_pop_factor)]]
                 
         vprint.v2(f"\n{u.CYAN}{len(self.bo_struc_keys)} structures in BO set..{u.OFF}\n")
@@ -136,7 +145,7 @@ class TPOT_BO_O(object):
             
             # initialise tpot bo handler
             handlers.append(TPOT_BO_Handler(tpots[i], vprint=self.vprint, discrete_mode=self.discrete_mode))
-            new_params = u.string_to_params(self.strucs[k].best)
+            new_params = self.strucs[k].bo_params
             
             # update pset of BO tpot object
             for (p,val) in new_params:
@@ -150,7 +159,10 @@ class TPOT_BO_O(object):
             # re-initialise tpot bo handler
             handlers[i] = TPOT_BO_Handler(tpots[i], vprint=self.vprint, discrete_mode=self.discrete_mode)
             
-            while len(self.strucs[k]) < self.n_0:
+            stagnate_cnt = 0
+            
+            while len(self.strucs[k]) < self.n_0 and stagnate_cnt < 1000:
+                old_size = len(tpots[i].evaluated_individuals_)
                 # run bayesian optimisation with seed_dicts as initial samples
                 handlers[i].optimise(0, X_train, y_train, n_evals=extra_bo,
                                 seed_samples=self.strucs[k].get_seed_samples(), 
@@ -158,6 +170,7 @@ class TPOT_BO_O(object):
                                 skip_params=[],
                                 timeout_trials=self.optuna_timeout_trials)
                 
+                stagnate_cnt += 1 if len(tpots[i].evaluated_individuals_) <= old_size else 0
                 
                 # add new pipes to list
                 for p,v in tpots[i].evaluated_individuals_.items():
