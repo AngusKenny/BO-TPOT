@@ -34,21 +34,21 @@ params = {
     'RUN_TPOT-BO-AUTO' : False,
     'VERBOSITY' : 2,               
     'DATA_DIR' : 'Data',
-    'RESULTS_DIR' : 'Results',
+    'RESULTS_DIR' : 'Results_old',
     # if not generating TPOT data, RUNS can be a list of runs
-    'RUNS' : [2],
+    'RUNS' : [0,1],
     'PROBLEMS' : [
-                #    'quake',
+                   'quake',
 		# 'socmob',
                 # 'abalone',
                 #   'house_16h',
-                'brazilian_houses',
+                # 'brazilian_houses',
     #             'diamonds',
                 #    'elevators',
     #             'black_friday'
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
-    'nJOBS' : 8,
+    'nJOBS' : 4,
     # toggle between discrete and continuous parameter spaces
     'DISCRETE_MODE' : True,
     # maximum time allowed for a single pipeline evaluation (mins)

@@ -222,6 +222,8 @@ class TPOT_BO_O(object):
                         
             old_size = len(self.pipes)
             
+            stagnate_cnt_gen = 0
+            
             while n_evals < B_g:
                 
                 # # allocate self.Delta to top m_strucs
@@ -237,6 +239,8 @@ class TPOT_BO_O(object):
                 #     allocs[self.bo_struc_keys.index(self.strucs.best)] = B_g
                 
                 n_allocs = np.sum([allocs[i] > 0 for i in range(len(allocs))])
+                
+                old_size_gen = len(self.pipes)
                 
                 # perform BO evaluations as per allocations
                 for i,alloc in enumerate(allocs):
@@ -315,10 +319,15 @@ class TPOT_BO_O(object):
                     with open(fname_o_track,'w') as f:
                         f.write(u.disp_ocba_tracking(tracking,Deltas,colours=False))
                 
+                stagnate_cnt_gen = stagnate_cnt_gen + 1 if len(self.pipes) == old_size_gen else 0
+                if stagnate_cnt_gen >= 50:
+                    print("10 OCBA iterations without change, exiting generation..")
+                    break                
+                
             stagnate_cnt = stagnate_cnt + 1 if len(self.pipes) == old_size else 0
             
             if stagnate_cnt >= 10:
-                print("10 OCBA iterations without change, exiting..")
+                print("10 OCBA iterations without change, exiting iteration..")
                 early_finish = f" - early finish (gen {gen})"
                 break                
         

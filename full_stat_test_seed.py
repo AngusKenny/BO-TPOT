@@ -39,7 +39,7 @@ params = {
                         #    'TPOT-BO-Hd','TPOT-BO-Hc',
                            'TPOT-BO-Hs'
                            ],
-    'RUN_LIST'          : [],
+    'SEED_LIST'          : [],
     'SAVE_STATS'        : False,
     # 'MODE'              : ['discrete'],
     # 'MODE'              : ['continuous'],
@@ -73,25 +73,31 @@ for problem in prob_list:
     
     print(f"Processing results from {prob_path}")
     
-    if len(params['RUN_LIST']) == 0:
-        run_idxs = [int(d.path.split("_")[-1]) 
-                        for d in os.scandir(prob_path) 
-                        if d.is_dir() and "Plots" not in d.path]
-        run_idxs.sort()
-    else:
-        run_idxs = params['RUN_LIST']
+    for method in params['METHODS']:
+        mode = '' if method == 'TPOT-BASE' else 'discrete' if 'd' in method else 'continuous' if 'c' in method else 'sequential'
+        raw_method = method.strip('dcs')
     
-    skipped_runs = []
+        method_path = os.path.join(prob_path,raw_method,mode)
     
-    # validate and collect data from specified runs
-    for run in run_idxs:
-        run_str = str(run)    
-        if run < 10:
-            run_str = "0" + str(run)
+        data[problem][method] = {}
+        
+        if len(params['SEED_LIST']) == 0:
+            seed_idxs = [int(d.path.split("_")[-1]) 
+                            for d in os.scandir(method_path) 
+                            if d.is_dir() and "Plots" not in d.path]
+            seed_idxs.sort()
+        else:
+            seed_idxs = params['SEED_LIST']
+        
+        skipped_seeds = []
     
-        run_path = os.path.join(prob_path,"Run_" + run_str)
-    
-        data[problem][run] = {}
+        # validate and collect data from specified runs
+        for seed in seed_idxs:
+            seed_path = os.path.join(prob_path,f"Seed_{seed}")
+        
+        
+        
+        
     
         for method in params['METHODS']:
             mode = '' if method == 'TPOT-BASE' else 'discrete' if 'd' in method else 'continuous' if 'c' in method else 'sequential'
