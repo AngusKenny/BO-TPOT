@@ -40,14 +40,25 @@ class PipeStructure(object):
         return self.mu, self.std, self.stderr
     
     def add(self, pipe, data) -> None:
-        data['structure'] = self.structure
-        self.pipes[pipe] = data
-        if data['internal_cv_score'] > self.cv:
-            self.cv = data['internal_cv_score']
-            self.best = pipe
-        
-        self.update_stats()
+        if pipe not in self.pipes:
+            data['structure'] = self.structure
+            self.pipes[pipe] = data
+            if data['internal_cv_score'] > self.cv:
+                self.cv = data['internal_cv_score']
+                self.best = pipe
+            
+            self.update_stats()
     
+    def get_best(self, n = 1):
+        pipe_keys = list(self.pipes.keys())
+        cvs = [v['internal_cv_score'] for v in self.pipes.values()]
+        sorted_ids = np.argsort(cvs)
+        return_pipes = []
+        for i in range(n):
+            return_pipes.append(pipe_keys[i % len(self)])
+            
+        return return_pipes
+        
     def get_seed_samples(self):
         return [(u.string_to_params(p), v['internal_cv_score']) for p,v in self.pipes.items()]
     
@@ -95,17 +106,25 @@ class StructureCollection(object):
     def index(self, struc_str):
         return list(self.structures.keys()).index(struc_str)
 
+    def get_by_index(self, idx):
+        return self.structures[list(self.structures.keys())[idx]]
+
     def add(self, pipe_str, data):
-        struc_str = u.string_to_bracket(pipe_str)
-        if struc_str not in self.structures:
-            self.structures[struc_str] = PipeStructure(pipe_str,self.config_dict)
-        
-        self.structures[struc_str].add(pipe_str,data)
-        
-        if data['internal_cv_score'] > self.cv:
-            self.cv = data['internal_cv_score']
-            self.best = struc_str    
+        if data['internal_cv_score'] > -np.inf:
+            struc_str = u.string_to_bracket(pipe_str)
+            if struc_str not in self.structures:
+                self.structures[struc_str] = PipeStructure(pipe_str,self.config_dict)
             
+            if pipe_str not in self.structures[struc_str]:
+                self.structures[struc_str].add(pipe_str,data)
+            
+            if data['internal_cv_score'] > self.cv:
+                self.cv = data['internal_cv_score']
+                self.best = struc_str    
+
+    def update(self, pipe_dict):
+        [self.add(p,v) for p,v in pipe_dict.items()]
+    
     def has_pipe(self, pipe_str):
         struc_str = u.string_to_bracket(pipe_str)
         
