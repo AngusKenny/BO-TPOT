@@ -19,7 +19,6 @@ from matplotlib import cm
 from matplotlib.colors import ListedColormap,LinearSegmentedColormap
 import matplotlib.colors
 from matplotlib.lines import Line2D
-import cmasher as cmr
 
 RESULTS_PATH = 'Results'
 PROBLEMS = [            
@@ -32,11 +31,10 @@ PROBLEMS = [
     ]
 # MODES = ['discrete']#,'continuous']
 # WTL = ['TPOT-BASE','TPOT-BO-S']#,'TPOT-BO-H']
-METHOD = 'oTPOT-BASE'
 POP_SIZE = 100
-SEEDS = [42]
+RUNS = [0]
 PRINT_COL = 20
-SAVE_PLOTS = False
+SAVE_PLOTS = True
 SAVE_PLOTS = False
 # WIN_TOL = 1e-14
 # ANIMATE = False
@@ -45,42 +43,40 @@ SHOW_TITLE = True
 # YLIM = [3.54e-6,3.685e-6]
 # LEGEND_POS = 'lower right'
 
-for problem in PROBLEMS:
+for PROBLEM in PROBLEMS:
     
     cwd = os.getcwd()
-    prob_path = os.path.join(cwd,RESULTS_PATH,problem)
+    prob_path = os.path.join(cwd,RESULTS_PATH,PROBLEM)
     
     plot_path = os.path.join(prob_path,'Plots')
     
-    skip_seeds = []
+    skip_runs = []
     
     sparse_tracker = {}
     
-    for seed in SEEDS:
-        seed_txt = f"Seed_{seed}"
+    for run in RUNS:
+        run_txt = f"Run_{run}" if run > 9 else f"Run_0{run}"
         
-        seed_path = os.path.join(prob_path, f'{METHOD}', seed_txt)
+        run_path = os.path.join(prob_path, run_txt)
     
-        # otb_path = os.path.join(run_path,'{METHOD}')
-        # f_otb_prog = os.path.join(tb_path,'{METHOD}.progress')
-        # f_otb_pipes = os.path.join(tb_path,'{METHOD}.pipes')
-        f_otb_tracker = os.path.join(seed_path,f'{METHOD}.tracker')
+        otb_path = os.path.join(run_path,'oTPOT-BASE')
+        # f_otb_prog = os.path.join(tb_path,'oTPOT-BASE.progress')
+        # f_otb_pipes = os.path.join(tb_path,'oTPOT-BASE.pipes')
+        f_otb_tracker = os.path.join(otb_path,'oTPOT-BASE.tracker')
 
         check_files = [f_otb_tracker]
         
         for check_file in check_files:
             if not os.path.exists(check_file):
-                print(f"Cannot find {check_file}\nskipping seed {seed_txt}..")
-                skip_seeds.append(seed)
+                print(f"Cannot find {check_file}\nskipping {run_txt}..")
+                skip_runs.append(run)
                 break
         
-        if seed in skip_seeds: continue
+        if run in skip_runs: continue
         
-        sparse_tracker[seed] = {}
+        sparse_tracker[run] = {}
         
         full_tracker = {}
-                                     
-        max_op_tracker = []                               
                                        
         with open(f_otb_tracker, 'r') as f:
             for line in f:
@@ -88,28 +84,23 @@ for problem in PROBLEMS:
                 gen = int(ls[0])
                 struc = ls[1]
                 n_selected = int(ls[2])
-                # n_ops = int(ls[3])
-                strip_struc = struc.replace("{input_matrix}","")
-                n_ops = len(strip_struc.split("{"))
                 
-                if gen not in sparse_tracker[seed]:
-                    sparse_tracker[seed][gen] = {}
-                    max_op_tracker.append(0)
+                if gen not in sparse_tracker[run]:
+                    sparse_tracker[run][gen] = {}
                 
-                sparse_tracker[seed][gen][struc] = n_selected
-                max_op_tracker[gen] = max(max_op_tracker[gen],n_ops)
+                sparse_tracker[run][gen][struc] = n_selected
                 
                 full_tracker[struc] = []
         
         # populate full tracker
         for struc,tracking in full_tracker.items():
-            for gen, gen_strucs in sparse_tracker[seed].items():
+            for gen, gen_strucs in sparse_tracker[run].items():
                 if struc in gen_strucs:
                     tracking.append(gen_strucs[struc])
                 else:
                     tracking.append(0)
        
-        # print(full_tracker)
+        print(full_tracker)
         
         points = np.empty((0,3))
         
@@ -125,63 +116,15 @@ for problem in PROBLEMS:
         
         norm = mpl.colors.Normalize(vmin=1, vmax=POP_SIZE)
         
-        # cmap=mpl.colormaps['viridis_r']
-        # cmap=mpl.colormaps['cool']
-        
-        cmap = plt.get_cmap('cmr.cosmic_r')
-        # cmap = plt.get_cmap('cmr.dusk_r')
-        
+        plt.scatter(points[:,0], points[:,1], c=points[:,2], cmap=mpl.colormaps['viridis_r'],norm=norm,marker='.',s=2)
+        # plt.scatter(points[:,0], points[:,1], c=points[:,2], cmap=newcmp)
+        plt.ylabel("Generation")
+        plt.xlabel("Structure index")
         c_tick_grads = POP_SIZE//10
         c_ticks = [1] + [i * c_tick_grads for i in range(1,10)] + [POP_SIZE]
-        
-        max_gen = max(points[:,1])
-        marksize = 400//max_gen
-        
-        plt.rcParams["figure.figsize"] = (15,9)
-        
-        # plt.rcParams["figure.figsize"] = plt.rcParamsDefault["figure.figsize"]
-        
-        fig, axs = plt.subplots(2)
-        fig.suptitle(f"{METHOD} - {problem} - seed: {seed}")
-        fig.tight_layout(h_pad=3.5)
-
-        
-        im=axs[0].scatter(points[:,0], points[:,1], c=points[:,2], cmap=cmap,norm=norm,marker='.',s=marksize)
-        # plt.scatter(points[:,0], points[:,1], c=points[:,2], cmap=newcmp)
-        axs[0].set_ylabel("Generation")
-        axs[0].set_xlabel("Structure index")
-        # axs[0].set_title("TPOT-BASE")
-        
-        # axs[0].colorbar(label="No. selected in generation (max = pop size)",ticks=c_ticks)
-        
-        
-        axs[1].plot(max_op_tracker)
-        axs[1].set_xlabel("Generation")
-        axs[1].set_ylabel("Max number of operations")
-        
-        fig.colorbar(im,ax=axs[0],label="No. selected in generation (max = pop size)",ticks=c_ticks)
-        
+        print(c_ticks)
+        plt.colorbar(label="No. selected in generation (max = pop size)",ticks=c_ticks)
         plt.show()
-        
-        # axs[1].scatter(points[:,0], points[:,1], c=points[:,2], cmap=mpl.colormaps['viridis_r'],norm=norm,marker='.',s=2)
-        # # plt.scatter(points[:,0], points[:,1], c=points[:,2], cmap=newcmp)
-        # axs[1].set_ylabel("Generation")
-        # axs[1].set_xlabel("Structure index")
-        # axs[1].set_title("{METHOD}")
-        
-
-        
-        # plt.scatter(points[:,0], points[:,1], c=points[:,2], cmap=mpl.colormaps['viridis_r'],norm=norm,marker='.',s=marksize)
-        # # plt.scatter(points[:,0], points[:,1], c=points[:,2], cmap=newcmp)
-        # plt.ylabel("Generation")
-        # plt.xlabel("Structure index")
-        # plt.title(f"{METHOD} - {problem} - seed: {seed}")
-        # plt.colorbar(label="No. selected in generation (max = pop size)",ticks=c_ticks)
-        
-        # plt.show()
-        
-        # plt.plot(max_op_tracker)
-        # plt.show()
         
 #         last_gens = {run: max(raw_tbo_pipes[run].keys()) for run in raw_tbo_pipes}
         
@@ -267,7 +210,7 @@ for problem in PROBLEMS:
 #         ax3.legend(handles=[l_tbo80,l_tbo,l_tbs80,l_tbs],prop={'size': 9})
 #         # ax2.legend()
 #         if SHOW_TITLE:
-#             ax3.set_title(f"{problem} :: Run {med_run} :: generation {gen}")
+#             ax3.set_title(f"{PROBLEM} :: Run {med_run} :: generation {gen}")
 #         ax3.set_ylabel("best CV")
 #         ax3.set_xlabel("no. HPs")
 #         # ax3.set_ylim(ylims)

@@ -56,6 +56,8 @@ class oTPOT_Base(object):
     def optimize(self, X_train, y_train, out_path=None):
         t_start = time.time()
 
+        fname_tracker = os.path.join(out_path,'oTPOT-BASE.tracker')
+        
         self.vprint.v2(f"{u.CYAN}fitting tpot model with {self.tpot.generations}" 
                + " generations (-1 to account for initial evaluations)" 
                + f"..\n{u.WHITE}")
@@ -74,10 +76,18 @@ class oTPOT_Base(object):
         pop_tracker = {0: {}, 1: {}}
         
         for p,v in self.tpot.evaluated_individuals_.items():
+            if v['internal_cv_score'] == -np.inf: continue
             if v['structure'] not in pop_tracker[v['generation']]:
                 pop_tracker[v['generation']][v['structure']] = 1
             else:
                 pop_tracker[v['generation']][v['structure']] = pop_tracker[v['generation']][v['structure']] + 1
+        
+        if (out_path):
+            with open(fname_tracker, 'w') as f:
+                for g in pop_tracker:
+                    for s in pop_tracker[g]:
+                        f.write(f"{g};{s};{pop_tracker[g][s]};{len(strucs[s].operators)}\n")
+        
         
         print(f"len strucs after update: {len(strucs)}")
         
@@ -97,11 +107,11 @@ class oTPOT_Base(object):
             zero_ids = sigma < EPS
             sigma[zero_ids] = min_sigma
             sigma[sigma > 1e10] = 1e10
-            print(f"generation: {gen}")
-            print(f"min_sigma: {min_sigma}")
-            print(f"mu: {mu}")
-            print(f"sigma: {sigma}")
-            print(f"max: {max_allocs}")
+            print(f"{u.CYAN}[{time.asctime()}]{u.OFF} - generation: {gen}")
+            # print(f"min_sigma: {min_sigma}")
+            # print(f"mu: {mu}")
+            # print(f"sigma: {sigma}")
+            # print(f"max: {max_allocs}")
             
             t_start_alloc = time.time()
             
@@ -111,7 +121,7 @@ class oTPOT_Base(object):
             
             t_end_alloc = time.time()
             
-            print(f"allocs: {allocs}")
+            # print(f"allocs: {allocs}")
             
             print(f"allocs completed in {t_end_alloc - t_start_alloc} seconds")
             
@@ -120,16 +130,26 @@ class oTPOT_Base(object):
             
             pop_tracker[gen] = {}
             
+            print("\nCONSTRUCTING POPULATION:\n")
+            
             for i,n in enumerate(allocs):
                 if n == 0: continue
                 struc = strucs.get_by_index(i)
+                print(f"{u.RED}{i}{u.OFF}: {u.CYAN}{struc.structure}{u.OFF}: {n} pipes, {len(struc.operators)} operators")
                 add_pipes = struc.get_best(n)
                 
                 pop_tracker[gen][struc.structure] = n
                     
-                for p in add_pipes:
+                for j,p in enumerate(add_pipes):
+                    print(f"{u.YELLOW}{j}{u.OFF}: {p}")
                     self.tpot._pop.append(creator.Individual.from_string(p, self.tpot._pset))
+                print("")
             
+            if (out_path):
+                with open(fname_tracker, 'a') as f:
+                    for s in pop_tracker[gen]:
+                        f.write(f"{gen};{s};{pop_tracker[gen][s]};{len(strucs[s].operators)}\n")
+        
             # pop_tracker[gen] = {}
             
             # for p in self.tpot._pop:                
@@ -139,9 +159,13 @@ class oTPOT_Base(object):
             #     else:
             #         pop_tracker[gen][s] = pop_tracker[gen][s] + 1
             
+            t_tpot_start = time.time()
             # fit TPOT model
             self.tpot.fit(X_train, y_train)
-                
+            t_tpot_end = time.time()
+            
+            print(f"{u.RED}TPOT took {t_tpot_end-t_tpot_start} seconds{u.OFF}")
+            
             for k,v in self.tpot.evaluated_individuals_.items():
                 if k not in self.pipes:
                     self.pipes[k] = v
@@ -173,9 +197,9 @@ class oTPOT_Base(object):
             with open(fname_tpot_pipes, 'w') as f:
                 for k,v in self.pipes.items():
                     f.write(f"{k};{v['generation']};{v['internal_cv_score']}\n")
-            with open(fname_tracker, 'w') as f:
-                for g in pop_tracker:
-                    for s in pop_tracker[g]:
-                        f.write(f"{g};{s};{pop_tracker[g][s]}\n")
+            # with open(fname_tracker, 'w') as f:
+            #     for g in pop_tracker:
+            #         for s in pop_tracker[g]:
+            #             f.write(f"{g};{s};{pop_tracker[g][s]}\n")
                     
         return "Successful"

@@ -115,8 +115,8 @@ class TestHandler(object):
             f.write(f"\nTests complete!\nTotal time elapsed: {round(t_end-self.t_start,2)}s\n")
 
     def run_TPOT_BASE(self, seed):
-        tpot_path = self.get_path('TPOT-BASE',seed)
         try:
+            tpot_path = self.get_path('TPOT-BASE',seed)
             t_tpot_start = time.time()
             self.vprint.v1(f"{u.CYAN_U}****** Generating tpot data for problem '{self.problem}' ******{u.OFF}\n")
             
@@ -160,8 +160,8 @@ class TestHandler(object):
         return tb.pipes
 
     def run_oTPOT_BASE(self,seed):
-        otb_path = self.get_path('oTPOT-BASE',seed)
         try:
+            otb_path = self.get_path('oTPOT-BASE',seed)
             t_tpot_start = time.time()
             self.vprint.v1(f"{u.CYAN_U}****** Generating oTPOT data (seed {seed}) for problem '{self.problem}' ******{u.OFF}\n")
             
@@ -252,8 +252,8 @@ class TestHandler(object):
     #     return tb.pipes
     
     def run_dTPOT_BASE(self,seed):
-        tpot_path = self.get_path('dTPOT-BASE',seed)
         try:
+            tpot_path = self.get_path('dTPOT-BASE',seed)
             t_tpot_start = time.time()
             self.vprint.v1(f"{u.CYAN_U}****** Generating dTPOT data for problem '{self.problem}' ******{u.OFF}\n")
             
@@ -297,14 +297,13 @@ class TestHandler(object):
         return tb.pipes
 
     def run_TPOT_BO_S(self, init_pipes, seed):
-        bo_path = self.get_path(f'TPOT-BO-S{self.disc_flag}',seed)
-
-        init_bo_pipes = u.truncate_pop(init_pipes, self.params['STOP_GEN'])        
-        
-        n_bo_evals = ((self.params['nTOTAL_GENS'] - self.params['STOP_GEN']) 
-                        * self.params['POP_SIZE'])
-        
         try:
+            bo_path = self.get_path(f'TPOT-BO-S{self.disc_flag}',seed)
+
+            init_bo_pipes = u.truncate_pop(init_pipes, self.params['STOP_GEN'])        
+            
+            n_bo_evals = ((self.params['nTOTAL_GENS'] - self.params['STOP_GEN']) 
+                            * self.params['POP_SIZE'])
             t_bo_start = time.time()
             self.vprint.v1(f"{u.CYAN_U}****** Running TPOT-BO-S{self.disc_flag} (seed {seed}) for problem '{self.problem}' ******{u.OFF}\n")
             # run BO on generated TPOT data
@@ -362,17 +361,14 @@ class TestHandler(object):
             f.write(f"{best_bo_pipe}\n")    
     
     def run_TPOT_BO_H(self, init_pipes, seed):
-        init_tbh_pipes = u.truncate_pop(copy.deepcopy(init_pipes), self.params['STOP_GEN'])        
-        
-        tbh_path = self.get_path(f'TPOT-BO-H{self.disc_flag}',seed)
-        
-        if not os.path.exists(tbh_path):
-            os.makedirs(tbh_path)
-        
-        n_bo_evals = ((self.params['nTOTAL_GENS'] - self.params['STOP_GEN']) 
-                      * self.params['POP_SIZE'])
-        
         try:
+            init_tbh_pipes = u.truncate_pop(copy.deepcopy(init_pipes), self.params['STOP_GEN'])        
+            
+            tbh_path = self.get_path(f'TPOT-BO-H{self.disc_flag}',seed)
+            
+            n_bo_evals = ((self.params['nTOTAL_GENS'] - self.params['STOP_GEN']) 
+                        * self.params['POP_SIZE'])
+            
             t_tbh_start = time.time()
             self.vprint.v1(f"{u.CYAN_U}****** Running TPOT-BO-H{self.disc_flag} - {self.disc_txt} (seed {seed}) for problem '{self.problem}' ******{u.OFF}\n")
             # run BO on generated TPOT data
@@ -432,23 +428,19 @@ class TestHandler(object):
             
             
     def run_TPOT_BO_Hs(self, init_pipes,seed):
-        tbhd_path = self.get_path(f'TPOT-BO-Hd',seed)
-        tbhd_pipes = os.path.join(tbhd_path,"TPOT-BO-H.pipes")
-        tbhs_path = self.get_path(f'TPOT-BO-Hs',seed)
-        
-        # load previous pipes
-        # init_tbh_pipes = u.load_bhs_pipes(tbhd_pipes)
-        init_tbh_pipes = u.load_bhd_pipes(tbhd_pipes)
-        
-        n_tbh_pipes = len([k for k,v in init_tbh_pipes.items() if 'TPOT-BO-H' in v['source']])
-        
-        if not os.path.exists(tbhs_path):
-            os.makedirs(tbhs_path)
-        
-        n_bo_evals = ((self.params['nTOTAL_GENS']-self.params['STOP_GEN']) * self.params['POP_SIZE'] - n_tbh_pipes)
-        
-        
         try:
+            tbhd_path = self.get_path(f'TPOT-BO-Hd',seed)
+            tbhd_pipes = os.path.join(tbhd_path,"TPOT-BO-H.pipes")
+            tbhs_path = self.get_path(f'TPOT-BO-Hs',seed)
+            
+            # load previous pipes
+            # init_tbh_pipes = u.load_bhs_pipes(tbhd_pipes)
+            init_tbh_pipes = u.load_bhd_pipes(tbhd_pipes)
+            
+            n_tbh_pipes = len([k for k,v in init_tbh_pipes.items() if 'TPOT-BO-H' in v['source']])
+            
+            n_bo_evals = ((self.params['nTOTAL_GENS']-self.params['STOP_GEN']) * self.params['POP_SIZE'] - n_tbh_pipes)
+            
             t_tbhs_start = time.time()
             self.vprint.v1(f"{u.CYAN_U}****** Running TPOT-BO-Hs - {self.disc_txt} (seed {seed}) for problem '{self.problem}' ******{u.OFF}\n")
             # run BO on generated TPOT data
@@ -521,16 +513,12 @@ class TestHandler(object):
             f.write(f"{best_tbhs_pipe}\n")
     
     def run_TPOT_BO_O(self, init_pipes,seed):
-        init_tbo_pipes = u.truncate_pop(copy.deepcopy(init_pipes), self.params['STOP_GEN'])        
-        tbo_path = self.get_path(f'TPOT-BO-O{self.disc_flag}',seed)
-        
-        if not os.path.exists(tbo_path):
-            os.makedirs(tbo_path)
-        
-        n_bo_evals = ((self.params['nTOTAL_GENS'] - self.params['STOP_GEN']) 
-                        * self.params['POP_SIZE'])
-        
         try:
+            init_tbo_pipes = u.truncate_pop(copy.deepcopy(init_pipes), self.params['STOP_GEN'])        
+            tbo_path = self.get_path(f'TPOT-BO-O{self.disc_flag}',seed)
+            
+            n_bo_evals = ((self.params['nTOTAL_GENS'] - self.params['STOP_GEN']) 
+                            * self.params['POP_SIZE'])
             t_tbo_start = time.time()
             self.vprint.v1(f"{u.CYAN_U}****** Running TPOT-BO-O{self.disc_flag} (seed {seed}) for problem '{self.problem}' ******{u.OFF}\n")
             # run BO on generated TPOT data
@@ -589,17 +577,14 @@ class TestHandler(object):
             f.write(f"{best_bo_pipe}\n")
     
     def run_TPOT_BO_ND(self, init_pipes, seed):
-        init_bnd_pipes = u.truncate_pop(copy.deepcopy(init_pipes), self.params['STOP_GEN'])        
-        
-        bnd_path = self.get_path(f'TPOT-BO-ND{self.disc_flag}',seed)
-        
-        if not os.path.exists(bnd_path):
-            os.makedirs(bnd_path)
-        
-        n_bo_evals = ((self.params['nTOTAL_GENS'] - self.params['STOP_GEN']) 
-                      * self.params['POP_SIZE'])
-        
         try:
+            init_bnd_pipes = u.truncate_pop(copy.deepcopy(init_pipes), self.params['STOP_GEN'])        
+            
+            bnd_path = self.get_path(f'TPOT-BO-ND{self.disc_flag}',seed)
+                        
+            n_bo_evals = ((self.params['nTOTAL_GENS'] - self.params['STOP_GEN']) 
+                        * self.params['POP_SIZE'])
+            
             t_bnd_start = time.time()
             self.vprint.v1(f"{u.CYAN_U}****** Running TPOT-BO-ND{self.disc_flag} (seed {seed}) for problem '{self.problem}' ******{u.OFF}\n")
             # run BO on generated TPOT data
@@ -663,16 +648,14 @@ class TestHandler(object):
 
 
     def run_TPOT_BO_ALT(self, seed, init_pipes=None):
-        alt_path = self.get_path(f'TPOT-BO-ALT{self.disc_flag}',seed)
-        if not os.path.exists(alt_path):
-            os.makedirs(alt_path)
-        n_tpot_gens = int((self.params['nTOTAL_GENS'] - self.params['STOP_GEN'])/self.params['nALT_ITERS'])
-        n_bo_evals = int(((self.params['nTOTAL_GENS'] - self.params['STOP_GEN']) 
-                      * self.params['POP_SIZE'])/self.params['nALT_ITERS'])
-        
-        alt_init_pipes = u.truncate_pop(init_pipes, n_tpot_gens-1)
-        
         try:
+            alt_path = self.get_path(f'TPOT-BO-ALT{self.disc_flag}',seed)
+            n_tpot_gens = int((self.params['nTOTAL_GENS'] - self.params['STOP_GEN'])/self.params['nALT_ITERS'])
+            n_bo_evals = int(((self.params['nTOTAL_GENS'] - self.params['STOP_GEN']) 
+                        * self.params['POP_SIZE'])/self.params['nALT_ITERS'])
+            
+            alt_init_pipes = u.truncate_pop(init_pipes, n_tpot_gens-1)
+            
             t_alt_start = time.time()
             self.vprint.v1(f"{u.CYAN_U}****** Running TPOT-BO-ALT (seed {seed}) for problem '{self.problem}' ******{u.OFF}\n")
             # run TPOT + BO alternating
@@ -725,14 +708,13 @@ class TestHandler(object):
             f.write("\n")
         
     def run_TPOT_BO_AUTO(self, seed, init_pipes=None):
-        auto_path = self.get_path(f'TPOT-BO-AUTO{self.disc_flag}',seed)
-        if not os.path.exists(auto_path):
-            os.makedirs(auto_path)
-        auto_init_pipes = u.truncate_pop(init_pipes, 0)
-        
-        self.disc_flag = "d" if self.params['DISCRETE_MODE'] else "c"
-        
         try:
+            auto_path = self.get_path(f'TPOT-BO-AUTO{self.disc_flag}',seed)
+        
+            auto_init_pipes = u.truncate_pop(init_pipes, 0)
+            
+            self.disc_flag = "d" if self.params['DISCRETE_MODE'] else "c"
+            
             t_auto_start = time.time()
             self.vprint.v1(f"{u.CYAN_U}****** Running TPOT-BO-AUTO (seed {seed}) for problem '{self.problem}' ******{u.OFF}\n")
             # run TPOT + BO Auto
@@ -797,6 +779,10 @@ class TestHandler(object):
         seed_txt = f"Seed_{seed}"
         
         seed_path = os.path.join(self.prob_path, self.method, seed_txt)
+        tpot_base_path = os.path.join(self.prob_path, 'TPOT-BASE', seed_txt, 'TPOT-BASE.progress')
+        if not os.path.exists(tpot_base_path) and method != 'TPOT-BASE':
+            raise Exception(f"Seed {seed} does not have initial TPOT-BASE data - skipping!")
+        
         if not os.path.exists(seed_path):
             os.makedirs(seed_path)     
         

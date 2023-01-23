@@ -33,11 +33,11 @@ params = {
     'RUN_TPOT-BO-Sr' : False,
     'RUN_TPOT-BO-ALT' : False,
     'RUN_TPOT-BO-AUTO' : False,
-    'VERBOSITY' : 2,               
+    'VERBOSITY' : 4,               
     'DATA_DIR' : 'Data',
-    'RESULTS_DIR' : 'Results_test2',
+    'RESULTS_DIR' : 'Results',
     # if not generating TPOT data, RUNS can be a list of runs
-    'SEEDS' : [43],
+    'SEEDS' : [49],
     'PROBLEMS' : [
                   'quake',
 		# 'socmob',
@@ -49,11 +49,11 @@ params = {
     #             'black_friday'
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
-    'nJOBS' : 4,
+    'nJOBS' : 1,
     # toggle between discrete and continuous parameter spaces
     'DISCRETE_MODE' : True,
     # maximum time allowed for a single pipeline evaluation (mins)
-    'PIPE_EVAL_TIMEOUT' : 1,
+    'PIPE_EVAL_TIMEOUT' : 5,
     #
     # TPOT data generation parameters
     #
