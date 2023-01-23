@@ -37,7 +37,7 @@ params = {
     'DATA_DIR' : 'Data',
     'RESULTS_DIR' : 'Results',
     # if not generating TPOT data, RUNS can be a list of runs
-    'SEEDS' : [49],
+    'SEEDS' : [43],
     'PROBLEMS' : [
                   'quake',
 		# 'socmob',
@@ -49,7 +49,7 @@ params = {
     #             'black_friday'
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
-    'nJOBS' : 1,
+    'nJOBS' : 4,
     # toggle between discrete and continuous parameter spaces
     'DISCRETE_MODE' : True,
     # maximum time allowed for a single pipeline evaluation (mins)

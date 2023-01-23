@@ -56,14 +56,24 @@ class oTPOT_Base(object):
     def optimize(self, X_train, y_train, out_path=None):
         t_start = time.time()
 
+        log_file = os.path.join(out_path,'oTPOT-BASE.log')       
+        time_file = os.path.join(out_path,'oTPOT-BASE.times')       
+        
+        if out_path:
+            self.tpot.log_file = log_file
+            f = open(time_file,'w')
+            f.close()
+        
         fname_tracker = os.path.join(out_path,'oTPOT-BASE.tracker')
         
         self.vprint.v2(f"{u.CYAN}fitting tpot model with {self.tpot.generations}" 
                + " generations (-1 to account for initial evaluations)" 
                + f"..\n{u.WHITE}")
         
-        # fit tpot model to training data
-        self.tpot.fit(X_train, y_train)        
+        t_tpot_start = time.time()
+        # fit TPOT model
+        self.tpot.fit(X_train, y_train)
+        t_tpot_end = time.time()
         
         # instantiate structure collection object
         strucs = StructureCollection(config_dict=self.config_dict)
@@ -87,6 +97,10 @@ class oTPOT_Base(object):
                 for g in pop_tracker:
                     for s in pop_tracker[g]:
                         f.write(f"{g};{s};{pop_tracker[g][s]};{len(strucs[s].operators)}\n")
+            with open(time_file,'w') as f:
+                f.write(f"{0};{0}\n")
+                f.write(f"{1};{t_tpot_end-t_tpot_start}\n")
+        
         
         
         print(f"len strucs after update: {len(strucs)}")
@@ -149,6 +163,7 @@ class oTPOT_Base(object):
                 with open(fname_tracker, 'a') as f:
                     for s in pop_tracker[gen]:
                         f.write(f"{gen};{s};{pop_tracker[gen][s]};{len(strucs[s].operators)}\n")
+                print(f"\n{u.CYAN}[{time.asctime()}]{u.OFF} - {u.YELLOW}Fitting TPOT model for gen {gen} - see {log_file} for progress{u.OFF}")
         
             # pop_tracker[gen] = {}
             
@@ -163,6 +178,10 @@ class oTPOT_Base(object):
             # fit TPOT model
             self.tpot.fit(X_train, y_train)
             t_tpot_end = time.time()
+            
+            if out_path:
+                with open(time_file,'a') as f:
+                    f.write(f"{gen};{t_tpot_end-t_tpot_start}\n")
             
             print(f"{u.RED}TPOT took {t_tpot_end-t_tpot_start} seconds{u.OFF}")
             

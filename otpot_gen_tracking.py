@@ -34,7 +34,7 @@ PROBLEMS = [
 # WTL = ['TPOT-BASE','TPOT-BO-S']#,'TPOT-BO-H']
 METHOD = 'oTPOT-BASE'
 POP_SIZE = 100
-SEEDS = [42]
+SEEDS = [43]
 PRINT_COL = 20
 SAVE_PLOTS = False
 SAVE_PLOTS = False
@@ -65,6 +65,7 @@ for problem in PROBLEMS:
         # f_otb_prog = os.path.join(tb_path,'{METHOD}.progress')
         # f_otb_pipes = os.path.join(tb_path,'{METHOD}.pipes')
         f_otb_tracker = os.path.join(seed_path,f'{METHOD}.tracker')
+        f_otb_times = os.path.join(seed_path,f'{METHOD}.times')
 
         check_files = [f_otb_tracker]
         
@@ -79,7 +80,9 @@ for problem in PROBLEMS:
         sparse_tracker[seed] = {}
         
         full_tracker = {}
-                                     
+                            
+        op_tracker = {}
+                 
         max_op_tracker = []                               
                                        
         with open(f_otb_tracker, 'r') as f:
@@ -98,9 +101,19 @@ for problem in PROBLEMS:
                 
                 sparse_tracker[seed][gen][struc] = n_selected
                 max_op_tracker[gen] = max(max_op_tracker[gen],n_ops)
-                
+                op_tracker[struc] = n_ops
+                                
                 full_tracker[struc] = []
         
+        time_tracker = []
+        
+        if os.path.exists(f_otb_times):
+            with open(f_otb_times) as f:
+                for line in f:
+                    ls = line.split(";")
+                    time_val = float(ls[1])
+                    time_tracker.append(time_val)
+                    
         # populate full tracker
         for struc,tracking in full_tracker.items():
             for gen, gen_strucs in sparse_tracker[seed].items():
@@ -113,7 +126,10 @@ for problem in PROBLEMS:
         
         points = np.empty((0,3))
         
-        for i, v in enumerate(full_tracker.values()):
+        op_points = np.empty((0,2))
+        
+        for i, (s,v) in enumerate(full_tracker.items()):
+            op_points = np.vstack((op_points,[i, op_tracker[s]]))
             for g,n in enumerate(v):
                 if n > 0:
                     points = np.vstack((points, [i, g, n]))
@@ -143,24 +159,41 @@ for problem in PROBLEMS:
         
         fig, axs = plt.subplots(2)
         fig.suptitle(f"{METHOD} - {problem} - seed: {seed}")
-        fig.tight_layout(h_pad=3.5)
+        
 
         
-        im=axs[0].scatter(points[:,0], points[:,1], c=points[:,2], cmap=cmap,norm=norm,marker='.',s=marksize)
+        gen_plot=axs[0].scatter(points[:,0], points[:,1], c=points[:,2], cmap=cmap,norm=norm,marker='.',s=marksize)
         # plt.scatter(points[:,0], points[:,1], c=points[:,2], cmap=newcmp)
         axs[0].set_ylabel("Generation")
         axs[0].set_xlabel("Structure index")
+        fig.colorbar(gen_plot,ax=axs[0],label="No. selected in generation (max = pop size)",ticks=c_ticks)
+        
+        op_ax = axs[0].twinx()
+        # op_plot = op_ax.scatter(op_points[:,0],op_points[:,1],c="tomato",marker='.',s=2)
+        op_plot = op_ax.bar(op_points[:,0],op_points[:,1],color="linen",width=1)
+        op_ax.set_ylabel("Number of operators")
+        
+        axs[0].legend([gen_plot,op_plot],['Selected','No. Operators'],loc='lower right')
+        
+        axs[0].set_zorder(2.5)
+        axs[0].set_frame_on(False)
+        
         # axs[0].set_title("TPOT-BASE")
         
         # axs[0].colorbar(label="No. selected in generation (max = pop size)",ticks=c_ticks)
         
         
-        axs[1].plot(max_op_tracker)
+        max_op_plot, = axs[1].plot(max_op_tracker)
         axs[1].set_xlabel("Generation")
-        axs[1].set_ylabel("Max number of operations")
-        
-        fig.colorbar(im,ax=axs[0],label="No. selected in generation (max = pop size)",ticks=c_ticks)
-        
+        axs[1].set_ylabel("Max number of operators")
+        if os.path.exists(f_otb_times):
+            time_ax = axs[1].twinx()
+            time_plot, = time_ax.plot(time_tracker,c='C1')
+            time_ax.set_ylabel("Time taken by TPOT [s]")
+            axs[1].legend([max_op_plot,time_plot],['No. Operators','TPOT Time'],loc='lower right')
+        else:
+            axs[1].legend([max_op_plot],['No. Operators'],loc='lower right')
+        fig.tight_layout(h_pad=3.5)
         plt.show()
         
         # axs[1].scatter(points[:,0], points[:,1], c=points[:,2], cmap=mpl.colormaps['viridis_r'],norm=norm,marker='.',s=2)
