@@ -21,6 +21,7 @@ EPS = 1e-10
 
 class oTPOT_Base(object):    
     def __init__(self,
+                 start_gen=2,
                  n_gens=100,
                  pop_size=100,
                  seed=42,
@@ -29,6 +30,7 @@ class oTPOT_Base(object):
                  pipe_eval_timeout=5,
                  vprint=u.Vprint(1)):
         
+        self.start_gen=start_gen
         self.pipes = {}
         self.n_gens=n_gens
         self.pop_size=pop_size
@@ -107,12 +109,10 @@ class oTPOT_Base(object):
         
         # copy evaluated individuals dictionary
         self.pipes = copy.deepcopy(self.tpot.evaluated_individuals_)
-        
-        # self.tpot.generations = 1
-        
-        for gen in range(2,self.n_gens):
+               
+        for gen in range(self.start_gen,self.n_gens):
             # get mu sigma and max allocs
-            mu = np.array([strucs[s].mu for s in strucs.keys()])
+            mu = -1 * np.array([strucs[s].mu for s in strucs.keys()])
             max_allocs = np.array([len(strucs[s]) for s in strucs.keys()])
             sigma = np.array([strucs[s].std for s in strucs.keys()])
             
@@ -155,9 +155,11 @@ class oTPOT_Base(object):
                 pop_tracker[gen][struc.structure] = n
                     
                 for j,p in enumerate(add_pipes):
-                    print(f"{u.YELLOW}{j}{u.OFF}: {p}")
+                    print(f"{u.YELLOW}{j}{u.OFF}: {p}, cv: {self.tpot.evaluated_individuals_[p]['internal_cv_score']}")
                     self.tpot._pop.append(creator.Individual.from_string(p, self.tpot._pset))
                 print("")
+            
+            print(f"\n{u.RED}Population of {len(self.tpot._pop)} individuals created{u.OFF}\n")
             
             if (out_path):
                 with open(fname_tracker, 'a') as f:

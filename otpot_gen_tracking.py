@@ -21,7 +21,7 @@ import matplotlib.colors
 from matplotlib.lines import Line2D
 import cmasher as cmr
 
-RESULTS_PATH = 'Results'
+RESULTS_PATH = 'Results_test2'
 PROBLEMS = [            
     'quake',
     # 'socmob',
@@ -32,7 +32,7 @@ PROBLEMS = [
     ]
 # MODES = ['discrete']#,'continuous']
 # WTL = ['TPOT-BASE','TPOT-BO-S']#,'TPOT-BO-H']
-METHOD = 'oTPOT-BASE'
+METHOD = 'TPOT-BASE'
 POP_SIZE = 100
 SEEDS = [43]
 PRINT_COL = 20

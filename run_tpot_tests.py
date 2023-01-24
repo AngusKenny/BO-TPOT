@@ -37,7 +37,7 @@ params = {
     'DATA_DIR' : 'Data',
     'RESULTS_DIR' : 'Results',
     # if not generating TPOT data, RUNS can be a list of runs
-    'SEEDS' : [42],
+    'SEEDS' : [43],
     'PROBLEMS' : [
                   'quake',
 		# 'socmob',
@@ -67,6 +67,7 @@ params = {
     # stop optuna running forever if it cannot find enough new pipelines
     'OPTUNA_TIMEOUT_TRIALS' : 100,
     'nALT_ITERS' : 10,
+    'ALLOW_oTPOT_WARM_START' : True
     }
 
 # suppress experimental warnings, etc if verbosity below 4

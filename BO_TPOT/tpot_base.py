@@ -12,6 +12,8 @@ import utils.tpot_utils as u
 import copy
 import os
 import time
+from utils.data_structures import StructureCollection
+import numpy as np
 
 class TPOT_Base(object):    
     def __init__(self,
@@ -35,7 +37,7 @@ class TPOT_Base(object):
         tpot_verb = vprint.verbosity + 1 if vprint.verbosity > 0 else 0
         
         # create TPOT object and fit for tot_gens generations
-        self.tpot = TPOTRegressor(generations=self.n_gens-1,
+        self.tpot = TPOTRegressor(generations=1,
                                   population_size=self.pop_size, 
                                   mutation_rate=0.9, 
                                   crossover_rate=0.1, 
@@ -50,22 +52,92 @@ class TPOT_Base(object):
     def optimize(self, X_train, y_train, out_path=None):
         t_start = time.time()
 
+        time_file = os.path.join(out_path,'TPOT-BASE.times')       
+        
+        if out_path:
+            f = open(time_file,'w')
+            f.close()
+        
+        fname_tracker = os.path.join(out_path,'TPOT-BASE.tracker')
+        
         self.vprint.v2(f"{u.CYAN}fitting tpot model with {self.tpot.generations}" 
                + " generations (-1 to account for initial evaluations)" 
                + f"..\n{u.WHITE}")
         
-        # in case something has been done to pipes externally update tpot pipes
-        self.tpot.evaluated_individuals_ = copy.deepcopy(self.pipes)
-        
-        # fit tpot model to training data
+        t_tpot_start = time.time()
+        # fit TPOT model
         self.tpot.fit(X_train, y_train)
+        t_tpot_end = time.time()
+        
+        # instantiate structure collection object
+        strucs = StructureCollection(config_dict=self.config_dict)
+        
+        print(f"len strucs before update: {len(strucs)}")
+        
+        # import structures from tpot dictionary
+        strucs.update(self.tpot.evaluated_individuals_)
+        
+        pop_tracker = {0: {}, 1: {}}
+        
+        for p,v in self.tpot.evaluated_individuals_.items():
+            if v['internal_cv_score'] == -np.inf: continue
+            if v['structure'] not in pop_tracker[v['generation']]:
+                pop_tracker[v['generation']][v['structure']] = 1
+            else:
+                pop_tracker[v['generation']][v['structure']] = pop_tracker[v['generation']][v['structure']] + 1
+        
+        if (out_path):
+            with open(fname_tracker, 'w') as f:
+                for g in pop_tracker:
+                    for s in pop_tracker[g]:
+                        f.write(f"{g};{s};{pop_tracker[g][s]};{len(strucs[s].operators)}\n")
+            with open(time_file,'w') as f:
+                f.write(f"{0};{0}\n")
+                f.write(f"{1};{t_tpot_end-t_tpot_start}\n")    
+        
+        print(f"len strucs after update: {len(strucs)}")
         
         # copy evaluated individuals dictionary
         self.pipes = copy.deepcopy(self.tpot.evaluated_individuals_)
-        
-        for k,v in self.pipes.items():
-            v['source'] = 'TPOT-BASE'
-        
+
+        for gen in range(2,self.n_gens):            
+            # create TPOT population for next generation           
+            pop_tracker[gen] = {}
+                        
+            for i,p in enumerate(self.tpot._pop):
+                struc = u.string_to_bracket(str(p))
+                if struc not in pop_tracker[gen]:
+                    pop_tracker[gen][struc] = 0
+                else:
+                    pop_tracker[gen][struc] = pop_tracker[gen][struc] + 1
+                
+            if (out_path):
+                with open(fname_tracker, 'a') as f:
+                    for s in pop_tracker[gen]:
+                        f.write(f"{gen};{s};{pop_tracker[gen][s]};{len(strucs[s].operators)}\n")
+                        
+            print(f"\n{u.CYAN}[{time.asctime()}]{u.OFF} - {u.YELLOW}Fitting TPOT model for gen {gen}, seed {self.seed}{u.OFF}")
+            
+            t_tpot_start = time.time()
+            # fit TPOT model
+            self.tpot.fit(X_train, y_train)
+            t_tpot_end = time.time()
+            
+            if out_path:
+                with open(time_file,'a') as f:
+                    f.write(f"{gen};{t_tpot_end-t_tpot_start}\n")
+            
+            print(f"{u.RED}TPOT took {t_tpot_end-t_tpot_start} seconds{u.OFF}")
+            
+            for k,v in self.tpot.evaluated_individuals_.items():
+                if k not in self.pipes:
+                    self.pipes[k] = v
+                    self.pipes[k]['generation'] = gen
+                    self.pipes[k]['source'] = 'TPOT-BASE'
+                    
+            # update structures
+            strucs.update(self.tpot.evaluated_individuals_)
+               
         t_end = time.time()
         
         best_tpot_pipe, best_tpot_cv = u.get_best(self.pipes)
