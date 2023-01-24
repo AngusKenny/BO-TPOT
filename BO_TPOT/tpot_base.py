@@ -91,7 +91,7 @@ class TPOT_Base(object):
             with open(fname_tracker, 'w') as f:
                 for g in pop_tracker:
                     for s in pop_tracker[g]:
-                        f.write(f"{g};{s};{pop_tracker[g][s]};{len(strucs[s].operators)}\n")
+                        f.write(f"{g};{s};{pop_tracker[g][s]};{strucs[s].cv}\n")
             with open(time_file,'w') as f:
                 f.write(f"{0};{0}\n")
                 f.write(f"{1};{t_tpot_end-t_tpot_start}\n")    
@@ -115,7 +115,7 @@ class TPOT_Base(object):
             if (out_path):
                 with open(fname_tracker, 'a') as f:
                     for s in pop_tracker[gen]:
-                        f.write(f"{gen};{s};{pop_tracker[gen][s]};{len(strucs[s].operators)}\n")
+                        f.write(f"{gen};{s};{pop_tracker[gen][s]};{strucs[s].cv}\n")
                         
             print(f"\n{u.CYAN}[{time.asctime()}]{u.OFF} - {u.YELLOW}Fitting TPOT model for gen {gen}, seed {self.seed}{u.OFF}")
             
