@@ -34,7 +34,7 @@ PROBLEMS = [
 # WTL = ['TPOT-BASE','TPOT-BO-S']#,'TPOT-BO-H']
 METHOD = 'oTPOT-BASE'
 POP_SIZE = 100
-SEEDS = [42]
+SEEDS = [44]
 PRINT_COL = 20
 SAVE_PLOTS = False
 SAVE_PLOTS = False
@@ -62,7 +62,7 @@ for problem in PROBLEMS:
         seed_path = os.path.join(prob_path, f'{METHOD}', seed_txt)
     
         # otb_path = os.path.join(run_path,'{METHOD}')
-        f_otb_prog = os.path.join(seed_path,f'{METHOD}.progress')
+        # f_otb_prog = os.path.join(seed_path,f'{METHOD}.progress')
         # f_otb_pipes = os.path.join(tb_path,'{METHOD}.pipes')
         f_otb_tracker = os.path.join(seed_path,f'{METHOD}.tracker')
         f_otb_times = os.path.join(seed_path,f'{METHOD}.times')
@@ -84,6 +84,9 @@ for problem in PROBLEMS:
         op_tracker = {}
                  
         max_op_tracker = []                               
+                                  
+        best_cv = np.inf
+        best_struc = ""                                  
                                        
         with open(f_otb_tracker, 'r') as f:
             for line in f:
@@ -91,9 +94,13 @@ for problem in PROBLEMS:
                 gen = int(ls[0])
                 struc = ls[1]
                 n_selected = int(ls[2])
-                # n_ops = int(ls[3])
                 strip_struc = struc.replace("{input_matrix}","")
                 n_ops = len(strip_struc.split("{"))
+                cv = float(ls[3])
+                if cv < 0:
+                    if -1 * cv < best_cv:
+                        best_cv = -1 * cv
+                        best_struc = struc
                 
                 if gen not in sparse_tracker[seed]:
                     sparse_tracker[seed][gen] = {}
@@ -115,15 +122,15 @@ for problem in PROBLEMS:
                     time_val = float(ls[1])
                     time_tracker.append(time_val)
                     
-        best_cv = "Unfinished"
         
-        if os.path.exists(f_otb_prog):
-            with open(f_otb_prog) as f:
-                for line in f:
-                    if "Best full" in line and "CV:" in line:
-                        ls = line.split(":")
-                        best_cv = -1 * float(ls[-1])
-                        break
+        
+        # if os.path.exists(f_otb_prog):
+        #     with open(f_otb_prog) as f:
+        #         for line in f:
+        #             if "Best full" in line and "CV:" in line:
+        #                 ls = line.split(":")
+        #                 best_cv = -1 * float(ls[-1])
+        #                 break
                                         
         # populate full tracker
         for struc,tracking in full_tracker.items():
@@ -139,11 +146,16 @@ for problem in PROBLEMS:
         
         op_points = np.empty((0,2))
         
+        best_idx = 0
+        
         for i, (s,v) in enumerate(full_tracker.items()):
             op_points = np.vstack((op_points,[i, op_tracker[s]]))
             for g,n in enumerate(v):
                 if n > 0:
                     points = np.vstack((points, [i, g, n]))
+            if best_struc == s:
+                best_idx = i
+                
         
         # # modified hsv in 256 color class
         # cm_modified = cm.get_cmap('viridis_r', 256)
@@ -187,6 +199,11 @@ for problem in PROBLEMS:
         axs[0].set_zorder(2.5)
         axs[0].set_frame_on(False)
         
+        print(best_idx)      
+        
+        if best_cv < np.inf:
+            op_ax.annotate('', xy=(best_idx,0), xytext=(best_idx, -0.1), arrowprops = dict(facecolor='red',edgecolor='red',shrink=0.05,headwidth=5,headlength=8),verticalalignment='bottom',horizontalalignment='center')
+        
         # axs[0].set_title("TPOT-BASE")
         
         # axs[0].colorbar(label="No. selected in generation (max = pop size)",ticks=c_ticks)
@@ -203,6 +220,7 @@ for problem in PROBLEMS:
         else:
             axs[1].legend([max_op_plot],['No. Operators'],loc='lower right')
         fig.tight_layout(h_pad=3.5)
+        
         plt.show()
         
         # axs[1].scatter(points[:,0], points[:,1], c=points[:,2], cmap=mpl.colormaps['viridis_r'],norm=norm,marker='.',s=2)

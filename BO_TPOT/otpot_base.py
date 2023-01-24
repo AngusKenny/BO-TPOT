@@ -155,7 +155,7 @@ class oTPOT_Base(object):
                 pop_tracker[gen][struc.structure] = n
                     
                 for j,p in enumerate(add_pipes):
-                    print(f"{u.YELLOW}{j}{u.OFF}: {p}, cv: {self.tpot.evaluated_individuals_[p]['internal_cv_score']}")
+                    # print(f"{u.YELLOW}{j}{u.OFF}: {p}, cv: {self.tpot.evaluated_individuals_[p]['internal_cv_score']}")
                     self.tpot._pop.append(creator.Individual.from_string(p, self.tpot._pset))
                 print("")
             
