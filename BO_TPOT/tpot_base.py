@@ -51,10 +51,11 @@ class TPOT_Base(object):
         
     def optimize(self, X_train, y_train, out_path=None):
         t_start = time.time()
-
+        log_file = os.path.join(out_path,'TPOT-BASE.log')
         time_file = os.path.join(out_path,'TPOT-BASE.times')       
         
         if out_path:
+            self.tpot.log_file = log_file
             f = open(time_file,'w')
             f.close()
         

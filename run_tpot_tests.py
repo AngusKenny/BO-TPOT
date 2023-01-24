@@ -22,8 +22,8 @@ params = {
     # clear BO and alt data from directories to be written to 
     # (will ask for confirmation)
     'CLEAN_DATA': False,    
-    'RUN_oTPOT-BASE' : True,
-    'RUN_TPOT-BASE' : False,
+    'RUN_oTPOT-BASE' : False,
+    'RUN_TPOT-BASE' : True,
     'RUN_dTPOT-BASE': False,
     'RUN_TPOT-BO-S' : False,
     'RUN_TPOT-BO-O' : False,
@@ -35,9 +35,9 @@ params = {
     'RUN_TPOT-BO-AUTO' : False,
     'VERBOSITY' : 4,               
     'DATA_DIR' : 'Data',
-    'RESULTS_DIR' : 'Results',
+    'RESULTS_DIR' : 'Results_test2',
     # if not generating TPOT data, RUNS can be a list of runs
-    'SEEDS' : [44],
+    'SEEDS' : [52,53,54,55,56,57,58,59,60,61,62],
     'PROBLEMS' : [
                   'quake',
 		# 'socmob',
@@ -49,7 +49,7 @@ params = {
     #             'black_friday'
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
-    'nJOBS' : 4,
+    'nJOBS' : 8,
     # toggle between discrete and continuous parameter spaces
     'DISCRETE_MODE' : True,
     # maximum time allowed for a single pipeline evaluation (mins)
