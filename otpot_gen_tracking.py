@@ -21,7 +21,7 @@ import matplotlib.colors
 from matplotlib.lines import Line2D
 import cmasher as cmr
 
-RESULTS_PATH = 'Results_test2'
+RESULTS_PATH = 'Results'
 PROBLEMS = [            
     'quake',
     # 'socmob',
@@ -32,9 +32,9 @@ PROBLEMS = [
     ]
 # MODES = ['discrete']#,'continuous']
 # WTL = ['TPOT-BASE','TPOT-BO-S']#,'TPOT-BO-H']
-METHOD = 'TPOT-BASE'
+METHOD = 'oTPOT-BASE'
 POP_SIZE = 100
-SEEDS = [43]
+SEEDS = [42]
 PRINT_COL = 20
 SAVE_PLOTS = False
 SAVE_PLOTS = False
@@ -62,7 +62,7 @@ for problem in PROBLEMS:
         seed_path = os.path.join(prob_path, f'{METHOD}', seed_txt)
     
         # otb_path = os.path.join(run_path,'{METHOD}')
-        # f_otb_prog = os.path.join(tb_path,'{METHOD}.progress')
+        f_otb_prog = os.path.join(seed_path,f'{METHOD}.progress')
         # f_otb_pipes = os.path.join(tb_path,'{METHOD}.pipes')
         f_otb_tracker = os.path.join(seed_path,f'{METHOD}.tracker')
         f_otb_times = os.path.join(seed_path,f'{METHOD}.times')
@@ -107,6 +107,7 @@ for problem in PROBLEMS:
         
         time_tracker = []
         
+        
         if os.path.exists(f_otb_times):
             with open(f_otb_times) as f:
                 for line in f:
@@ -114,6 +115,16 @@ for problem in PROBLEMS:
                     time_val = float(ls[1])
                     time_tracker.append(time_val)
                     
+        best_cv = "Unfinished"
+        
+        if os.path.exists(f_otb_prog):
+            with open(f_otb_prog) as f:
+                for line in f:
+                    if "Best full" in line and "CV:" in line:
+                        ls = line.split(":")
+                        best_cv = -1 * float(ls[-1])
+                        break
+                                        
         # populate full tracker
         for struc,tracking in full_tracker.items():
             for gen, gen_strucs in sparse_tracker[seed].items():
@@ -158,10 +169,8 @@ for problem in PROBLEMS:
         # plt.rcParams["figure.figsize"] = plt.rcParamsDefault["figure.figsize"]
         
         fig, axs = plt.subplots(2)
-        fig.suptitle(f"{METHOD} - {problem} - seed: {seed}")
-        
-
-        
+        fig.suptitle(f"{METHOD} - {problem} - seed: {seed}, best CV: {best_cv:.6e}")
+               
         gen_plot=axs[0].scatter(points[:,0], points[:,1], c=points[:,2], cmap=cmap,norm=norm,marker='.',s=marksize)
         # plt.scatter(points[:,0], points[:,1], c=points[:,2], cmap=newcmp)
         axs[0].set_ylabel("Generation")

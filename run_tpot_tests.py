@@ -22,8 +22,8 @@ params = {
     # clear BO and alt data from directories to be written to 
     # (will ask for confirmation)
     'CLEAN_DATA': False,    
-    'RUN_oTPOT-BASE' : True,
-    'RUN_TPOT-BASE' : False,
+    'RUN_oTPOT-BASE' : False,
+    'RUN_TPOT-BASE' : True,
     'RUN_dTPOT-BASE': False,
     'RUN_TPOT-BO-S' : False,
     'RUN_TPOT-BO-O' : False,
@@ -35,9 +35,9 @@ params = {
     'RUN_TPOT-BO-AUTO' : False,
     'VERBOSITY' : 4,               
     'DATA_DIR' : 'Data',
-    'RESULTS_DIR' : 'Results',
+    'RESULTS_DIR' : 'Results_test2',
     # if not generating TPOT data, RUNS can be a list of runs
-    'SEEDS' : [43],
+    'SEEDS' : [42],
     'PROBLEMS' : [
                   'quake',
 		# 'socmob',

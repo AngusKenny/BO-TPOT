@@ -164,7 +164,7 @@ class oTPOT_Base(object):
             if (out_path):
                 with open(fname_tracker, 'a') as f:
                     for s in pop_tracker[gen]:
-                        f.write(f"{gen};{s};{pop_tracker[gen][s]};{len(strucs[s].operators)}\n")
+                        f.write(f"{gen};{s};{pop_tracker[gen][s]};{strucs[s].cv}\n")
                 print(f"\n{u.CYAN}[{time.asctime()}]{u.OFF} - {u.YELLOW}Fitting TPOT model for gen {gen}, seed {self.seed} - see {log_file} for progress{u.OFF}")
         
             # pop_tracker[gen] = {}
