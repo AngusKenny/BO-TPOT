@@ -39,6 +39,7 @@ params = {
                         #    'TPOT-BO-Hd','TPOT-BO-Hc',
                         #    'TPOT-BO-Hs',
                         #    'TPOT-BO-Od','TPOT-BO-Oc',
+                            # 'oTPOT-BASE'
                            ],
     'INCLUDE_TB80'       : False,
     'SEED_LIST'          : [],
@@ -134,7 +135,12 @@ for problem in prob_list:
                             data[problem][seed]['TPOT-BASE'] = -float(line.split(":")[-1])
                         if 'Best initial TPOT CV' in line and params['INCLUDE_TB80']:
                             data[problem][seed]['TPOT-BASE80'] = -float(line.split(":")[-1])
-            
+                            
+                if method == 'oTPOT-BASE':
+                    for line in f:
+                        if 'Best full oTPOT CV' in line:
+                            data[problem][seed]['oTPOT-BASE'] = -float(line.split(":")[-1])
+                        
                 if base_method == 'TPOT-BO-S' or base_method == 'TPOT-BO-O' or (base_method == 'TPOT-BO-H' and method != 'TPOT-BO-Hs'):
                     read_data = False
                     n_evals = 0

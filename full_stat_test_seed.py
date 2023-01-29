@@ -26,18 +26,19 @@ params = {
     'RESULTS_DIR'       : 'Results',
     'PROBLEMS'          : [
                             'quake',
-                            'socmob',
-                            'abalone',
-                            'brazilian_houses',
-                            'house_16h',
-                            'elevators'
+                            # 'socmob',
+                            # 'abalone',
+                            # 'brazilian_houses',
+                            # 'house_16h',
+                            # 'elevators'
                           ],
     'METHODS'           : ['TPOT-BASE',
                         #    'TPOT-BO-Sd','TPOT-BO-Sc',
                             # 'TPOT-BO-ALTd','TPOT-BO-ALTc',
-                           'TPOT-BO-AUTOd','TPOT-BO-AUTOc',
+                        #    'TPOT-BO-AUTOd','TPOT-BO-AUTOc',
                         #    'TPOT-BO-Hd','TPOT-BO-Hc',
-                           'TPOT-BO-Hs'
+                        #    'TPOT-BO-Hs',
+                           'oTPOT-BASE',
                            ],
     'SEED_LIST'          : [],
     'SAVE_STATS'        : False,

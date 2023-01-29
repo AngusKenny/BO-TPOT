@@ -21,26 +21,50 @@ import matplotlib.colors
 from matplotlib.lines import Line2D
 import cmasher as cmr
 
-RESULTS_PATH = 'Results'
+# import matplotlib
+mpl.rcParams['pdf.fonttype'] = 42
+mpl.rcParams['ps.fonttype'] = 42
+
+mpl.rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
+mpl.rc('text', usetex=True)
+
+# import matplotlib.pyplot as plt
+# plt.rcParams["font.family"] = "serif"
+# plt.rcParams["font.serif"] = ["Computer Modern Serif"]
+plt.rcParams["font.size"] = 18
+# plt.rcParams["mathtext.fontset"] = "dejavuserif"
+
+# mpl.rcParams['mathtext.fontset'] = 'custom'
+# mpl.rcParams['mathtext.rm'] = 'Bitstream Vera Sans'
+# mpl.rcParams['mathtext.it'] = 'Bitstream Vera Sans:italic'
+# mpl.rcParams['mathtext.bf'] = 'Bitstream Vera Sans:bold'
+# mpl.pyplot.title(r'ABC123 vs $\mathrm{ABC123}^{123}$')
+
+RESULTS_PATH = 'Results_test2'
 PROBLEMS = [            
-    'quake',
+    # 'quake',
     # 'socmob',
-    # 'abalone',
+    'abalone',
     # 'brazilian_houses',
     # 'house_16h',
     # 'elevators'
     ]
 # MODES = ['discrete']#,'continuous']
 # WTL = ['TPOT-BASE','TPOT-BO-S']#,'TPOT-BO-H']
-METHOD = 'oTPOT-BASE'
+METHOD = 'TPOT-BASE'
 POP_SIZE = 100
 SEEDS = [44]
 PRINT_COL = 20
+# FIGURE_SIZE = (15,9)
+FIGURE_SIZE = (5.8,4)
+PLOT_OPS = False
+PLOT_TIMES = False
 SAVE_PLOTS = False
 SAVE_PLOTS = False
 # WIN_TOL = 1e-14
 # ANIMATE = False
-SHOW_TITLE = True
+SHOW_TITLE = False
+COLOURBAR_PAD = 0.02
 # YLIM = None
 # YLIM = [3.54e-6,3.685e-6]
 # LEGEND_POS = 'lower right'
@@ -62,7 +86,7 @@ for problem in PROBLEMS:
         seed_path = os.path.join(prob_path, f'{METHOD}', seed_txt)
     
         # otb_path = os.path.join(run_path,'{METHOD}')
-        # f_otb_prog = os.path.join(seed_path,f'{METHOD}.progress')
+        f_otb_prog = os.path.join(seed_path,f'{METHOD}.progress')
         # f_otb_pipes = os.path.join(tb_path,'{METHOD}.pipes')
         f_otb_tracker = os.path.join(seed_path,f'{METHOD}.tracker')
         f_otb_times = os.path.join(seed_path,f'{METHOD}.times')
@@ -123,14 +147,14 @@ for problem in PROBLEMS:
                     time_tracker.append(time_val)
                     
         
-        
-        # if os.path.exists(f_otb_prog):
-        #     with open(f_otb_prog) as f:
-        #         for line in f:
-        #             if "Best full" in line and "CV:" in line:
-        #                 ls = line.split(":")
-        #                 best_cv = -1 * float(ls[-1])
-        #                 break
+        if best_cv == np.inf:
+            if os.path.exists(f_otb_prog):
+                with open(f_otb_prog) as f:
+                    for line in f:
+                        if "Best full" in line and "CV:" in line:
+                            ls = line.split(":")
+                            best_cv = -1 * float(ls[-1])
+                            break
                                         
         # populate full tracker
         for struc,tracking in full_tracker.items():
@@ -170,55 +194,62 @@ for problem in PROBLEMS:
         cmap = plt.get_cmap('cmr.cosmic_r')
         # cmap = plt.get_cmap('cmr.dusk_r')
         
-        c_tick_grads = POP_SIZE//10
+        c_tick_grads = POP_SIZE//5
         c_ticks = [1] + [i * c_tick_grads for i in range(1,10)] + [POP_SIZE]
         
         max_gen = max(points[:,1])
         marksize = 400//max_gen
         
-        plt.rcParams["figure.figsize"] = (15,9)
+        plt.rcParams["figure.figsize"] = FIGURE_SIZE
         
         # plt.rcParams["figure.figsize"] = plt.rcParamsDefault["figure.figsize"]
         
-        fig, axs = plt.subplots(2)
-        fig.suptitle(f"{METHOD} - {problem} - seed: {seed}, best CV: {best_cv:.6e}")
-               
-        gen_plot=axs[0].scatter(points[:,0], points[:,1], c=points[:,2], cmap=cmap,norm=norm,marker='.',s=marksize)
+        n_plots = 2 if PLOT_TIMES else 1
+                
+        fig, axs = plt.subplots(n_plots)
+        if SHOW_TITLE:
+            fig.suptitle(f"{METHOD} - {problem} - seed: {seed}, best CV: {best_cv:.6e}")
+        
+        ax = axs[0] if PLOT_TIMES else axs
+        
+        gen_plot=ax.scatter(points[:,0], points[:,1], c=points[:,2], cmap=cmap,norm=norm,marker='.',s=marksize)
         # plt.scatter(points[:,0], points[:,1], c=points[:,2], cmap=newcmp)
-        axs[0].set_ylabel("Generation")
-        axs[0].set_xlabel("Structure index")
-        fig.colorbar(gen_plot,ax=axs[0],label="No. selected in generation (max = pop size)",ticks=c_ticks)
+        ax.set_ylabel("Generation")
+        ax.set_xlabel("Structure index")
+        fig.colorbar(gen_plot,pad=COLOURBAR_PAD,ax=ax,label="No. selected in generation",ticks=c_ticks)
         
-        op_ax = axs[0].twinx()
-        # op_plot = op_ax.scatter(op_points[:,0],op_points[:,1],c="tomato",marker='.',s=2)
-        op_plot = op_ax.bar(op_points[:,0],op_points[:,1],color="linen",width=1)
-        op_ax.set_ylabel("Number of operators")
-        
-        axs[0].legend([gen_plot,op_plot],['Selected','No. Operators'],loc='lower right')
-        
-        axs[0].set_zorder(2.5)
-        axs[0].set_frame_on(False)
-        
-        print(best_idx)      
-        
-        if best_cv < np.inf:
-            op_ax.annotate('', xy=(best_idx,0), xytext=(best_idx, -0.1), arrowprops = dict(facecolor='red',edgecolor='red',shrink=0.05,headwidth=5,headlength=8),verticalalignment='bottom',horizontalalignment='center')
-        
+        if PLOT_OPS:
+            op_ax = ax.twinx()
+            # op_plot = op_ax.scatter(op_points[:,0],op_points[:,1],c="tomato",marker='.',s=2)
+            # op_plot = op_ax.bar(op_points[:,0],op_points[:,1],color="linen",width=1)
+            op_plot = op_ax.bar(op_points[:,0],op_points[:,1],color="mistyrose",width=1)
+            op_ax.set_ylabel("Number of operators")
+            
+            ax.legend([gen_plot,op_plot],['Selected','No. Operators'],loc='lower right')
+            
+            ax.set_zorder(2.5)
+            ax.set_frame_on(False)
+            
+            if best_struc !=   "":
+                op_ax.annotate('', xy=(best_idx,0), xytext=(best_idx, -0.1), arrowprops = dict(facecolor='red',edgecolor='red',shrink=0.05,headwidth=5,headlength=8),verticalalignment='bottom',horizontalalignment='center')
+        else:
+            if best_struc !=   "":
+                ax.annotate('', xy=(best_idx,0), xytext=(best_idx, -0.1), arrowprops = dict(facecolor='red',edgecolor='red',shrink=0.05,headwidth=5,headlength=8),verticalalignment='bottom',horizontalalignment='center')
         # axs[0].set_title("TPOT-BASE")
         
         # axs[0].colorbar(label="No. selected in generation (max = pop size)",ticks=c_ticks)
         
-        
-        max_op_plot, = axs[1].plot(max_op_tracker)
-        axs[1].set_xlabel("Generation")
-        axs[1].set_ylabel("Max number of operators")
-        if os.path.exists(f_otb_times):
-            time_ax = axs[1].twinx()
-            time_plot, = time_ax.plot(time_tracker,c='C1')
-            time_ax.set_ylabel("Time taken by TPOT [s]")
-            axs[1].legend([max_op_plot,time_plot],['No. Operators','TPOT Time'],loc='lower right')
-        else:
-            axs[1].legend([max_op_plot],['No. Operators'],loc='lower right')
+        if PLOT_TIMES:
+            max_op_plot, = axs[1].plot(max_op_tracker)
+            axs[1].set_xlabel("Generation")
+            axs[1].set_ylabel("Max number of operators")
+            if os.path.exists(f_otb_times):
+                time_ax = axs[1].twinx()
+                time_plot, = time_ax.plot(time_tracker,c='C1')
+                time_ax.set_ylabel("Time taken by TPOT [s]")
+                axs[1].legend([max_op_plot,time_plot],['No. Operators','TPOT Time'],loc='lower right')
+            else:
+                axs[1].legend([max_op_plot],['No. Operators'],loc='lower right')
         fig.tight_layout(h_pad=3.5)
         
         plt.show()

@@ -29,7 +29,7 @@ PROBLEMS = [
     ]
 MODES = ['discrete']#,'continuous']
 WTL = ['TPOT-BASE']#,'TPOT-BO-S','TPOT-BO-H']
-RUNS = [0]
+RUNS = [2]
 PRINT_COL = 20
 SAVE_PLOTS = True
 SAVE_PLOTS = False

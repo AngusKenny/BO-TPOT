@@ -16,6 +16,7 @@ import pygmo as pg
 import optuna
 import matplotlib.pyplot as plt
 import matplotlib.colors
+import matplotlib as mpl
 from matplotlib.lines import Line2D
 
 RESULTS_PATH = 'Results_old'
@@ -30,8 +31,19 @@ WIN_TOL = 1e-14
 ANIMATE = False
 SHOW_TITLE = False
 YLIM = None
+FIGURE_SIZE = (4.8,4)
 # YLIM = [3.54e-6,3.685e-6]
 # LEGEND_POS = 'lower right'
+
+plt.rcParams["figure.figsize"] = FIGURE_SIZE
+mpl.rcParams['pdf.fonttype'] = 42
+mpl.rcParams['ps.fonttype'] = 42
+plt.rcParams["font.size"] = 18
+# plt.rcParams["font.family"] = "serif"
+# plt.rcParams["mathtext.fontset"] = "dejavuserif"
+
+mpl.rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
+mpl.rc('text', usetex=True)
 
 disc_txt = "discrete" if DISCRETE_MODE else "continuous"
 
@@ -246,7 +258,7 @@ for gen in idx_plots:
     size = 10 if gen> 0 else 40
     ax4.scatter(idx_plots[gen][:,0],idx_plots[gen][:,1],label='TPOT-BO-H',marker='o',s=size,color=blues(colour_grads[gen]))
     
-l_tbh80 = Line2D([0], [0], label="TPOT-BO-H(@80 gens)", color='#7BC8F6', lw=0,marker='o',markersize=8)
+l_tbh80 = Line2D([0], [0], label="TPOT-BASE(@80 gens)", color='#7BC8F6', lw=0,marker='o',markersize=8)
 l_tbh = Line2D([0], [0], label="TPOT-BO-H", color='#030764', lw=0,marker='o',markersize=4)
 l_tbs80 = Line2D([0], [0], label="TPOT-BO-S(@80 gens)", color='#FFA500', lw=0,marker='o',markerfacecolor='none',markersize=9)
 l_tbs = Line2D([0], [0], label="TPOT-BO-S", color='#E50000', lw=0,marker='o',markerfacecolor='none',markersize=9)
@@ -255,13 +267,14 @@ ax4.legend(handles=[l_tbh80,l_tbh,l_tbs80,l_tbs],prop={'size': 9})
 # ax2.legend()
 if SHOW_TITLE:
     ax4.set_title(f"{PROBLEM} :: Run {med_run} :: generation {gen}")
-ax4.set_ylabel("best CV")
-ax4.set_xlabel("pipeline index")
+ax4.set_ylabel("Best CV for structure")
+ax4.set_xlabel("Structure index")
 # ax3.set_ylim(ylims)
 # ax3.set_xlim(xlims)
 if SAVE_PLOTS:
     f_hvs = os.path.join(plot_path,f'{PROBLEM}_TPOT-BO-HvS_run_{med_run}_{disc_flag}.png')
     fig4.savefig(f_hvs,bbox_inches='tight')
+fig4.tight_layout(h_pad=3.5)
 plt.show()
 
 
