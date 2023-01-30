@@ -16,21 +16,22 @@ import copy
 import os
 import time
 import numpy as np
+import pickle
 
 EPS = 1e-10
 
 class oTPOT_Base(object):    
     def __init__(self,
-                 start_gen=2,
                  n_gens=100,
                  pop_size=100,
                  seed=42,
                  config_dict=default_tpot_config_dict,
                  n_jobs=-1,
                  pipe_eval_timeout=5,
+                 allow_restart=False,
                  vprint=u.Vprint(1)):
         
-        self.start_gen=start_gen
+        self.allow_restart = allow_restart
         self.pipes = {}
         self.n_gens=n_gens
         self.pop_size=pop_size
@@ -55,6 +56,10 @@ class oTPOT_Base(object):
                                   warm_start=True,
                                   max_eval_time_mins=pipe_eval_timeout)
         
+        self.tpot._fit_init()
+        
+        self.start_gen = 2
+        
     def optimize(self, X_train, y_train, out_path=None):
         t_start = time.time()
 
@@ -63,19 +68,33 @@ class oTPOT_Base(object):
         
         if out_path:
             self.tpot.log_file = log_file
-            f = open(time_file,'w')
-            f.close()
+            fname_pickle = os.path.join(out_path,'oTPOT-BASE.pickle')
         
-        fname_tracker = os.path.join(out_path,'oTPOT-BASE.tracker')
+        fname_tracker = os.path.join(out_path,'oTPOT-BASE.tracker')        
         
-        self.vprint.v2(f"{u.CYAN}fitting tpot model with {self.tpot.generations}" 
+        
+        if out_path and self.allow_restart and os.path.exists(fname_pickle):
+            with open(fname_pickle, 'rb') as f:
+                self.tpot.evaluated_individuals_ = pickle.load(f)
+            self.start_gen = max([v['generation'] for v in self.tpot.evaluated_individuals_.values()]) + 1
+            print(f"{u.RED}Loaded {self.start_gen-1} generations from previous interrupted run.. continuing..")
+            
+        else:
+            self.vprint.v2(f"{u.CYAN}fitting tpot model with {self.tpot.generations}" 
                + " generations (-1 to account for initial evaluations)" 
                + f"..\n{u.WHITE}")
-        
-        t_tpot_start = time.time()
-        # fit TPOT model
-        self.tpot.fit(X_train, y_train)
-        t_tpot_end = time.time()
+            t_tpot_start = time.time()
+            # fit TPOT model
+            self.tpot.fit(X_train, y_train)
+            t_tpot_end = time.time()
+            if out_path:
+                with open(time_file,'w') as f:
+                    f.write(f"{0};{0}\n")
+                    f.write(f"{1};{t_tpot_end-t_tpot_start}\n")
+            if out_path and self.allow_restart:
+                with open(fname_pickle, 'wb') as f:
+                    # Pickle the 'data' dictionary using the highest protocol available.
+                    pickle.dump(self.tpot.evaluated_individuals_, f, pickle.HIGHEST_PROTOCOL)
         
         # instantiate structure collection object
         strucs = StructureCollection(config_dict=self.config_dict)
@@ -85,10 +104,12 @@ class oTPOT_Base(object):
         # import structures from tpot dictionary
         strucs.update(self.tpot.evaluated_individuals_)
         
-        pop_tracker = {0: {}, 1: {}}
+        pop_tracker = {}
         
         for p,v in self.tpot.evaluated_individuals_.items():
             if v['internal_cv_score'] == -np.inf: continue
+            if v['generation'] not in pop_tracker:
+                pop_tracker[v['generation']] = {}
             if v['structure'] not in pop_tracker[v['generation']]:
                 pop_tracker[v['generation']][v['structure']] = 1
             else:
@@ -99,9 +120,6 @@ class oTPOT_Base(object):
                 for g in pop_tracker:
                     for s in pop_tracker[g]:
                         f.write(f"{g};{s};{pop_tracker[g][s]};{strucs[s].cv}\n")
-            with open(time_file,'w') as f:
-                f.write(f"{0};{0}\n")
-                f.write(f"{1};{t_tpot_end-t_tpot_start}\n")
         
         
         
@@ -195,6 +213,11 @@ class oTPOT_Base(object):
                     
             # update structures
             strucs.update(self.tpot.evaluated_individuals_)
+            
+            if out_path and self.allow_restart:
+                with open(fname_pickle, 'wb') as f:
+                    # Pickle the 'data' dictionary using the highest protocol available.
+                    pickle.dump(self.tpot.evaluated_individuals_, f, pickle.HIGHEST_PROTOCOL)
         
         t_end = time.time()
         
@@ -208,6 +231,9 @@ class oTPOT_Base(object):
         
         # if out_path exists then write pipes to file
         if out_path:
+            # delete pickle file if exists
+            if os.path.exists(fname_pickle):
+                os.remove(fname_pickle)
             print(out_path)
             if not os.path.exists(out_path):
                 os.makedirs(out_path)

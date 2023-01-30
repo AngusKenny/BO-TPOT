@@ -171,6 +171,7 @@ class TestHandler(object):
                            config_dict=self.params['TPOT_CONFIG_DICT'],
                            n_jobs=self.params['nJOBS'],
                            pipe_eval_timeout=self.params['PIPE_EVAL_TIMEOUT'],
+                           allow_restart=self.params['ALLOW_RESTART'],
                            vprint=self.vprint)
             
             res_txt = otb.optimize(self.X_train, self.y_train, out_path=otb_path)

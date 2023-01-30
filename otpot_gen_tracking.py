@@ -42,28 +42,28 @@ plt.rcParams["font.size"] = 18
 
 RESULTS_PATH = 'Results_test2'
 PROBLEMS = [            
-    # 'quake',
+    'quake',
     # 'socmob',
-    'abalone',
+    # 'abalone',
     # 'brazilian_houses',
     # 'house_16h',
     # 'elevators'
     ]
 # MODES = ['discrete']#,'continuous']
 # WTL = ['TPOT-BASE','TPOT-BO-S']#,'TPOT-BO-H']
-METHOD = 'TPOT-BASE'
+METHOD = 'oTPOT-BASE'
 POP_SIZE = 100
 SEEDS = [44]
 PRINT_COL = 20
-# FIGURE_SIZE = (15,9)
-FIGURE_SIZE = (5.8,4)
-PLOT_OPS = False
-PLOT_TIMES = False
+FIGURE_SIZE = (15,9)
+# FIGURE_SIZE = (5.8,4)
+PLOT_OPS = True
+PLOT_TIMES = True
 SAVE_PLOTS = False
 SAVE_PLOTS = False
 # WIN_TOL = 1e-14
 # ANIMATE = False
-SHOW_TITLE = False
+SHOW_TITLE = True
 COLOURBAR_PAD = 0.02
 # YLIM = None
 # YLIM = [3.54e-6,3.685e-6]
