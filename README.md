@@ -434,7 +434,7 @@ The table below gives all parameter arguments, their type and default values:
 > $S$ &larr; evaluated pipeline set after fitting $T$ on $D$ for 1 generation  
 > **for** $nG_t - 2$ generations **do:**  
 >> $Q$ &larr; partition of $S$ by pipeline structure  
->> $\mu,\sigma,\hat{q}$ &larr; mean, standard deviation and number of pipelines for each structure in $Q$  
+>> $\mu,\sigma,\hat{q}$ &larr; mean, standard deviation and maximum number of pipelines for each structure in $Q$  
 >> $A$ &larr; OCBA budget allocations for $Q$ using parameters $\mu,\sigma,nP,\hat{q}$  
 >> $P$ &larr; $\emptyset$ &nbsp;&nbsp;&nbsp;&nbsp; empty TPOT population  
 >> **for** $i \in \lbrace 1,2,3,\dots,|A|\rbrace$ **do:**  
