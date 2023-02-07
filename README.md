@@ -437,7 +437,7 @@ The table below gives all parameter arguments, their type and default values:
 >> $\mu,\sigma,\hat{q}$ &larr; mean, standard deviation and number of pipelines for each structure in $Q$  
 >> $A$ &larr; OCBA budget allocations for $Q$ using parameters $\mu,\sigma,nP,\hat{q}$  
 >> $P$ &larr; $\emptyset$ &nbsp;&nbsp;&nbsp;&nbsp; empty TPOT population  
->> **for** $i \in \{1,2,3,\dots,|A|\}$ **do:**  
+>> **for** $i \in \lbrace 1,2,3,\dots,|A|\rbrace$ **do:**  
 >>> $P$ &larr; $P\ \cup$ best $A[i]$ pipelines of structure $Q[i]$
 >>
 >> $T$ &larr; update parent population with $P$  
