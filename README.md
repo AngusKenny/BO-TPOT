@@ -404,6 +404,27 @@ The generated pipelines are accessible as the class attribute `pipes`. The dicti
 
 
 ### `oTPOT-BASE`:
+By default, TPOT performs a non-dominated sort on the set of evaluated pipelines, when selecting the parent population for each generation, minimising both CV error and number of operators. While this method ensures pipeline complexity does not run out of control during the search - an important consideration for GP based methods - it can severely limit the diversity of the parent population.
+
+In `oTPOT-BASE` this method of parent population selection is replaced with one based on OCBA principles. With each generation, the set of evaluated solutions $S$, is partitioned by structure, producing $Q$. The mean CV and its standard deviation statistics are computed for each structure in $Q$. Due to the random selection of hyper-parameters by TPOT, the standard deviation of the CV can be **very** high or sometimes zero when all pipelines produced the same CV, or only one pipeline has been evaluated from a given structure. Therefore, the standard deviation is capped at `1E+10` from above and `1e-10` from below. A modified version of the OCBA algorithm is used with a total budget equal to the population size $nP$ to produce allocations for each pipeline structure, $A$. The modifications introduce an allowed upper bound for each allocation, ensuring that the allocated budget for a given structure does not exceed the number of pipelines exhibiting it.
+
+These allocations are used to select the best $A[i]$ pipelines from pipeline structure $Q[i]$ and add them to a new parent population $P$. This population is then evolved and fitted to the input data.
+
+#### **Parameters:**
+
+The table below gives all parameter arguments, their type and default values:
+
+| Parameter              | Type     | Default                   | 
+|:-----------------------|:--------:|--------------------------:|
+|`pop_size`              | int      | 100                       |
+|`n_gens`                | int      | 100                       |
+|`seed`                  | int      | 42                        |
+|`config_dict`           | dict     |`default_tpot_config_dict` |
+|`n_jobs`                | int      | -1                        |
+|`pipe_eval_timeout`     | int      | 5                         |
+|`allow_restart`         | boolean  | True                      |
+|`vprint`                | `Vprint` |`u.Vprint(1)`              |
+
 
 #### **Pseudocode:**
 
@@ -420,13 +441,29 @@ The generated pipelines are accessible as the class attribute `pipes`. The dicti
 >>> $P$ &larr; $P\ \cup$ best $A[i]$ pipelines of structure $Q[i]$
 >>
 >> **end for**  
->> $T$ &larr; update active population with $P$  
+>> $T$ &larr; update parent population with $P$  
 >> $S$ &larr; update with result of fitting $T$ on $D$ and $S$ for 1 generation  
 >
 > **end for**  
 > **return** $S$
 
 **Notes:** Main loop is performed for $nG_t-2$ generations to account for $nP$ initial evaluations and first TPOT fitting.
+
+#### **Outputs:**  
+If the `out_file` parameter is set when calling the `optimize` method, 3 files are produced as output:
+
+`oTPOT-BASE.progress` - provides general information about the run
+
+`oTPOT-BASE.tracker` - provides tracking information for the selected parent population for each generation, with each line taking the form:
+```text
+<generation>;<pipeline structure>;<number allocated>;<best evaluated CV error>
+```
+
+`oTPOT-BASE.pipes` - provides full list of pipelines evaluated during the entire search, with each line taking the form:
+```text
+<pipeline string>;<generation>;<evaluated CV error>
+```
+
 
 ---
 
