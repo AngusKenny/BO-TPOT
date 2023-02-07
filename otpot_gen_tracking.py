@@ -40,20 +40,20 @@ plt.rcParams["font.size"] = 18
 # mpl.rcParams['mathtext.bf'] = 'Bitstream Vera Sans:bold'
 # mpl.pyplot.title(r'ABC123 vs $\mathrm{ABC123}^{123}$')
 
-RESULTS_PATH = 'Results_test2'
+RESULTS_PATH = 'Results'
 PROBLEMS = [            
-    'quake',
+    # 'quake',
     # 'socmob',
     # 'abalone',
     # 'brazilian_houses',
-    # 'house_16h',
+    'house_16h',
     # 'elevators'
     ]
 # MODES = ['discrete']#,'continuous']
 # WTL = ['TPOT-BASE','TPOT-BO-S']#,'TPOT-BO-H']
 METHOD = 'oTPOT-BASE'
 POP_SIZE = 100
-SEEDS = [44]
+SEEDS = [74]
 PRINT_COL = 20
 FIGURE_SIZE = (15,9)
 # FIGURE_SIZE = (5.8,4)
@@ -64,7 +64,7 @@ SAVE_PLOTS = False
 # WIN_TOL = 1e-14
 # ANIMATE = False
 SHOW_TITLE = True
-COLOURBAR_PAD = 0.02
+COLOURBAR_PAD = None #0.02
 # YLIM = None
 # YLIM = [3.54e-6,3.685e-6]
 # LEGEND_POS = 'lower right'
@@ -216,7 +216,10 @@ for problem in PROBLEMS:
         # plt.scatter(points[:,0], points[:,1], c=points[:,2], cmap=newcmp)
         ax.set_ylabel("Generation")
         ax.set_xlabel("Structure index")
-        fig.colorbar(gen_plot,pad=COLOURBAR_PAD,ax=ax,label="No. selected in generation",ticks=c_ticks)
+        if COLOURBAR_PAD:
+            fig.colorbar(gen_plot,pad=COLOURBAR_PAD,ax=ax,label="No. selected in generation",ticks=c_ticks)
+        else:
+            fig.colorbar(gen_plot,ax=ax,label="No. selected in generation",ticks=c_ticks)
         
         if PLOT_OPS:
             op_ax = ax.twinx()

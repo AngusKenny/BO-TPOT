@@ -1,6 +1,5 @@
-# Augmented TPOT (aTPOT) Suite
-This set of tools augments the [Tree-based Pipeline Optimisation Tool (TPOT)](http://epistasislab.github.io/tpot/) Python library for automated machine learning. It does so by employing a number of techniques, such as Bayesian optimization (BO) or optimal computing budget allocation (OCBA) in either a post hoc or in hoc fashion. 
-<!---(By employing [Optuna](https://optuna.org/), a hyperparameter optimisation Python library, Bayesian optimisation can be applied to an existing TPOT pipeline to improve its quality of prediction by identifying real-valued hyperparameters of the machine learning components of the pipeline. --->
+# Bayesian Optimisation for TPOT (BO-TPOT)
+An add-on for the [Tree-based Pipeline Optimisation Tool (TPOT)](http://epistasislab.github.io/tpot/), a Python library for automated machine learning. By employing [Optuna](https://optuna.org/), a hyperparameter optimisation Python library, Bayesian optimisation can be applied to an existing TPOT pipeline to improve its quality of prediction by identifying real-valued hyperparameters of the machine learning components of the pipeline.
 
 
 ## Dependencies
@@ -20,48 +19,16 @@ One significant limitation of TPOT is that for all its GP bells-and-whistles, it
 
 [Optuna](https://optuna.org/) is a hyperparameter optimisation library for Python which uses Bayesian optimisation to tune hyperparameter values. It uses a Tree-based Parzen Estimator (TPE)-based surrogate model, built on historical information, to estimate and suggest hyperparameter values, which are then evaluated and the model subsequently updated. Unlike TPOT,  Optuna has no limitations on the type of values the hyperparameters can take. However it is not as effective at selecting models or structuring models in a pipeline as TPOT. 
 
-We can think of TPOT as an effective tool for pipeline _exploration_ and BO as effective tool for pipeline _exploitation_. By using Optuna to _fine-tune_ the coarser results produced by TPOT, the algorithims in the BO-TPOT suite can potentially harness the strengths of both of these powerful tools. The question then becomes, "which pipelines should be selected for improvement by BO?", and exploring the many possibilities for this choice is the purpose of most of the tools in this suite.
+We can think of TPOT as an effective tool for pipeline _exploration_ and Optuna as effective tool for pipeline _exploitation_. By using Optuna to _fine-tune_ the coarser results produced by TPOT, the algorithims in the BO-TPOT suite can potentially harness the strengths of both of these powerful tools.
 
-Additionally, TPOT has some limitations itself, particularly in the way it selects its active population for each generation using a non-dominated sort, based on CV error and number of operators. Biasing the selection towards pipelines with fewer operators is important to prevent the GP from running out of control; however, doing so can severely limit the diversity of the population, meaning a smaller region of the search space is explored. We suggest an alternative method of selecting the active population, based on the optimal computing budget allocation (OCBA) algorithm, which takes into account the mean and standard deviation of similar pipelines when making its selection.
+## Description of Operation 
+There are three main tools in the BO-TPOT suite:
 
----
+1. `TPOT-BASE` which generates the initial TPOT pipelines from the given data of the problem;
+2. `TPOT-BO-S` which performs a single instance of Bayesian optimisation after a pre-determined point in the `TPOT-BASE` process, to allow comparison; and,
+3. `TPOT-BO-ALT` which performs an alternating series of TPOT and Bayesian optimisation operations.
 
-## Tools in the aTPOT suite
-There are two main classes of tools in the aTPOT suite:
-
-1. _Post-hoc_ methods. These are applied after an initial TPOT search (typically, 80 generations) has completed. They include:
-    - `TPOT-BO-S`, which selects a single candidate (based on CV error) to improve with BO;
-    - `TPOT-BO-H`, which allocates a BO budget to many candidates, proportional to the number of hyper-parameters it contains, using a successive halving strategy to reduce the number of candidates in subsequent generations;
-    - `TPOT-BO-O`, which operates similarly to `TPOT-BO-H`, however BO budget is allocated according to OCBA principles (specifically [OCBA-m for subset selection](https://github.com/CLAHRCWessex/subset-selection-problem)), reducing the number of candidates in each subsequent generation.
-
-2. _In hoc_ methods. These are applied in tandem with TPOT, starting from generation zero. They include:
-    - `TPOT-BASE`, which provides an interface to perform a base-line search using the un-altered TPOT algorithm, and store its output in a format compatible with the rest of the aTPOT suite;
-    - `TPOT-BO-ALT`, which performs a prescribed number of alternating TPOT and BO optimisation steps;
-    - `TPOT-BO-AUTO`, which automatically decides whether to perform a TPOT or BO step, based on gradient information;
-    - `oTPOT-BASE`, which replaces the non-dominated sort-based population selection mechanism that TPOT uses, in favour of one based on OCBA principles.
-
----
-## File organisation
-Each tool has the option to write tracking and output data to a file. There are different conventions and types of data tracked for each individual tool, however they all follow the same over-arching file organisation structure:
-
-`<root>/<results dir>/<problem name>/<method name>/Seed_<seed number>/`
-
-**NB:** previous versions (i.e., before the change of name from BO-TPOT) followed a different file organisation convention. Any data generated using the deprecated convention can be easily updated by running the `BO-TPOT_to_aTPOT_file_organisation_patch.py` script from the root directory.
-
----
-
-## Pipeline structures
-During its operation, TPOT can be thought of as searching a hierarchy of two distinct classes of spaces. The first is the space of all possible combinations of operators, which it explores by using genetic programming to recombine and mutate tree representations of previously evaluated pipelines. The second is the sub-space of all possible hyper-parameter combinations for each unique combination of operators, which it explores using a grid-based search (having discretised any continuous parameter spaces). 
-
-As it is used for tuning hyper-parameters, BO can only operate on this second sub-space and can only manipulate the value of hyper-parameters, not their relation to each other. Similarly, OCBA-based methods rely on statistical information to function, and therefore need multiple samples from the same concept. Because of this, it is useful to have a method of grouping pipelines together by their pipeline structure. 
-
-A unique pipeline is said to have the same structure as another unique pipeline if both have the same set of hyper-parameters, in the same order, but with at least one disagreeing in value. As a given operator will have the same hyper-parameters, regardless of its position in the pipeline, a pipeline structure can be represented by its operators alone.
-
-The tools in this suite 
-
----
-## Description of operation
-The tools are found as classes in separate Python files in the directory `aTPOT` and may be run independently of each other. However, all of the post hoc methods rely on previously generated pipelines and require that `TPOT-BASE` has been run _at some stage_.
+All three of these are found as classes in separate Python files in the directory `BO-TPOT` and may be run independently of each other. However, TPOT-BO-S relies on previously generated pipelines and require that [1] has been run _at some stage_.
 
 Each class has a constructor and a single `optimize` method, into which the training data `X_train` and `y_train` must be passed. The `optimize` method may also be called with an optional keyword `out_path` which specifies a directory that the output files should be written to (if required). 
 

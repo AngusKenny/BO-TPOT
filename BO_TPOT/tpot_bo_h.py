@@ -67,34 +67,11 @@ class TPOT_BO_H(object):
         self.bo_struc_keys = u.get_best_structures(self.strucs, size=int(pop_size*bo_pop_factor))
         
         vprint.v2(f"\n{u.CYAN}{len(self.bo_struc_keys)} groups in BO set, populating TPOT evaluated dictionary..{u.OFF}\n")
-
-        # self.tpot = TPOTRegressor(generations=0,
-        #                           population_size=1, 
-        #                           mutation_rate=0.9, 
-        #                           crossover_rate=0.1, 
-        #                           cv=5,
-        #                           verbosity=self.tpot_verb, 
-        #                           config_dict=copy.deepcopy(self.config_dict),
-        #                           random_state=self.seed, 
-        #                           n_jobs=1,
-        #                           warm_start=True,
-        #                           max_eval_time_mins=self.pipe_eval_timeout)            
-            
-        #     # initialise tpot object to generate pset
-        # self.tpot._fit_init()
-        
-        # self.tpot.evaluated_individuals_ = {}
         
         # create TPOT object for each pipe in set and fit for 0 generations
         for i,k in enumerate(self.bo_struc_keys):
-            # print(f"{i}:{k}")
-            # for p,v in self.strucs[k].pipes.items():
-                # print(f"\t{i}:{len(self.strucs[k].pipes)}:{u.string_to_bracket(p)}:{v['structure']}")
-            #     if u.string_to_bracket(p) != k:
-                    # print(f"{u.string_to_bracket(p)} not equal to {k}")
             # add to pipes and TPOT evaluated dictionary
             self.pipes.update(self.strucs[k].pipes)
-            # self.tpot.evaluated_individuals_.update(copy.deepcopy(v['matching']))
 
         self.starting_size = len(self.pipes)
         
@@ -190,21 +167,15 @@ class TPOT_BO_H(object):
                         # v['matching'][k2] = copy.deepcopy(v2)
                     
                     if k2 not in self.pipes:
-                        # self.pipes[k2] = copy.deepcopy(v2)
                         self.pipes[k2] = copy.deepcopy(v2)
                         if out_path:
-                            f.write(f"{k2};{v2['structure']};{gen};{n_strucs};{v2['source']};{v2['internal_cv_score']}\n")    
-                            # f.write(f"{k2};{gen};{len(self.bo_set)};{v2['source']};{v2['internal_cv_score']}\n")
+                            f.write(f"{k2};{v2['structure']};{gen};{n_strucs};{v2['source']};{v2['internal_cv_score']}\n")
                             
                 if out_path:
                     f.close()
                 
-                # # update group statistics
-                # self.bo_set[k] = u.update_group(v)
-                
             # do halving and update BO set
             if len(self.bo_struc_keys) > 1:
-                # self.bo_struc_keys = u.get_best(self.bo_set, size=int(np.ceil(len(self.bo_set)/2)))
                 self.bo_struc_keys = u.get_best_structures(self.strucs, size=int(np.ceil(n_strucs/2)))
                 
             stagnate_cnt = stagnate_cnt + 1 if len(self.pipes) == old_size else 0
@@ -228,17 +199,6 @@ class TPOT_BO_H(object):
         self.vprint.v1(f"\n{u.YELLOW}best pipe found by BO:{u.OFF}")
         self.vprint.v1(f"{best_bo_pipe}\n{u.GREEN} * score:{u.OFF} {best_bo_cv}")
         self.vprint.v1(f"\nTotal time elapsed: {round(t_end-t_start,2)} sec\n")
-        
-        # # if out_path exists then write pipes to file
-        # if out_path:
-        #     if not os.path.exists(out_path):
-        #         os.makedirs(out_path)
-        #     fname_bo_pipes = os.path.join(out_path,'TPOT-BO-H.pipes')
-        #     # write all evaluated pipes
-        #     # with open(fname_bo_pipes, 'a') as f:
-        #     #     for k,v in self.pipes.items():
-        #     #         if v['source'] == 'TPOT-BO-H':
-        #     #             f.write(f"{k};{v['internal_cv_score']}\n")
                     
         return f"Successful{early_finish}"
                     
@@ -273,38 +233,13 @@ class TPOT_BO_Hs(object):
         self.strucs = u.get_structures(self.tbh_pipes, config_dict=self.config_dict)
         
         self.bo_struc_keys = u.get_best_structures(self.strucs, size=1)
-        
-        # self.bo_set = u.get_best(u_grps, size=1)
                 
         struct_str = list(self.bo_struc_keys)[0]
         
         vprint.v2(f"\n{u.CYAN}best structure from TPOT-BO-Hd:{u.OFF}\n{struct_str}\n")
-
-        # self.tpot = TPOTRegressor(generations=0,
-        #                           population_size=1, 
-        #                           mutation_rate=0.9, 
-        #                           crossover_rate=0.1, 
-        #                           cv=5,
-        #                           verbosity=self.tpot_verb, 
-        #                           config_dict=copy.deepcopy(self.config_dict),
-        #                           random_state=self.seed, 
-        #                           n_jobs=1,
-        #                           warm_start=True,
-        #                           max_eval_time_mins=self.pipe_eval_timeout)            
-            
-        #     # initialise tpot object to generate pset
-        # self.tpot._fit_init()
         
         self.pipes = self.strucs[struct_str].pipes
         
-        # self.tpot.evaluated_individuals_ = copy.deepcopy(self.pipes)
-        
-        # # create TPOT object for each pipe in set and fit for 0 generations
-        # for k,v in self.bo_set.items():
-        #     # add to pipes and TPOT evaluated dictionary
-        #     self.pipes.update(copy.deepcopy(v['matching']))
-        #     # self.tpot.evaluated_individuals_.update(copy.deepcopy(v['matching']))
-
         self.starting_size = len(self.pipes)
         self.starting_gen = np.max([v['generation'] for v in self.tbh_pipes.values()]) + 1
         
@@ -381,8 +316,6 @@ class TPOT_BO_Hs(object):
                     v2['source'] = f'TPOT-BO-Hs'
                 if k2 not in self.strucs:
                         self.strucs.add(k2,v2)
-                # if k2 not in v['matching']:
-                #     v['matching'][k2] = copy.deepcopy(v2)
                 
                 if k2 not in self.pipes:
                     v2['source'] = f'TPOT-BO-Hs({k})'
@@ -391,24 +324,7 @@ class TPOT_BO_Hs(object):
                         f.write(f"{k2};{v2['structure']};{self.starting_gen};1;{v2['source']};{v2['internal_cv_score']}\n")
                         
             if out_path:
-                f.close()
-            
-            # update group statistics
-            # self.bo_set[k] = u.update_group(v)
-                
-            # # do halving and update BO set
-            # if len(self.bo_set) > 1:
-            #     self.bo_set = u.get_best(self.bo_set, size=int(np.ceil(len(self.bo_set)/2)))
-            
-            # stagnate_cnt = stagnate_cnt + 1 if len(self.pipes) == old_size else 0
-            
-            # if stagnate_cnt > 9:
-            #     print("10 generations without change, exiting..")
-            #     early_finish = f" - early finish (gen {gen})"
-            #     break
-            
-            # gen = gen+1
-                
+                f.close()                
         
         t_end = time.time()
                 
@@ -424,16 +340,5 @@ class TPOT_BO_Hs(object):
         self.vprint.v1(f"\n{u.YELLOW}best pipe found by BO-Hs:{u.OFF}")
         self.vprint.v1(f"{best_tbhs_pipe}\n{u.GREEN} * score:{u.OFF} {best_tbhs_cv}")
         self.vprint.v1(f"\nTotal time elapsed: {round(t_end-t_start,2)} sec\n")
-        
-        # # if out_path exists then write pipes to file
-        # if out_path:
-        #     if not os.path.exists(out_path):
-        #         os.makedirs(out_path)
-        #     fname_bo_pipes = os.path.join(out_path,'TPOT-BO-H.pipes')
-        #     # write all evaluated pipes
-        #     # with open(fname_bo_pipes, 'a') as f:
-        #     #     for k,v in self.pipes.items():
-        #     #         if v['source'] == 'TPOT-BO-H':
-        #     #             f.write(f"{k};{v['internal_cv_score']}\n")
                     
         return f"Successful{early_finish}"

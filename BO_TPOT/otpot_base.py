@@ -19,6 +19,7 @@ import numpy as np
 import pickle
 
 EPS = 1e-10
+MAX_SIGMA = 1e10
 
 class oTPOT_Base(object):    
     def __init__(self,
@@ -28,7 +29,7 @@ class oTPOT_Base(object):
                  config_dict=default_tpot_config_dict,
                  n_jobs=-1,
                  pipe_eval_timeout=5,
-                 allow_restart=False,
+                 allow_restart=True,
                  vprint=u.Vprint(1)):
         
         self.allow_restart = allow_restart
@@ -63,21 +64,20 @@ class oTPOT_Base(object):
     def optimize(self, X_train, y_train, out_path=None):
         t_start = time.time()
 
-        log_file = os.path.join(out_path,'oTPOT-BASE.log')       
-        time_file = os.path.join(out_path,'oTPOT-BASE.times')       
-        
+        log_file = None
+                
         if out_path:
-            self.tpot.log_file = log_file
+            log_file = os.path.join(out_path,'oTPOT-BASE.log')       
+            time_file = os.path.join(out_path,'oTPOT-BASE.times')       
             fname_pickle = os.path.join(out_path,'oTPOT-BASE.pickle')
-        
-        fname_tracker = os.path.join(out_path,'oTPOT-BASE.tracker')        
-        
+            fname_tracker = os.path.join(out_path,'oTPOT-BASE.tracker')        
+            self.tpot.log_file = log_file
         
         if out_path and self.allow_restart and os.path.exists(fname_pickle):
             with open(fname_pickle, 'rb') as f:
                 self.tpot.evaluated_individuals_ = pickle.load(f)
             self.start_gen = max([v['generation'] for v in self.tpot.evaluated_individuals_.values()]) + 1
-            print(f"{u.RED}Loaded {self.start_gen-1} generations from previous interrupted run.. continuing..")
+            print(f"{u.RED}Loaded {self.start_gen-1} generations from previous interrupted run.. continuing..{u.OFF}")
             
         else:
             self.vprint.v2(f"{u.CYAN}fitting tpot model with {self.tpot.generations}" 
@@ -119,9 +119,7 @@ class oTPOT_Base(object):
             with open(fname_tracker, 'w') as f:
                 for g in pop_tracker:
                     for s in pop_tracker[g]:
-                        f.write(f"{g};{s};{pop_tracker[g][s]};{strucs[s].cv}\n")
-        
-        
+                        f.write(f"{g};{s};{pop_tracker[g][s]};{strucs[s].cv}\n")      
         
         print(f"len strucs after update: {len(strucs)}")
         
@@ -138,22 +136,15 @@ class oTPOT_Base(object):
             min_sigma = min(sigma[sigma > EPS]) - EPS if np.sum(sigma) > 0 else EPS
             zero_ids = sigma < EPS
             sigma[zero_ids] = min_sigma
-            sigma[sigma > 1e10] = 1e10
+            sigma[sigma > MAX_SIGMA] = MAX_SIGMA
             print(f"{u.CYAN}[{time.asctime()}]{u.OFF} - generation: {gen}")
-            # print(f"min_sigma: {min_sigma}")
-            # print(f"mu: {mu}")
-            # print(f"sigma: {sigma}")
-            # print(f"max: {max_allocs}")
             
             t_start_alloc = time.time()
             
             # get allocations
-            allocs = o.get_allocations(mu,sigma,self.pop_size,max_allocs=max_allocs)   
-            # allocs = o.get_allocations(mu,sigma,self.pop_size)           
+            allocs = o.get_allocations(mu,sigma,self.pop_size,max_allocs=max_allocs)  
             
             t_end_alloc = time.time()
-            
-            # print(f"allocs: {allocs}")
             
             print(f"allocs completed in {t_end_alloc - t_start_alloc} seconds")
             
@@ -184,15 +175,6 @@ class oTPOT_Base(object):
                     for s in pop_tracker[gen]:
                         f.write(f"{gen};{s};{pop_tracker[gen][s]};{strucs[s].cv}\n")
                 print(f"\n{u.CYAN}[{time.asctime()}]{u.OFF} - {u.YELLOW}Fitting TPOT model for gen {gen}, seed {self.seed} - see {log_file} for progress{u.OFF}")
-        
-            # pop_tracker[gen] = {}
-            
-            # for p in self.tpot._pop:                
-            #     s = u.string_to_bracket(str(p))
-            #     if s not in pop_tracker[gen]:
-            #         pop_tracker[gen][s] = 1
-            #     else:
-            #         pop_tracker[gen][s] = pop_tracker[gen][s] + 1
             
             t_tpot_start = time.time()
             # fit TPOT model
@@ -231,9 +213,11 @@ class oTPOT_Base(object):
         
         # if out_path exists then write pipes to file
         if out_path:
-            # delete pickle file if exists
+            # delete pickle and log files if they exist
             if os.path.exists(fname_pickle):
                 os.remove(fname_pickle)
+            if os.path.exists(log_file):
+                os.remove(log_file)
             print(out_path)
             if not os.path.exists(out_path):
                 os.makedirs(out_path)
@@ -244,9 +228,5 @@ class oTPOT_Base(object):
             with open(fname_tpot_pipes, 'w') as f:
                 for k,v in self.pipes.items():
                     f.write(f"{k};{v['generation']};{v['internal_cv_score']}\n")
-            # with open(fname_tracker, 'w') as f:
-            #     for g in pop_tracker:
-            #         for s in pop_tracker[g]:
-            #             f.write(f"{g};{s};{pop_tracker[g][s]}\n")
                     
         return "Successful"

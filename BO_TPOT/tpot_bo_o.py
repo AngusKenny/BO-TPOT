@@ -77,11 +77,7 @@ class TPOT_BO_O(object):
         
         # get unique structures
         self.strucs = u.get_structures(self.tpot_pipes, config_dict=self.config_dict)
-        
-        # get keys for ND structures
-        # self.bo_struc_keys = self.strucs.get_nd_keys(size=int(pop_size*bo_pop_factor))
-        # self.bo_struc_keys = self.strucs.get_nd_keys(f1_f2=["-cv","-cv"],size=int(pop_size*bo_pop_factor))
-        
+                
         # get keys by CV ranking
         cvs = np.array([-self.strucs[k].cv for k in self.strucs.keys()])
         cv_idxs = np.argsort(cvs)        
@@ -106,15 +102,10 @@ class TPOT_BO_O(object):
         
     def optimize(self, X_train, y_train, out_path=None):            
         t_start = time.time()
-        
         self.vprint.v1("")
-        
         early_finish = ""
-        
         n_extra_bo = 0
-
         gen = 0
-
         tracking = [[0 for k in self.bo_struc_keys]]
 
         tpots = []
@@ -219,9 +210,7 @@ class TPOT_BO_O(object):
                 break
             
             n_evals = 0
-                        
             old_size = len(self.pipes)
-            
             stagnate_cnt_gen = 0
             
             while n_evals < B_g:
@@ -232,11 +221,7 @@ class TPOT_BO_O(object):
                 means = np.array([self.strucs[k].mu for k in self.bo_struc_keys])
                 ses = np.array([self.strucs[k].stderr for k in self.bo_struc_keys])
 
-                allocs = ocba_m.get_allocs(means, ses, m_strucs[-1], Deltas[-1])
-                    # allocs = ocba_m.get_allocs(means, ses, m_strucs[-1], 10)
-                # else:
-                #     allocs = [0 for _ in range(len(self.bo_struc_keys))]
-                #     allocs[self.bo_struc_keys.index(self.strucs.best)] = B_g
+                allocs = ocba_m.get_allocations(means, ses, m_strucs[-1], Deltas[-1])
                 
                 n_allocs = np.sum([allocs[i] > 0 for i in range(len(allocs))])
                 
@@ -252,40 +237,7 @@ class TPOT_BO_O(object):
                     
                     self.vprint.v2(f"\n{u.CYAN}{len(self.pipes)-self.starting_size+n_extra_bo} total evaluations of {self.n_bo_evals+n_extra_bo} performed, {B_r-n_evals} remaining{u.OFF}")
                     self.vprint.v2(f"{u.CYAN}{n_evals} evaluations of {B_g} performed, with {B_g-n_evals} remaning in generation {gen} (Delta = {Deltas[-1]})\nPerforming {alloc} evaluations on structure ({n_allocs} allocs):\n{struc}..{u.OFF}\n")
-                    
-                    # tpot = TPOTRegressor(generations=0,
-                    #                     population_size=1, 
-                    #                     mutation_rate=0.9, 
-                    #                     crossover_rate=0.1, 
-                    #                     cv=5,
-                    #                     verbosity=self.tpot_verb, 
-                    #                     config_dict=copy.deepcopy(self.config_dict),
-                    #                     random_state=self.seed, 
-                    #                     n_jobs=1,
-                    #                     warm_start=True,
-                    #                     max_eval_time_mins=self.pipe_eval_timeout)            
-                        
-                    # # initialise tpot object to generate pset
-                    # tpot._fit_init()
-                    
-                    # tpot.evaluated_individuals_ = struc.pipes
-                    
-                    # # initialise tpot bo handler
-                    # handler = TPOT_BO_Handler(tpot, vprint=self.vprint, discrete_mode=self.discrete_mode)
-                    # new_params = u.string_to_params(struc.best)
-                    
-                    # # update pset of BO tpot object
-                    # for (p,val) in new_params:
-                    #     handler.add_param_to_pset(p, val)
-                    
-                    # # remove generated pipeline and transplant saved from before
-                    # tpot._pop = [creator.Individual.from_string(struc.best, tpot._pset)]
-                    
-                    # tpot.fit(X_train, y_train)
-                    
-                    # re-initialise tpot bo handler
-                    # handler = TPOT_BO_Handler(tpot, vprint=self.vprint, discrete_mode=self.discrete_mode)
-                    
+                                        
                     # run bayesian optimisation with seed_dicts as initial samples
                     handlers[i].optimise(0, X_train, y_train, n_evals=alloc,
                                     seed_samples=struc.get_seed_samples(), 
@@ -310,9 +262,6 @@ class TPOT_BO_O(object):
             
                     if out_path:
                         f.close()              
-                
-                # print("")
-                # print(u.disp_ocba_tracking(tracking,Deltas))
                 
                 if out_path:
                     fname_o_track = os.path.join(out_path,"TPOT-BO-O.tracking")

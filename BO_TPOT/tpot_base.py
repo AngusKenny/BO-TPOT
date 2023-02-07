@@ -14,6 +14,7 @@ import os
 import time
 from utils.data_structures import StructureCollection
 import numpy as np
+import pickle
 
 class TPOT_Base(object):    
     def __init__(self,
@@ -23,8 +24,10 @@ class TPOT_Base(object):
                  config_dict=default_tpot_config_dict,
                  n_jobs=-1,
                  pipe_eval_timeout=5,
+                 allow_restart=True,
                  vprint=u.Vprint(1)):
         
+        self.allow_restart = allow_restart
         self.pipes = {}
         self.n_gens=n_gens
         self.pop_size=pop_size
@@ -49,26 +52,42 @@ class TPOT_Base(object):
                                   warm_start=True,
                                   max_eval_time_mins=pipe_eval_timeout)
         
+        self.tpot._fit_init()
+        
     def optimize(self, X_train, y_train, out_path=None):
         t_start = time.time()
-        log_file = os.path.join(out_path,'TPOT-BASE.log')
-        time_file = os.path.join(out_path,'TPOT-BASE.times')       
+        
+        log_file = None
         
         if out_path:
+            log_file = os.path.join(out_path,'TPOT-BASE.log')
+            time_file = os.path.join(out_path,'TPOT-BASE.times')       
+            fname_pickle = os.path.join(out_path,'oTPOT-BASE.pickle')
+            fname_tracker = os.path.join(out_path,'TPOT-BASE.tracker')
             self.tpot.log_file = log_file
-            f = open(time_file,'w')
-            f.close()
         
-        fname_tracker = os.path.join(out_path,'TPOT-BASE.tracker')
         
-        self.vprint.v2(f"{u.CYAN}fitting tpot model with {self.tpot.generations}" 
+        if out_path and self.allow_restart and os.path.exists(fname_pickle):
+            with open(fname_pickle, 'rb') as f:
+                self.tpot.evaluated_individuals_ = pickle.load(f)
+            self.start_gen = max([v['generation'] for v in self.tpot.evaluated_individuals_.values()]) + 1
+            print(f"{u.RED}Loaded {self.start_gen-1} generations from previous interrupted run.. continuing..{u.OFF}")
+        else:
+            self.vprint.v2(f"{u.CYAN}fitting tpot model with {self.tpot.generations}" 
                + " generations (-1 to account for initial evaluations)" 
                + f"..\n{u.WHITE}")
-        
-        t_tpot_start = time.time()
-        # fit TPOT model
-        self.tpot.fit(X_train, y_train)
-        t_tpot_end = time.time()
+            t_tpot_start = time.time()
+            # fit TPOT model
+            self.tpot.fit(X_train, y_train)
+            t_tpot_end = time.time()
+            if out_path:
+                with open(time_file,'w') as f:
+                    f.write(f"{0};{0}\n")
+                    f.write(f"{1};{t_tpot_end-t_tpot_start}\n")
+            if out_path and self.allow_restart:
+                with open(fname_pickle, 'wb') as f:
+                    # Pickle the 'data' dictionary using the highest protocol available.
+                    pickle.dump(self.tpot.evaluated_individuals_, f, pickle.HIGHEST_PROTOCOL)
         
         # instantiate structure collection object
         strucs = StructureCollection(config_dict=self.config_dict)
@@ -138,6 +157,11 @@ class TPOT_Base(object):
                     
             # update structures
             strucs.update(self.tpot.evaluated_individuals_)
+            
+            if out_path and self.allow_restart:
+                with open(fname_pickle, 'wb') as f:
+                    # Pickle the 'data' dictionary using the highest protocol available.
+                    pickle.dump(self.tpot.evaluated_individuals_, f, pickle.HIGHEST_PROTOCOL)
                
         t_end = time.time()
         
@@ -151,6 +175,11 @@ class TPOT_Base(object):
         
         # if out_path exists then write pipes to file
         if out_path:
+            # delete pickle and log files if they exist
+            if os.path.exists(fname_pickle):
+                os.remove(fname_pickle)
+            if os.path.exists(log_file):
+                os.remove(log_file)
             print(out_path)
             if not os.path.exists(out_path):
                 os.makedirs(out_path)

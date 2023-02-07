@@ -21,7 +21,7 @@ from matplotlib.lines import Line2D
 
 RESULTS_PATH = 'Results_old'
 PROBLEM = 'abalone'
-DISCRETE_MODE = False
+DISCRETE_MODE = True
 # DISCRETE_MODE = True
 RUNS = [2]
 PRINT_COL = 20
@@ -222,6 +222,7 @@ reds = matplotlib.colors.LinearSegmentedColormap.from_list("", ["#FFA500","#E500
 
 fig3,ax3 = plt.subplots()
 # ax3.set_xlim([0,30])
+
 for gen in idx_plots:
     # ax3.set_ylim([0.03535,0.03555])
     if YLIM:
@@ -250,6 +251,9 @@ plt.show()
 
 
 fig4,ax4 = plt.subplots()
+
+print(idx_plots[0][:,1])
+
 for gen in idx_plots:
     # ax3.set_ylim([0.03535,0.03555])
     if YLIM:

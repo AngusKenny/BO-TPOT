@@ -96,13 +96,3 @@ def get_allocations(mu, sigma, Delta, min_allocs=None, max_allocs=None, minimize
     
     # only return new allocations
     return (tot_allocs - min_allocs).astype(int)
-
-
-# mu = np.array([41, 38, 44, 38, 40, 41])
-# sigma = np.array([25, 21, 26, 22, 23, 21])
-# min_allocs = np.array([30, 30, 30, 30, 30, 30])
-# max_allocs = np.array([8, 10, 10, 10, 7, 10])
-# # max_allocs = None
-# Delta = 50
-
-# print(get_allocations(mu,sigma,Delta,min_allocs=min_allocs, max_allocs=max_allocs))

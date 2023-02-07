@@ -25,21 +25,21 @@ SAVE_PLOTS:     Save generated plots to file in ./<RESULTS_DIR>/Plots/
 params = {
     'RESULTS_DIR'       : 'Results',
     'PROBLEMS'          : [
-                            'quake',
-                            'socmob',
-                            'abalone',
-                            'brazilian_houses',
+                            # 'quake',
+                            # 'socmob',
+                            # 'abalone',
+                            # 'brazilian_houses',
                             'house_16h',
-                            'elevators'
+                            # 'elevators'
                           ],
     'METHODS'           : ['TPOT-BASE',
                         #    'TPOT-BO-Sd','TPOT-BO-Sc',
-                            'TPOT-BO-ALTd','TPOT-BO-ALTc',
-                           'TPOT-BO-AUTOd','TPOT-BO-AUTOc',
+                            # 'TPOT-BO-ALTd','TPOT-BO-ALTc',
+                        #    'TPOT-BO-AUTOd','TPOT-BO-AUTOc',
                         #    'TPOT-BO-Hd','TPOT-BO-Hc',
                         #    'TPOT-BO-Hs',
                         #    'TPOT-BO-Od','TPOT-BO-Oc',
-                            # 'oTPOT-BASE'
+                            'oTPOT-BASE'
                            ],
     'INCLUDE_TB80'       : False,
     'SEED_LIST'          : [],
@@ -186,6 +186,8 @@ for problem in prob_list:
             
             
         if seed in skipped_seeds:
+            if seed in data[problem]:
+                data[problem].pop(seed)
             continue            
 
     # for base_method in params['METHODS']:

@@ -133,7 +133,7 @@ def parameter_c(means, ses, k, m):
 
     return((s_ses[k-m+1] * s_means[k-m]) + (s_ses[k-m] * s_means[k-m+1]))/(s_ses[k-m]+s_ses[k-m+1])  
 
-def get_allocs(means, ses, m, Delta):
+def get_allocations(means, ses, m, Delta):
     k = len(means)
     allocs = [0 for _ in range(k)]
     
