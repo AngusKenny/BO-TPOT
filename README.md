@@ -440,7 +440,7 @@ The table below gives all parameter arguments, their type and default values:
 >> **for** $i \in \lbrace 1,2,3,\dots,|A|\rbrace$ **do:**  
 >>> $P$ &larr; $P\ \cup$ best $A[i]$ pipelines of structure $Q[i]$
 >>
->> $T$ &larr; update parent population with $P$  
+>> $T$ &larr; replace parent population in $T$ with $P$  
 >> $S$ &larr; update with result of fitting $T$ on $D$ and $S$ for 1 generation  
 >
 > **return** $S$
