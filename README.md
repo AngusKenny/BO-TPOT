@@ -432,19 +432,17 @@ The table below gives all parameter arguments, their type and default values:
 **Output:** $S$: evaluated pipeline set  
 > $T$ &larr; `TPOTRegressor` object initialised using $nP$ and $\rho$  
 > $S$ &larr; evaluated pipeline set after fitting $T$ on $D$ for 1 generation  
-> **for** $nG_t - 2$ generations **do**  
+> **for** $nG_t - 2$ generations **do:**  
 >> $Q$ &larr; partition of $S$ by pipeline structure  
 >> $\mu,\sigma,\hat{q}$ &larr; mean, standard deviation and number of pipelines for each structure in $Q$  
 >> $A$ &larr; `get_OCBA_allocations(`$\mu,\sigma,nP,\hat{q}$`)`  
 >> $P$ &larr; $\emptyset$ &nbsp;&nbsp;&nbsp;&nbsp; empty TPOT population  
->> **for** $i \in \{1,2,3,\dots,|A|\}$ **do**  
+>> **for** $i \in \{1,2,3,\dots,|A|\}$ **do:**  
 >>> $P$ &larr; $P\ \cup$ best $A[i]$ pipelines of structure $Q[i]$
 >>
->> **end for**  
 >> $T$ &larr; update parent population with $P$  
 >> $S$ &larr; update with result of fitting $T$ on $D$ and $S$ for 1 generation  
 >
-> **end for**  
 > **return** $S$
 
 **Notes:** Main loop is performed for $nG_t-2$ generations to account for $nP$ initial evaluations and first TPOT fitting.
