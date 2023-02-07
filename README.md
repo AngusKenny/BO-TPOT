@@ -454,16 +454,11 @@ If the `out_file` parameter is set when calling the `optimize` method, 3 files a
 
 `oTPOT-BASE.progress` - provides general information about the run
 
-`oTPOT-BASE.tracker` - provides tracking information for the selected parent population for each generation, with each line taking the form:
->```text
-><generation>;<pipeline structure>;<number allocated>;<best evaluated CV error>
->```
+`oTPOT-BASE.tracker` - provides tracking information for the selected parent population for each generation, with each semi-colon separated line taking the form:
+>`<generation>;<pipeline structure>;<number allocated>;<best evaluated CV error>`
 
-`oTPOT-BASE.pipes` - provides full list of pipelines evaluated during the entire search, with each line taking the form:
->```text
-><pipeline string>;<generation>;<evaluated CV error>
->```
-
+`oTPOT-BASE.pipes` - provides full list of pipelines evaluated during the entire search, with each semi-colon separated line line taking the form:
+>`<pipeline string>;<generation>;<evaluated CV error>`
 
 ---
 
