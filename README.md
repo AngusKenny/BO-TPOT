@@ -410,7 +410,7 @@ In `oTPOT-BASE` this method of parent population selection is replaced with one 
 
 These allocations are used to select the best $A[i]$ pipelines from pipeline structure $Q[i]$ and add them to a new parent population $P$. This population is then evolved and fitted to the input data.
 
-#### **Parameters:**
+### **Parameters:**
 
 The table below gives all parameter arguments, their type and default values:
 
@@ -426,7 +426,7 @@ The table below gives all parameter arguments, their type and default values:
 |`vprint`                | `Vprint` |`u.Vprint(1)`              |
 
 
-#### **Pseudocode:**
+### **Pseudocode:**
 
 **Input:** $D$: training data; $nG_t$: number of generations; $nP$: population size; $\rho$: GP parameter set  
 **Output:** $S$: evaluated pipeline set  
@@ -449,7 +449,7 @@ The table below gives all parameter arguments, their type and default values:
 
 **Notes:** Main loop is performed for $nG_t-2$ generations to account for $nP$ initial evaluations and first TPOT fitting.
 
-#### **Outputs:**  
+### **Outputs:**  
 If the `out_file` parameter is set when calling the `optimize` method, 3 files are produced as output:
 
 `oTPOT-BASE.progress` - provides general information about the run
