@@ -120,7 +120,7 @@ class TPOT_Base(object):
         # copy evaluated individuals dictionary
         self.pipes = copy.deepcopy(self.tpot.evaluated_individuals_)
 
-        for gen in range(2,self.n_gens):            
+        for gen in range(self.start_gen,self.n_gens):            
             # create TPOT population for next generation           
             pop_tracker[gen] = {}
                         
