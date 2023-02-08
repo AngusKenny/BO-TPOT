@@ -23,10 +23,10 @@ params = {
     # (will ask for confirmation)
     'CLEAN_DATA': False,    
     'RUN_oTPOT-BASE' : False,
-    'RUN_TPOT-BASE' : True,
+    'RUN_TPOT-BASE' : False,
     'RUN_dTPOT-BASE': False,
     'RUN_TPOT-BO-S' : False,
-    'RUN_TPOT-BO-O' : False,
+    'RUN_TPOT-BO-O' : True,
     'RUN_TPOT-BO-H' : False,
     'RUN_TPOT-BO-Hs' : False,
     'RUN_TPOT-BO-ALT' : False,
@@ -37,11 +37,11 @@ params = {
     'DATA_DIR' : 'Data',
     'RESULTS_DIR' : 'Results_test2',
     # if not generating TPOT data, RUNS can be a list of runs
-    'SEEDS' : list(range(42,63)),
+    'SEEDS' : [42],
     'PROBLEMS' : [
-                #   'quake',
+                  'quake',
 		# 'socmob',
-                'abalone',
+                # 'abalone',
                 #   'house_16h',
                 #  'brazilian_houses',
     #             'diamonds',
@@ -49,7 +49,7 @@ params = {
     #             'black_friday'
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
-    'nJOBS' : 8,
+    'nJOBS' : 4,
     # toggle between discrete and continuous parameter spaces
     'DISCRETE_MODE' : False,
     # maximum time allowed for a single pipeline evaluation (mins)

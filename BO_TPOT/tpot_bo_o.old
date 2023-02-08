@@ -34,11 +34,6 @@ import copy
 import os
 import time
 import numpy as np
-import utils.ocba as o
-import pickle
-
-EPS = 1e-10
-MAX_SIGMA = 1e10
 
 class TPOT_BO_O(object):    
     def __init__(self,  
@@ -97,13 +92,13 @@ class TPOT_BO_O(object):
         cv_idxs = np.delete(cv_idxs, remove_ids)
                         
         self.bo_struc_keys = [key_list[i] for i in cv_idxs[:int(pop_size*bo_pop_factor)]]
+                
+        vprint.v2(f"\n{u.CYAN}{len(self.bo_struc_keys)} structures in BO set..{u.OFF}\n")
         
         for k in self.bo_struc_keys:
             self.pipes.update(self.strucs[k].pipes)
-        
+
         self.starting_size = len(self.pipes)
-        
-        vprint.v2(f"\n{u.CYAN}{len(self.bo_struc_keys)} structures in BO set..{u.OFF}\n")
         
     def optimize(self, X_train, y_train, out_path=None):            
         t_start = time.time()
@@ -111,39 +106,16 @@ class TPOT_BO_O(object):
         early_finish = ""
         n_extra_bo = 0
         gen = 0
-        tracking = []
+        tracking = [[0 for k in self.bo_struc_keys]]
 
         tpots = []
         handlers = []
         
-        fname_pickle = os.path.join(out_path,f'TPOT-BO-O{self.d_flag}.pickle')
-        
-        start_delta = self.pop_size
-        
-        Deltas = [start_delta]
-        
-        for p,v in self.pipes.items():
-            v['delta'] = self.pop_size
-            v['structure'] = u.string_to_bracket(p)
-        
-        if out_path and os.path.exists(fname_pickle):
-            # unpickle previous
-            with open(fname_pickle, 'rb') as f:
-                self.pipes = pickle.load(f)
-            # update structures
-            self.strucs.update(self.pipes)
-            # find starting delta
-            start_delta = min([v['delta'] for v in self.pipes.values() if v['source'] != "TPOT-BASE"])
-            gen = max([v['generation'] for v in self.pipes.values() if v['source'] != "TPOT-BASE"])
-            Deltas = list({v['delta'] for v in self.pipes.values()})
-            Deltas.sort(reverse=True)
-            self.vprint.v2(f"{u.RED}Loaded {gen} generations from previous interrupted run.. continuing from Delta = {np.ceil(start_delta/2)}..{u.OFF}\n")
-            
         # perform extra evaluations to initialise
         for i,k in enumerate(self.bo_struc_keys):
             # if len(self.strucs[k]) < self.n_0:
-
-            tracking = [[0 for k in self.bo_struc_keys]]
+            extra_bo = max(self.n_0 - len(self.strucs[k]),0)
+            self.vprint.v2(f"{u.CYAN}Performing {extra_bo} initial evaluations on structure ({i}/{len(self.bo_struc_keys)}): {k}..{u.OFF}\n")
             
             tpots.append(TPOTRegressor(generations=0,
                                     population_size=1, 
@@ -178,18 +150,10 @@ class TPOT_BO_O(object):
             # re-initialise tpot bo handler
             handlers[i] = TPOT_BO_Handler(tpots[i], vprint=self.vprint, discrete_mode=self.discrete_mode)
             
-            extra_bo = max(self.n_0 - len(self.strucs[k].get_valid()),0)
-            
             stagnate_cnt = 0
             
-            if extra_bo > 0:
-                self.vprint.v2(f"{u.CYAN}Performing {extra_bo} initial evaluations on structure ({i}/{len(self.bo_struc_keys)}): {k}..{u.OFF}\n")
-            
-            old_invalid_cnt = len(self.strucs[k]) - len(self.strucs[k].get_valid())
-            
-            while len(self.strucs[k].get_valid()) < self.n_0 and stagnate_cnt < 1000:
+            while len(self.strucs[k]) < self.n_0 and stagnate_cnt < 1000:
                 old_size = len(tpots[i].evaluated_individuals_)
-                extra_bo = max(self.n_0 - len(self.strucs[k].get_valid()),0)
                 # run bayesian optimisation with seed_dicts as initial samples
                 handlers[i].optimise(0, X_train, y_train, n_evals=extra_bo,
                                 seed_samples=self.strucs[k].get_seed_samples(), 
@@ -198,56 +162,34 @@ class TPOT_BO_O(object):
                                 timeout_trials=self.optuna_timeout_trials)
                 
                 stagnate_cnt += 1 if len(tpots[i].evaluated_individuals_) <= old_size else 0
-                                
-                invalid_cnt = 0
                 
                 # add new pipes to list
                 for p,v in tpots[i].evaluated_individuals_.items():
-                    if v['internal_cv_score'] == -np.inf: 
-                        invalid_cnt += 1        
                     if 'source' not in v:
                         v['source'] = f'TPOT-BO-O{self.d_flag}'
-                        v['structure'] = u.string_to_bracket(p)
-                        v['generation'] = gen
-                        v['delta'] = self.pop_size
                         self.strucs.add(p,v)
                         self.pipes[p] = v
                         n_extra_bo += 1
-                        # tracking[gen][i] += 1
+                        tracking[gen][i] += 1
 
-                if invalid_cnt > old_invalid_cnt:
-                    self.vprint.v2(f"{u.RED}{invalid_cnt - old_invalid_cnt} invalid pipelines evaluated, continuing with same structure..\n{u.OFF}")
-                
-                old_invalid_cnt = invalid_cnt
-                
         if out_path:
-            with open(fname_pickle, 'wb') as f:
-                # Pickle the 'data' dictionary using the highest protocol available.
-                pickle.dump(self.pipes, f, pickle.HIGHEST_PROTOCOL)
-
             if not os.path.exists(out_path):
                 os.makedirs(out_path)
-            fname_h_pipes = os.path.join(out_path,f"TPOT-BO-O{self.d_flag}.pipes")
+            fname_h_pipes = os.path.join(out_path,"TPOT-BO-O.pipes")
             # wipe existing pipe files if they exist
             with open(fname_h_pipes,'w') as f:
                 for k,v in self.pipes.items():
-                    f.write(f"{k};{v['structure']};{v['generation']};{v['delta']};{v['source']};{v['internal_cv_score']}\n")    
+                    f.write(f"{k};{v['structure']};{gen};{len(self.bo_struc_keys)};{v['source']};{v['internal_cv_score']}\n")    
         
         self.vprint.v2(f"\n{u.CYAN}{n_extra_bo} initial evaluations performed so that all structures start with {self.n_0} samples..{u.OFF}\n")
         
-        tracking = [[0 for k in self.bo_struc_keys] for _ in range(gen+1)]
-        
-        for p,v in self.pipes.items():
-            if v['source'] != "TPOT-BASE":
-                tracking[v['generation']][self.bo_struc_keys.index(v['structure'])] += 1
-        
-        
         # adjust number of bo evals to include extras
         self.n_bo_evals -= n_extra_bo
-        
+                
         # initialise m_strucs as 2*k as we halve at the start of each generation
         # m_strucs = [len(self.bo_struc_keys)]
-        # m_strucs = [self.m_strucs]
+        m_strucs = [self.m_strucs]
+        Deltas = [self.Delta]
         
         stagnate_cnt = 0
         
@@ -257,7 +199,7 @@ class TPOT_BO_O(object):
             # m_strucs.append(int(np.ceil(m_strucs[-1]/2)))
             if Deltas[-1] > 1:
                 tracking.append([0 for _ in self.bo_struc_keys])
-                # m_strucs.append(self.m_strucs)
+                m_strucs.append(self.m_strucs)
                 Deltas.append(int(np.ceil(Deltas[-1]/2)))
                 gen += 1
             B_r = max(max_evals - len(self.pipes),0)
@@ -276,30 +218,10 @@ class TPOT_BO_O(object):
                 # # allocate self.Delta to top m_strucs
                 # if Deltas[-1] > 1:
                     # compute statistics
-                '''
-                # means = np.array([self.strucs[k].mu for k in self.bo_struc_keys])
-                # ses = np.array([self.strucs[k].stderr for k in self.bo_struc_keys])
-                '''
-                
-                # get mu sigma and max allocs
-                mu = -1 * np.array([self.strucs[s].mu for s in self.bo_struc_keys])
-                sigma = np.array([self.strucs[s].std for s in self.bo_struc_keys])
-                
-                # deal with zero sigma issues
-                # min_sigma = min(sigma[sigma > EPS]) - EPS if np.sum(sigma) > 0 else EPS
-                # zero_ids = sigma < EPS
-                # sigma[zero_ids] = min_sigma
-                # sigma[sigma > MAX_SIGMA] = MAX_SIGMA
-                print(f"{u.CYAN}[{time.asctime()}]{u.OFF} - generation: {gen}")
-                
-                t_start_alloc = time.time()
-                
-                # get allocations
-                allocs = o.get_allocations(mu,sigma,Deltas[-1])
+                means = np.array([self.strucs[k].mu for k in self.bo_struc_keys])
+                ses = np.array([self.strucs[k].stderr for k in self.bo_struc_keys])
 
-                '''
                 allocs = ocba_m.get_allocations(means, ses, m_strucs[-1], Deltas[-1])
-                '''
                 
                 n_allocs = np.sum([allocs[i] > 0 for i in range(len(allocs))])
                 
@@ -329,14 +251,12 @@ class TPOT_BO_O(object):
                     # add new pipes to list
                     for p,v in tpots[i].evaluated_individuals_.items():
                         if 'source' not in v:
-                            v['structure'] = u.string_to_bracket(p)
                             v['source'] = f'TPOT-BO-O{self.d_flag}'
                             v['generation'] = gen
-                            v['delta'] = Deltas[-1]
                             self.strucs.add(p,v)
                             self.pipes[p] = v
                             if out_path:
-                                f.write(f"{p};{v['structure']};{v['generation']};{v['delta']};{v['source']};{v['internal_cv_score']}\n")
+                                f.write(f"{p};{v['structure']};{gen};{m_strucs[-1]};{v['source']};{v['internal_cv_score']}\n")
                             n_evals += 1 
                             tracking[gen][i] += 1
             
@@ -344,7 +264,7 @@ class TPOT_BO_O(object):
                         f.close()              
                 
                 if out_path:
-                    fname_o_track = os.path.join(out_path,f"TPOT-BO-O{self.d_flag}.tracking")
+                    fname_o_track = os.path.join(out_path,"TPOT-BO-O.tracking")
                     with open(fname_o_track,'w') as f:
                         f.write(u.disp_ocba_tracking(tracking,Deltas,colours=False))
                 
@@ -358,19 +278,9 @@ class TPOT_BO_O(object):
             if stagnate_cnt >= 10:
                 print("10 OCBA iterations without change, exiting iteration..")
                 early_finish = f" - early finish (gen {gen})"
-                break   
-            
-            if out_path:
-                with open(fname_pickle, 'wb') as f:
-                    # Pickle the 'data' dictionary using the highest protocol available.
-                    pickle.dump(self.pipes, f, pickle.HIGHEST_PROTOCOL)             
+                break                
         
         t_end = time.time()
-        
-        # delete pickle and log files if they exist
-        if out_path:
-            if os.path.exists(fname_pickle):
-                os.remove(fname_pickle)
         
         best_tpot_pipe, best_tpot_cv = u.get_best(self.pipes, source='TPOT-BASE')
         best_bo_pipe, best_bo_cv = u.get_best(self.pipes, source=f'TPOT-BO-O{self.d_flag}')

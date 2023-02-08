@@ -399,9 +399,10 @@ The generated pipelines are accessible as the class attribute `pipes`. The dicti
 ---
 
 ### `TPOT-BO-O`:
+The hyper-parameter values of a pipeline can take different types, and have varying degrees of effect on its fitness. This implies that allocating computational budget proportional to the number of hyper-parameters 
+
 
 ---
-
 
 ### `oTPOT-BASE`:
 By default, TPOT performs a non-dominated sort on the set of evaluated pipelines, when selecting the parent population for each generation, minimising both CV error and number of operators. While this method ensures pipeline complexity does not run out of control during the search - an important consideration for GP based methods - it can severely limit the diversity of the parent population.

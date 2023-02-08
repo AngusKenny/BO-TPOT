@@ -25,12 +25,12 @@ SAVE_PLOTS:     Save generated plots to file in ./<RESULTS_DIR>/Plots/
 params = {
     'RESULTS_DIR'       : 'Results',
     'PROBLEMS'          : [
-                            # 'quake',
-                            # 'socmob',
-                            # 'abalone',
-                            # 'brazilian_houses',
+                            'quake',
+                            'socmob',
+                            'abalone',
+                            'brazilian_houses',
                             'house_16h',
-                            # 'elevators'
+                            'elevators'
                           ],
     'METHODS'           : ['TPOT-BASE',
                         #    'TPOT-BO-Sd','TPOT-BO-Sc',
@@ -46,7 +46,7 @@ params = {
     'SAVE_STATS'        : False,
     # 'MODE'              : ['discrete'],
     # 'MODE'              : ['continuous'],
-    'CONFIDENCE_LEVEL'  : 0.1
+    'CONFIDENCE_LEVEL'  : 0.10
     }
 
 cwd = os.getcwd()
@@ -212,6 +212,17 @@ for problem in params['PROBLEMS']:
         stats[problem]['mean'][method] = np.mean([data[problem][seed][method] for seed in data[problem]])
         stats[problem]['std_dev'][method] = np.std([data[problem][seed][method] for seed in data[problem]])
 
+best_markers = {prob : {'best':None,'worst':None,'median':None,'mean':None,'std_dev':None} for prob in params['PROBLEMS']}
+
+for prob,p_stats in stats.items():
+    means = [p_stats['mean'][m] for m in p_stats['mean']]
+    medians = [p_stats['median'][m] for m in p_stats['median']]
+    m_keys = list(p_stats['median'].keys())
+    best_markers[prob]['mean'] = m_keys[np.argmin(means)]
+    best_markers[prob]['median'] = m_keys[np.argmin(medians)]
+
+print(best_markers)
+
 # # find median run index (closest to median value)
 # med_auto_run_idx = np.abs(data['TPOT-BO-H'] - np.median(data['TPOT-BO-H'])).argmin()
 # med_run = list(raw_data.keys())[med_auto_run_idx]
@@ -246,7 +257,7 @@ wtl_overall = {tgt: {src:{'W':0, 'T': 0, 'L':0} for src in method_list} for tgt 
 
 for prob,d in stat_data.items():
     print(f'{prob}:')
-    print('='*(len(prob)+1))
+    # print('='*(len(prob)+1))
 
     print(f"{str(''):>{PRINT_COL}}",end='')
     # for method in params['METHODS']:
@@ -260,12 +271,40 @@ for prob,d in stat_data.items():
     for stat,methods in stats[prob].items():
         print(f"{str(stat):>{PRINT_COL}}",end="")
         for method,val in methods.items():
-            print(f"{val:>{PRINT_COL}.6e}",end="")
+            col_txt = f"{u.CYAN}" if best_markers[prob][stat] == method else ""
+            print(f"{col_txt}{val:>{PRINT_COL}.6e}{u.OFF}",end="")
         print()
 
 
     print("\n")
 
+    if params['CONFIDENCE_LEVEL']> 0:
+
+        print(f"{str('.'):>{PRINT_COL}}",end="")
+        # for src_method in params['METHODS']:
+        for src_method in method_list:
+            print(f"{src_method:>{PRINT_COL}}",end="")
+        print()
+        # for tgt_method in params['METHODS']:
+        for tgt_method in method_list:
+            print(f"{tgt_method:>{PRINT_COL}}",end="")
+            # for src_method in params['METHODS']:
+            for src_method in method_list:
+                res = ranksums(stat_data[prob][src_method],stat_data[prob][tgt_method])
+                wtl_res = 'T'
+                if res.pvalue <= params['CONFIDENCE_LEVEL']:
+                    wtl_res = 'W' if med_data[prob][src_method] < med_data[prob][tgt_method] else 'L'
+                
+                wtl_overall[tgt_method][src_method][wtl_res] = wtl_overall[tgt_method][src_method][wtl_res] + 1
+                
+                res_txt = f"{wtl_res}(p={res.pvalue:.4f})"
+                
+                print(f"{res_txt:>{PRINT_COL}}",end="")
+            print()
+        print()
+        
+if params['CONFIDENCE_LEVEL']> 0:    
+    print(f"\n\nover all (confidence level {int(params['CONFIDENCE_LEVEL']*100)}%):")
     print(f"{str('.'):>{PRINT_COL}}",end="")
     # for src_method in params['METHODS']:
     for src_method in method_list:
@@ -276,35 +315,10 @@ for prob,d in stat_data.items():
         print(f"{tgt_method:>{PRINT_COL}}",end="")
         # for src_method in params['METHODS']:
         for src_method in method_list:
-            res = ranksums(stat_data[prob][src_method],stat_data[prob][tgt_method])
-            wtl_res = 'T'
-            if res.pvalue <= params['CONFIDENCE_LEVEL']:
-                wtl_res = 'W' if med_data[prob][src_method] < med_data[prob][tgt_method] else 'L'
-            
-            wtl_overall[tgt_method][src_method][wtl_res] = wtl_overall[tgt_method][src_method][wtl_res] + 1
-            
-            res_txt = f"{wtl_res}(p={res.pvalue:.4f})"
-            
-            print(f"{res_txt:>{PRINT_COL}}",end="")
+            wtl_txt = f"{wtl_overall[tgt_method][src_method]['W']}/{wtl_overall[tgt_method][src_method]['T']}/{wtl_overall[tgt_method][src_method]['L']}"
+            print(f"{wtl_txt:>{PRINT_COL}}",end="")
         print()
     print()
-        
-        
-print(f"\n\nover all (confidence level {int(params['CONFIDENCE_LEVEL']*100)}%):")
-print(f"{str('.'):>{PRINT_COL}}",end="")
-# for src_method in params['METHODS']:
-for src_method in method_list:
-    print(f"{src_method:>{PRINT_COL}}",end="")
-print()
-# for tgt_method in params['METHODS']:
-for tgt_method in method_list:
-    print(f"{tgt_method:>{PRINT_COL}}",end="")
-    # for src_method in params['METHODS']:
-    for src_method in method_list:
-        wtl_txt = f"{wtl_overall[tgt_method][src_method]['W']}/{wtl_overall[tgt_method][src_method]['T']}/{wtl_overall[tgt_method][src_method]['L']}"
-        print(f"{wtl_txt:>{PRINT_COL}}",end="")
-    print()
-print()
 
 # print("median results:\n===============")
 # print(f"{str(''):>{PRINT_COL}}",end='')
