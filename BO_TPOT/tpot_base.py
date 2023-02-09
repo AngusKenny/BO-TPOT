@@ -97,11 +97,11 @@ class TPOT_Base(object):
         
         # import structures from tpot dictionary
         strucs.update(self.tpot.evaluated_individuals_)
-        
+                
         pop_tracker = {0: {}, 1: {}}
         
         for p,v in self.tpot.evaluated_individuals_.items():
-            if v['internal_cv_score'] == -np.inf: continue
+            # if v['internal_cv_score'] == -np.inf: continue
             if v['structure'] not in pop_tracker[v['generation']]:
                 pop_tracker[v['generation']][v['structure']] = 1
             else:
