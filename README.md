@@ -399,17 +399,78 @@ The generated pipelines are accessible as the class attribute `pipes`. The dicti
 ---
 
 ### `TPOT-BO-O`:
-The hyper-parameter values of a pipeline can take different types, and have varying degrees of effect on its fitness. This implies that allocating computational budget proportional to the number of hyper-parameters 
+The hyper-parameter values of a pipeline can take different variable types, and have varying degrees of effect on its fitness. This implies that allocating computational budget proportional to the number of hyper-parameters alone is unlikely the best strategy, as the number of hyper-parameters alone does not necessarily reflect the size of the search space, or difficulty of the problem (e.g., all hyper-parameters could be True/False). The optimal computing budget allocation (OCBA) algorithm uses the mean and standard deviation for a number of samples from different concepts to determine what proportion of the available budget should be allocated to each one. By using statistical information like this, OCBA prioritises regions of the search space that not only have the best sample mean (and are therefore more likely to have been exploited already), but also potentially promising regions, which have a high level of uncertainty.
 
+In principle, `TPOT-BO-O` functions similarly to `TPOT-BO-H`, with a couple of differences. After $nG_s$ (typically 80) TPOT generations, the set of evaluated solutions $S$ is partitioned into pipeline structures with more than one hyper-parameter and ordered by CV. The top $\frac{nP}{2}$ pipeline structures are selected, producing $Q$, and `TPOT-BO-S` is applied to each one as needed, such that the number of _valid_ (i.e., CV $\neq \infty$) evaluated pipelines for a given structure is $|Q[i]| \geq n_0$, with $n_0$ typically 10. Because TPOT uses a non-dominated sort-based method of selecting its parent population for each generation, the search tends to focus on narrow regions of the search space, with many generated pipeline structures only being evaluated once or twice. To make its allocations, OCBA requires the mean and standard deviation of multiple samples, so these initial evaluations aid in the production of more accurate statistics.
+
+In OCBA, the $\Delta$ parameter is often used to specify how many evaluations are made between each statistics update. This parameter is used in `TPOT-BO-O` as a loose control on how focused the search is. A high value for $\Delta$ means that more budget is available to allocate with each iteration, allowing it to potentially spread across many candidates; while a low value forces OCBA to narrowly allocate computing resources, while also reassessing this allocation more frequently to allow it to change its area of attention if need be. Starting with $\Delta = \frac{nP}{2}$, a similar principle of successive halving as was used in `TPOT-BO-H` is applied to $\Delta$, with the intent of focusing the search more with each generation. 
+
+As with `TPOT-BO-H`, $\Delta$ is halved with every generation and the budget for the current generation is computed based on how many halvings remain until $\Delta=1$. Let $B_r$ be the total remaining computing budget for the entire search, the budget to be allocated in the current generation is calculated as ${B_g = \frac{B_r}{\lceil\log_2(\Delta)+1 \rceil}}$. Once $\Delta=1$, single selections and evaluations are carried out until the budget is fully expended.
+
+As with the other BO-based methods, `TPOT-BO-O` can operate using both discrete and continuous BO parameter spaces.
+
+### **Parameters:**
+
+The table below gives all parameter arguments, their type and default values:
+
+| Parameter              | Type     | Default                   | 
+|:-----------------------|:--------:|--------------------------:|
+|`init_pipes`            | dict     | `{}`                      |
+|`seed`                  | int      | 42                        |
+|`pop_size`              | int      | 100                       |
+|`n_bo_evals`            | int      | 2000                      |
+|`discrete_mode`         | boolean  | True                      |
+|`optuna_timeout_trials` | int      | 100                       |
+|`config_dict`           | dict     |`default_tpot_config_dict` |
+|`pipe_eval_timeout`     | int      | 5                         |
+|`n_jobs`                | int      | -1                        |
+|`n_0`                   | int      | 10                        |
+|`vprint`                | `Vprint` |`u.Vprint(1)`              |
+
+### **Pseudocode:**
+
+**Input:** $D$: training data; $S$: input pipeline set; $nE$: number of BO evaluations; $nP$: TPOT population size; $n_0$: initial number of OCBA samples; $\rho$: GP parameter set  
+**Output:** $S$: evaluated pipeline set  
+> $Q$ &larr; top $\frac{nP}{2}$ from partition of $S$ by pipeline structure, ordered by CV  
+> **for** $q \in Q$ **do:**  
+>> $q$ &larr; `TPOT-BO-S`$(D,q,\max(0,|q|-n_0),\rho)$  
+>
+> $B_r$ &larr; $nE + |S| - \sum_{q \in Q}|q|$  
+> $S$ &larr; $S \bigcup_{q \in Q}q$  
+> $\Delta$ &larr; $nP$  
+> **while** $B_r > 0$ **do:**  
+>> $\Delta$ &larr; $\max(1,\frac{\Delta}{2})$  
+>> $B_g$ &larr; $\frac{B_r}{\lceil\log_2(\Delta)+1 \rceil}$ **if** $\Delta > 1$ **else** 1  
+>> $B_r$ &larr; $B_r - B_g$  
+>> **while** $B_g > 0$ **do:**  
+>>> $\mu,\sigma$ &larr; mean, standard deviation for each structure in $Q$  
+>>> $A$ &larr; OCBA budget allocations for $Q$ using parameters $\mu,\sigma,\min(B_g,\Delta)$  
+>>> **for** $q \in Q$ **do:**  
+>>>> $q$ &larr; `TPOT-BO-S`$(D,q,A_q,\rho)$  
+>>>
+>>> $S$ &larr; $S \bigcup_{q \in Q}q$  
+>>> $B_g$ &larr; $B_g - \sum_{q \in Q} A_q$
+>
+> **return** $S$
+
+### **Outputs:**  
+If the `out_file` parameter is set when calling the `optimize` method, 3 files are produced as output:
+
+`TPOT-BO-O{d/c}.progress` - provides general information about the run
+
+`TPOT-BO-O{d/c}.tracking` - provides generation-by-generation of tracking in the form of an ASCII histogram
+
+`TPOT-BO-O{d/c}.pipes` - provides full list of pipelines evaluated during the entire search, with each semi-colon separated line line taking the form:
+>`<pipeline string>;<structure string>;<generation>;<delta value>;<evaluated CV error>`  
 
 ---
 
 ### `oTPOT-BASE`:
 By default, TPOT performs a non-dominated sort on the set of evaluated pipelines, when selecting the parent population for each generation, minimising both CV error and number of operators. While this method ensures pipeline complexity does not run out of control during the search - an important consideration for GP based methods - it can severely limit the diversity of the parent population.
 
-In `oTPOT-BASE` this method of parent population selection is replaced with one based on OCBA principles. With each generation, the set of evaluated solutions $S$, is partitioned by structure, producing $Q$. The mean CV and its standard deviation statistics are computed for each structure in $Q$. Due to the random selection of hyper-parameters by TPOT, the standard deviation of the CV can be **very** high or sometimes zero when all pipelines produced the same CV, or only one pipeline has been evaluated from a given structure. Therefore, the standard deviation is capped at `1E+10` from above and `1e-10` from below. A modified version of the OCBA algorithm is used with a total budget equal to the population size $nP$ to produce allocations for each pipeline structure, $A$. The modifications introduce an allowed upper bound for each allocation, ensuring that the allocated budget for a given structure does not exceed the number of pipelines exhibiting it.
+In `oTPOT-BASE` this method of parent population selection is replaced with one based on OCBA principles. With each generation, the set of evaluated solutions $S$, is partitioned by structure, producing $Q$. The mean CV and its standard deviation statistics are computed for each structure in $Q$. Due to the random selection of hyper-parameters by TPOT, the standard deviation of the CV can be **very** high or sometimes zero when all pipelines produced the same CV, or only one pipeline has been evaluated from a given structure. Therefore, the standard deviation is capped at `1E+10` from above and `1e-10` from below. A modified version of the OCBA algorithm is used with a total budget equal to the population size $nP$ to produce allocations $A$ for each pipeline structure in $Q$. The modifications introduce an allowed upper bound for each allocation, ensuring that the allocated budget for a given structure does not exceed the number of pipelines exhibiting it.
 
-These allocations are used to select the best $A[i]$ pipelines from pipeline structure $Q[i]$ and add them to a new parent population $P$. This population is then evolved and fitted to the input data.
+These allocations are used to select the best $A_q$ pipelines from pipeline structure $q \in Q$ and add them to a new parent population $P$. This population is then evolved and fitted to the input data.
 
 ### **Parameters:**
 
@@ -438,8 +499,8 @@ The table below gives all parameter arguments, their type and default values:
 >> $\mu,\sigma,\hat{q}$ &larr; mean, standard deviation and maximum number of pipelines for each structure in $Q$  
 >> $A$ &larr; OCBA budget allocations for $Q$ using parameters $\mu,\sigma,nP,\hat{q}$  
 >> $P$ &larr; $\emptyset$ &nbsp;&nbsp;&nbsp;&nbsp; empty TPOT population  
->> **for** $i \in \lbrace 1,2,3,\dots,|A|\rbrace$ **do:**  
->>> $P$ &larr; $P\ \cup$ best $A[i]$ pipelines of structure $Q[i]$
+>> **for** $q \in Q$ **do:**  
+>>> $P$ &larr; $P\ \cup$ best $A_q$ pipelines of structure $q \in Q$
 >>
 >> $T$ &larr; replace parent population in $T$ with $P$  
 >> $S$ &larr; update with result of fitting $T$ on $D$ and $S$ for 1 generation  
