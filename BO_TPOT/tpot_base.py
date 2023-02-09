@@ -62,7 +62,7 @@ class TPOT_Base(object):
         if out_path:
             log_file = os.path.join(out_path,'TPOT-BASE.log')
             # time_file = os.path.join(out_path,'TPOT-BASE.times')       
-            fname_pickle = os.path.join(out_path,'oTPOT-BASE.pickle')
+            fname_pickle = os.path.join(out_path,'TPOT-BASE.pickle')
             fname_tracker = os.path.join(out_path,'TPOT-BASE.tracker')
             self.tpot.log_file = log_file
         
