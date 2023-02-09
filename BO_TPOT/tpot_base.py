@@ -61,7 +61,7 @@ class TPOT_Base(object):
         
         if out_path:
             log_file = os.path.join(out_path,'TPOT-BASE.log')
-            time_file = os.path.join(out_path,'TPOT-BASE.times')       
+            # time_file = os.path.join(out_path,'TPOT-BASE.times')       
             fname_pickle = os.path.join(out_path,'oTPOT-BASE.pickle')
             fname_tracker = os.path.join(out_path,'TPOT-BASE.tracker')
             self.tpot.log_file = log_file
@@ -112,9 +112,9 @@ class TPOT_Base(object):
                 for g in pop_tracker:
                     for s in pop_tracker[g]:
                         f.write(f"{g};{s};{pop_tracker[g][s]};{strucs[s].cv}\n")
-            with open(time_file,'w') as f:
-                f.write(f"{0};{0}\n")
-                f.write(f"{1};{t_tpot_end-t_tpot_start}\n")    
+            # with open(time_file,'w') as f:
+            #     f.write(f"{0};{0}\n")
+            #     f.write(f"{1};{t_tpot_end-t_tpot_start}\n")    
         
         print(f"len strucs after update: {len(strucs)}")
         
@@ -144,9 +144,9 @@ class TPOT_Base(object):
             self.tpot.fit(X_train, y_train)
             t_tpot_end = time.time()
             
-            if out_path:
-                with open(time_file,'a') as f:
-                    f.write(f"{gen};{t_tpot_end-t_tpot_start}\n")
+            # if out_path:
+            #     with open(time_file,'a') as f:
+            #         f.write(f"{gen};{t_tpot_end-t_tpot_start}\n")
             
             print(f"{u.RED}TPOT took {t_tpot_end-t_tpot_start} seconds{u.OFF}")
             
