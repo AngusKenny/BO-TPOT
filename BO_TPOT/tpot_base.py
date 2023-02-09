@@ -66,6 +66,7 @@ class TPOT_Base(object):
             fname_tracker = os.path.join(out_path,'TPOT-BASE.tracker')
             self.tpot.log_file = log_file
         
+        self.start_gen = 2
         
         if out_path and self.allow_restart and os.path.exists(fname_pickle):
             with open(fname_pickle, 'rb') as f:
