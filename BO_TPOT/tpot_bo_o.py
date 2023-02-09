@@ -183,7 +183,7 @@ class TPOT_BO_O(object):
             stagnate_cnt = 0
             
             if extra_bo > 0:
-                self.vprint.v2(f"{u.CYAN}Performing {extra_bo} initial evaluations on structure ({i}/{len(self.bo_struc_keys)}): {k}..{u.OFF}\n")
+                self.vprint.v2(f"{u.CYAN}[Seed {self.seed}] Performing {extra_bo} initial evaluations on structure ({i}/{len(self.bo_struc_keys)}): {k}..{u.OFF}\n")
             
             old_invalid_cnt = len(self.strucs[k]) - len(self.strucs[k].get_valid())
             
@@ -313,7 +313,7 @@ class TPOT_BO_O(object):
                     
                     struc = self.strucs[self.bo_struc_keys[i]]
                     
-                    self.vprint.v2(f"\n{u.CYAN}{len(self.pipes)-self.starting_size+n_extra_bo} total evaluations of {self.n_bo_evals+n_extra_bo} performed, {B_r-n_evals} remaining{u.OFF}")
+                    self.vprint.v2(f"\n{u.CYAN}[Seed {self.seed}] {len(self.pipes)-self.starting_size+n_extra_bo} total evaluations of {self.n_bo_evals+n_extra_bo} performed, {B_r-n_evals} remaining{u.OFF}")
                     self.vprint.v2(f"{u.CYAN}{n_evals} evaluations of {B_g} performed, with {B_g-n_evals} remaning in generation {gen} (Delta = {Deltas[-1]})\nPerforming {alloc} evaluations on structure ({n_allocs} allocs):\n{struc}..{u.OFF}\n")
                                         
                     # run bayesian optimisation with seed_dicts as initial samples
