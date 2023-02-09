@@ -35,9 +35,11 @@ class PipeStructure(object):
         return key in self.pipes
 
     def update_stats(self):
-        self.mu = np.mean([v['internal_cv_score'] for v in self.get_valid().values()])
-        self.std = np.std([v['internal_cv_score'] for v in self.get_valid().values()])
-        self.stderr = self.std/np.sqrt(len(self))
+        valid_pipes = self.get_valid()
+        if len(valid_pipes) > 0:
+            self.mu = np.mean([v['internal_cv_score'] for v in valid_pipes.values()])
+            self.std = np.std([v['internal_cv_score'] for v in valid_pipes.values()])
+            self.stderr = self.std/np.sqrt(len(self))
         return self.mu, self.std, self.stderr
     
     def add(self, pipe, data) -> None:
