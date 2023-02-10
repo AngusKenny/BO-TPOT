@@ -32,7 +32,8 @@ There are two main classes of tools in the aTPOT suite:
 1. _Post hoc_ methods. These are applied after an initial TPOT search (typically, 80 generations) has completed. They include:
     - `TPOT-BO-S`, which selects a single candidate (based on CV error) to improve with BO;
     - `TPOT-BO-H`, which allocates a BO budget to many candidates, proportional to the number of hyper-parameters it contains, using a successive halving strategy to reduce the number of candidates in subsequent generations;
-    - `TPOT-BO-O`, which operates similarly to `TPOT-BO-H`, however BO budget is allocated according to OCBA principles (specifically [OCBA-m for subset selection](https://github.com/CLAHRCWessex/subset-selection-problem)), reducing the number of candidates in each subsequent generation.
+    - `TPOT-BO-O`, which operates similarly to `TPOT-BO-H`, however BO budget is allocated according to OCBA principles (specifically [OCBA-m for subset selection](https://github.com/CLAHRCWessex/subset-selection-problem)), reducing the number of candidates in each subsequent generation.  
+&nbsp;
 
 2. _In hoc_ methods. These are applied in tandem with TPOT, starting from generation zero. They include:
     - `TPOT-BASE`, which provides an interface to perform a base-line search using the un-altered TPOT algorithm, and store its output in a format compatible with the rest of the aTPOT suite;
@@ -88,7 +89,9 @@ The tools are found as classes in separate Python files in the directory `aTPOT`
 
 Each class has a constructor and a single `optimize` method, into which the training data `X_train` and `y_train` must be passed. The `optimize` method may also be called with an optional keyword `out_path` which specifies a directory that the output files should be written to (if required). 
 
-The processing of parameters and running and tracking of these methods can be performed easily using the `TestHandler` class in the `utils` directory, but they can also be accessed separately for use in other code.
+When the `optimize` method is called with `out_path` specified, pickling is used to save the progress of the search with each generation, to allow the search to be continued from near where it left off, should it be interrupted. The pickle file is located in `/<out_path>/<method_name>.pickle` - e.g.,`./Results/Prob1/TPOT-BASE/Seed_42/TPOT-BASE.pickle` - and is deleted at the end of a successfully completed search. It should be noted that resuming a search in this way makes exact reproduction of results almost impossible, as the random seed will be reset mid-way through the search. To start the search from scratch after an interruption, simple delete the `.pickle` file.
+
+The processing of parameters and running and tracking of the tools in the aTPOT suite can be performed easily using the `TestHandler` class in the `utils` directory, but they can also be accessed separately for use in customised code.
 
 The following is a detailed description of these three classes and their constructors and `optimize` methods.
 
@@ -399,7 +402,54 @@ One of the main issues identified from experiments using `TPOT-BO-S`, `TPOT-BO-A
 
 Having completed $nG_s$ generations, assuming the typical values of $nG_s=80$ and $nP=100$, the set of evaluated solutions produced by TPOT $S$, should have a size of around 8,000. If $S$ is ordered by CV value and some subset of the best performing pipelines are picked, it is likely that this subset would have a very low diversity, in terms of pipeline structure - i.e., pipelines with the same operators, ordered in the same way, but with different hyper-parameter values. This is not necessarily because one particular pipeline structure is much more promising than any other, but more an artefact of the manner in which TPOT selects its parent population for each generation. When deciding on which set of pipelines to carry forward to generate new offspring, TPOT performs a non-dominated sort on the set of evaluated pipelines, minimising CV error and number of operators. The number of operators is a metric that approximates the complexity of a given pipeline, and keeping this complexity low is important for the operation of the genetic programming algorithm that TPOT is built on. An unfortunate consequence of using this, rather coarse, metric is that unless the first set of hyper-parameters chosen produces a pipeline with a very low CV error, any offspring with a higher number of operators is unlikely to be chosen for the next generation, and therefore will not have many opportunities to find a set of hyper-parameters that do work. This selection bias has an effect on the diversity of the evaluated pipelines, and can result in TPOT becoming "fixated" on one particular pipeline structure from very early on in the search. By first partitioning $S$ by pipeline structure - producing $Q$ - and then sorting $Q$ by CV error, a much more diverse set of candidates for BO improvment can be obtained. 
 
-Initially, $\frac{nP}{2}$ candidate pipeline structures are selected for improvement using `TPOT-BO-S`. With each generation the size of this sub-population is halved and the allocated budget for each generation is calculated, based on how many "halvings" remain until 
+Initially, $|Q| = \frac{nP}{2}$ candidate pipeline structures are selected for improvement using `TPOT-BO-S`. With each generation the size of this sub-population is halved and the allocated budget for each generation is calculated, based on how many "halvings" remain until $|Q| = 1$. Let $B_r$ be the total remaining budget, the budget for the current generation can be computed as ${B_g = \frac{B_r}{\lceil\log_2(|Q|)+1 \rceil}}$. As the size of the BO search space increases exponentially with the number of hyper-parameters, this budget is allocated among the pipeline structures in $Q$, proportional to the number of number of hyper-parameters they contain that can take 2 or more values. If $H_q$ is the set of hyper-parameters for structure $q \in Q$, then the budget allocation for $q$ is ${A_q = \lceil \frac{|H_q| \times B_g}{\sum_{r \in Q} |H_r|} \rceil}$.
+
+With each generation, $B_g$ and $A$ are calculated, and used to apply `TPOT-BO-S` to each pipeline structure in $Q$, proportional to the number of hyper-parameters. Once all pipline structures have had BO applied and are ordered by the best evaluated CV, the best $\lceil \frac{|Q|}{2} \rceil$ are selected for the next generation and the total remaining budget $B_r$ is updated. This continues until $|Q| = 1$ at which point the remainder of the budget is applied at once. 
+
+As with other BO-based methods, `TPOT-BO-H` can operate with both discrete and continuous parameter spaces, however there is also a third mode `TPOT-BO-Hs`. This `s` stands for "sequential" and runs `TPOT-BO-H` with the standard TPOT discrete parameter spaces, right until $|Q|=1$, at which point it switches to continuous parameter spaces for the final application of BO. The reasoning behind this is that as the BO budget is being spread across many pipelines, there is not a lot of time to explore the search space and construct meaningful BO models for all of the structures in $Q$, especially those which have very few initial samples. Using a coarser, discrete parameter space initially can help the algorithm explore more efficiently, while switching to a continuous space at the end of the search allows the algorithm to "fine tune" the parameters and search in between the discretised steps.
+
+### **Parameters:**
+
+The table below gives all parameter arguments, their type and default values:
+
+| Parameter              | Type     | Default                   | 
+|:-----------------------|:--------:|--------------------------:|
+|`init_pipes`            | dict     | `{}`                      |
+|`seed`                  | int      | 42                        |
+|`pop_size`              | int      | 100                       |
+|`n_bo_evals`            | int      | 2000                      |
+|`discrete_mode`         | boolean  | True                      |
+|`optuna_timeout_trials` | int      | 100                       |
+|`config_dict`           | dict     |`default_tpot_config_dict` |
+|`pipe_eval_timeout`     | int      | 5                         |
+|`n_jobs`                | int      | -1                        |
+|`vprint`                | `Vprint` |`u.Vprint(1)`              |
+
+### **Pseudocode:**
+
+**Input:** $D$: training data; $S$: input pipeline set; $nE$: number of BO evaluations; $nP$: TPOT population size; $\rho$: GP parameter set  
+**Output:** $S$: evaluated pipeline set  
+> $Q$ &larr; top $\frac{nP}{2}$ from partition of $S$ by pipeline structure, ordered by CV  
+> $B_r$ &larr; $nE$  
+> **while** $B_r > 0$ **do:**  
+>> $B_g$ &larr; $\frac{B_r}{\lceil\log_2(|Q|)+1 \rceil}$ **if** $|Q| > 1$ **else** $B_r$  
+>> $A$ &larr; allocation of $B_g$ for each structure $q \in Q$, proportional to number of hyper-parameters  
+>> **for** $q \in Q$ **do:**  
+>>> $q$ &larr; `TPOT-BO-S`$(D,q,A_q,\rho)$  
+>>
+>> $S$ &larr; $S \bigcup_{q \in Q}q$  
+>> $B_r$ &larr; $B_r - \sum_{q \in Q} A_q$  
+>> $Q$ &larr; top $\lceil \frac{|Q|}{2} \rceil$ pipeline structures in $Q$, ordered by CV  
+>
+> **return** S
+
+### **Outputs:**  
+If the `out_file` parameter is set when calling the `optimize` method, 2 files are produced as output:
+
+`TPOT-BO-H{d/c/s}.progress` - provides general information about the run
+
+`TPOT-BO-H{d/c/s}.pipes` - provides full list of pipelines evaluated during the entire search, with each semi-colon separated line line taking the form:
+>`<pipeline string>;<structure string>;<generation>;<number of structures>;<source>;<evaluated CV error>`  
 
 ---
 
@@ -444,12 +494,12 @@ The table below gives all parameter arguments, their type and default values:
 > $S$ &larr; $S \bigcup_{q \in Q}q$  
 > $\Delta$ &larr; $nP$  
 > **while** $B_r > 0$ **do:**  
->> $\Delta$ &larr; $\max(1,\frac{\Delta}{2})$  
+>> $\Delta$ &larr; $\lceil\frac{\Delta}{2} \rceil$  
 >> $B_g$ &larr; $\frac{B_r}{\lceil\log_2(\Delta)+1 \rceil}$ **if** $\Delta > 1$ **else** 1  
 >> $B_r$ &larr; $B_r - B_g$  
 >> **while** $B_g > 0$ **do:**  
->>> $\mu,\sigma$ &larr; mean, standard deviation for each structure in $Q$  
->>> $A$ &larr; OCBA budget allocations for $Q$ using parameters $\mu,\sigma,\min(B_g,\Delta)$  
+>>> $\mu,\sigma$ &larr; mean, standard deviation for each structure $q \in Q$  
+>>> $A$ &larr; OCBA budget allocations for $q \in Q$ using parameters $\mu,\sigma,\min(B_g,\Delta)$  
 >>> **for** $q \in Q$ **do:**  
 >>>> $q$ &larr; `TPOT-BO-S`$(D,q,A_q,\rho)$  
 >>>
@@ -473,7 +523,7 @@ If the `out_file` parameter is set when calling the `optimize` method, 3 files a
 ### `oTPOT-BASE`:
 By default, TPOT performs a non-dominated sort on the set of evaluated pipelines, when selecting the parent population for each generation, minimising both CV error and number of operators. While this method ensures pipeline complexity does not run out of control during the search - an important consideration for GP based methods - it can severely limit the diversity of the parent population.
 
-In `oTPOT-BASE` this method of parent population selection is replaced with one based on OCBA principles. With each generation, the set of evaluated solutions $S$, is partitioned by structure, producing $Q$. The mean CV and its standard deviation statistics are computed for each structure in $Q$. Due to the random selection of hyper-parameters by TPOT, the standard deviation of the CV can be **very** high or sometimes zero when all pipelines produced the same CV, or only one pipeline has been evaluated from a given structure. Therefore, the standard deviation is capped at `1E+10` from above and `1e-10` from below. A modified version of the OCBA algorithm is used with a total budget equal to the population size $nP$ to produce allocations $A$ for each pipeline structure in $Q$. The modifications introduce an allowed upper bound for each allocation, ensuring that the allocated budget for a given structure does not exceed the number of pipelines exhibiting it.
+In `oTPOT-BASE` this method of parent population selection is replaced with one based on OCBA principles. With each generation, the set of evaluated solutions $S$, is partitioned by structure, producing $Q$. The mean CV and its standard deviation statistics are computed for each structure in $Q$. Due to the random selection of hyper-parameters by TPOT, the standard deviation of the CV can be **very** high or sometimes zero when all pipelines produced the same CV, or only one pipeline has been evaluated from a given structure. Therefore, the standard deviation is capped at `1E+10` from above and `1e-10` from below. A modified version of the OCBA algorithm is used with a total budget equal to the population size $nP$ to produce allocations $A$ for each pipeline structure in $Q$. The modifications introduce an allowed upper bound for each allocation, ensuring that the allocated budget for a given structure $q \in Q$ does not exceed the number of pipelines exhibiting it, $|q|$.
 
 These allocations are used to select the best $A_q$ pipelines from pipeline structure $q \in Q$ and add them to a new parent population $P$. This population is then evolved and fitted to the input data.
 
@@ -501,11 +551,11 @@ The table below gives all parameter arguments, their type and default values:
 > $S$ &larr; evaluated pipeline set after fitting $T$ on $D$ for 1 generation  
 > **for** $nG_t - 2$ generations **do:**  
 >> $Q$ &larr; partition of $S$ by pipeline structure  
->> $\mu,\sigma,\hat{q}$ &larr; mean, standard deviation and maximum number of pipelines for each structure in $Q$  
->> $A$ &larr; OCBA budget allocations for $Q$ using parameters $\mu,\sigma,nP,\hat{q}$  
+>> $\mu,\sigma$ &larr; mean, standard deviation for each structure $q \in Q$  
+>> $A$ &larr; OCBA budget allocations for $q \in Q$ using parameters $\mu,\sigma,nP,|q|$  
 >> $P$ &larr; $\emptyset$ &nbsp;&nbsp;&nbsp;&nbsp; empty TPOT population  
 >> **for** $q \in Q$ **do:**  
->>> $P$ &larr; $P\ \cup$ best $A_q$ pipelines of structure $q \in Q$
+>>> $P$ &larr; $P\ \cup$ best $A_q$ pipelines of structure $q \in Q$  
 >>
 >> $T$ &larr; replace parent population in $T$ with $P$  
 >> $S$ &larr; update with result of fitting $T$ on $D$ and $S$ for 1 generation  
