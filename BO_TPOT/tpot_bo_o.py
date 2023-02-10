@@ -290,7 +290,7 @@ class TPOT_BO_O(object):
                 # zero_ids = sigma < EPS
                 # sigma[zero_ids] = min_sigma
                 # sigma[sigma > MAX_SIGMA] = MAX_SIGMA
-                print(f"{u.CYAN}[{time.asctime()}]{u.OFF} - generation: {gen}")
+                print(f"{u.CYAN}[{time.asctime()}]{u.OFF} - seed: {self.seed}, generation: {gen}")
                 
                 t_start_alloc = time.time()
                 
