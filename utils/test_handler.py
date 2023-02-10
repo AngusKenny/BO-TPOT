@@ -614,7 +614,7 @@ class TestHandler(object):
                 f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Seed {seed} {self.problem} (TPOT-BO-O{self.disc_flag}): Failed..\n{trace}\n\n")
             return
                 
-        fname_bo_prog = os.path.join(tbo_path,f'TPOT-BO-O.progress')
+        fname_bo_prog = os.path.join(tbo_path,f'TPOT-BO-O{self.disc_flag}.progress')
         
         best_bo_pipe,best_bo_cv = u.get_best(tbo.pipes)
         best_init_pipe, best_init_cv = u.get_best(init_tbo_pipes)
