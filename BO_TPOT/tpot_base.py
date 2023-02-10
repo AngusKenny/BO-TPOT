@@ -60,11 +60,11 @@ class TPOT_Base(object):
         log_file = None
         
         if out_path:
-            log_file = os.path.join(out_path,'TPOT-BASE.log')
+            # log_file = os.path.join(out_path,'TPOT-BASE.log')
             # time_file = os.path.join(out_path,'TPOT-BASE.times')       
             fname_pickle = os.path.join(out_path,'TPOT-BASE.pickle')
             fname_tracker = os.path.join(out_path,'TPOT-BASE.tracker')
-            self.tpot.log_file = log_file
+            # self.tpot.log_file = log_file
         
         self.start_gen = 2
         
@@ -181,9 +181,8 @@ class TPOT_Base(object):
             # delete pickle and log files if they exist
             if os.path.exists(fname_pickle):
                 os.remove(fname_pickle)
-            if os.path.exists(log_file):
-                os.close(log_file)
-                os.remove(log_file)
+            # if os.path.exists(log_file):
+            #     os.remove(log_file)
             print(out_path)
             if not os.path.exists(out_path):
                 os.makedirs(out_path)
