@@ -109,7 +109,7 @@ class TPOT_BO_H(object):
             for i,k in enumerate(self.bo_struc_keys):
                 n_hp = len(self.strucs[k].bo_params)
                 struc_data = self.strucs[k]                
-                n_grp_trials = max(1,int((n_hp/tot_params)*gen_evals))
+                n_grp_trials = np.ceil((n_hp/tot_params)*gen_evals)
                 
                 seed_samples = [(u.string_to_params(k2), v2['internal_cv_score']) for k2,v2 in struc_data.pipes.items()]
                 
