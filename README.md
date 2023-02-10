@@ -200,7 +200,7 @@ If the `out_file` parameter is set when calling the `optimize` method, 2 files a
 
 Starting from generation 0, `TPOT-BO-ALT` divides the total computing budget into $nI$ iterations, with each further divided into a TPOT and `TPOT-BO-S` step. The number of total TPOT generations $nG_t$ and the number of generations per TPOT step $nG_s$ are specified as part of the input and, typically, should be set to allow a fair comparison with other methods. For example, let the TPOT population size $nP$ be 100, and say 100 `TPOT-BASE` generations were performed as a control, with `TPOT-BO-S` performing 2000 evaluations from the 80 generation mark. If $nI = 10$, then appropriate values would be $nG_t= 100$ and $nG_s = \frac{80}{nI} = 8$. Using these values, the number of BO evaluations for the `TPOT-BO-S` step can be calculated as ${nE = (nG_t - nI \times nG_s) \times nP = 200}$. This ensures that the total number of evaluations for all three methods would be 10,000, with the same ratio of TPOT to BO evaluations for both `TPOT-BO-S` and `TPOT-BO-ALT`.
 
-Starting with an empty set of evaluated pipelines $S$, an instance of the `TPOTRegressor` class $T$ is initialised with population size $nP$. Then, for each of $nI$ iterations, $S$ is updated with the result of fitting $T$ on the input data $D$ and $S$ for $nG_s$ generations and passed to an instance of `TPOT-BO-S` which applies BO for $nE$ evaluations. In the first iteration $T$ is fit for $nG_s - 1$ generations to account for the initial construction of the population, which must be evaluated using $T$ as well. Once all iterations have completed, $S$ is returned.
+An instance of the `TPOTRegressor` class $T$ is initialised with population size $nP$, from which an initial population of evaluated solutions $S$ is extracted. Then, for each of $nI$ iterations, $S$ is updated with the result of fitting $T$ on the input data $D$ and $S$ for $nG_s$ generations and passed to an instance of `TPOT-BO-S` which applies BO for $nE$ evaluations. In the first iteration $T$ is fit for $nG_s - 1$ generations to account for the initial construction of the population, which must be evaluated using $T$ as well. Once all iterations have completed, $S$ is returned.
 
 #### Parameters:
 
@@ -227,7 +227,7 @@ The table below gives all parameter arguments, their type and default values:
 **Output:** $S$: evaluated pipeline set  
 > $T$ &larr; `TPOTRegressor` class initialised with $nP$ and GP parameters $\rho$  
 > $nE$ &larr; $(nG_t - nI \times nG_s) \times nP$  
-> $S$ &larr; $\emptyset$ &nbsp;&nbsp;&nbsp;&nbsp;evaluated pipeline set  
+> $S$ &larr; initial evaluated pipeline set from $T$  
 > **for** $nI$ iterations **do:**  
 >> $S$ &larr; update with result of fitting $T$ on $D$ and $S$ for $nG_s$ generations  
 >> $S$ &larr; `TPOT-BO-S`$(D,S,nE,\rho)$  
@@ -245,7 +245,9 @@ If the `out_file` parameter is set when calling the `optimize` method, 2 files a
 ---
 
 ### `TPOT-BO-AUTO`:
-This method is very similar in operation to `TPOT-BO-ALT`, except that instead of performing a fixed number of alternations between TPOT and BO, gradient information is used with each TPOT generation (or generation equivalent of BO evaluations) to determine which method should be used for the next generation.
+While dividing the budget into $nI$ iterations allows `TPOT-BO-ALT` to spread its BO budget across a number of pipelines, the choice of $nI$ is still arbitrary and there is a risk that the budget is not being used as efficently as possible. `TPOT-BO-AUTO` aims to address this by removing this parameter $nI$ and using gradient information to decide whether to use TPOT or `TPOT-BO-S` with each generation (or equivalent $nP$ BO evaluations).
+
+A population of $nP$ pipelines $S$ is initialised with an instance of the `TPOTRegressor` class $T$. The initial gradients $\Delta_T$ and $\Delta_B$ (TPOT and `TPOT-BO-S` steps, respectively) are set to arbitrarily large values, with $\Delta_T > \Delta_B$ to force the TPOT step to execute first. With each generation, the gradients are checked to see which step has the best gradient recently and that step is executed for either 1 TPOT generation or $nP$ BO evaluations. If the gradients are equal, then toggle to the step which was _not_ most recently used. Once the step is completed, $S$ is updated, along with the appropriate gradient, and process is repeated until $nG_t -1$ (-1 to account for the generation of the initial population) generations have elapsed - returning $S$ at the end.
 
 #### Parameters:
 
@@ -264,33 +266,36 @@ The table below gives all parameter arguments, their type and default values:
 |`pipe_eval_timeout`     | int      | 5                         |
 |`vprint`                | `Vprint` |`u.Vprint(1)`              |
 
+### **Pseudocode:**
 
-#### Constructor operation:
+**Input:** $D$: training data; $nG_t$: total number of TPOT generations; $nP$: TPOT population size; $\rho$: GP parameter set  
+**Output:** $S$: evaluated pipeline set  
+> $T$ &larr; `TPOTRegressor` class initialised with $nP$ and GP parameters $\rho$  
+> $S$ &larr; initial evaluated pipeline set from $T$  
+> $\Delta_T,\Delta_B$ &larr; arbitrarily large values such that $\Delta_T > \Delta_B$  
+> `DoTPOT` &larr; True
+> **for** $nG_t -1$ iterations **do:**  
+>> **if** $\Delta_T = \Delta_B$ **:**  
+>>> `DoTPOT` &larr; `!DoTPOT`  
+>> **else:**  
+>>> `DoTPOT` &larr; $\Delta_T > \Delta_B$  
+>> **if** `DoTPOT` = True **:**  
+>>> $S$ &larr; update with result of fitting $T$ on $D$ and $S$ for 1 generation  
+>> 
+>> **else:**  
+>>> $S$ &larr; `TPOT-BO-S`$(D,S,nP,\rho)$  
+>>
+>> $\Delta_T,\Delta_B$ &larr; update gradients  
+>
+> **return** $S$
 
-The constructor for `TPOT-BO-AUTO` operates the same as `TPOT-BO-ALT`.
+### **Outputs:**  
+If the `out_file` parameter is set when calling the `optimize` method, 2 files are produced as output:
 
-#### `optimize` operation:
+`TPOT-BO-AUTO{d/c}.progress` - provides general information about the run
 
-`TPOT-BO-AUTO` operates very similarly to `TPOT-BO-ALT`, except that it removes the arbitrary nature of specifiying a number of iterations to divide the total budget into, instead deciding on a generation-by-generation basis, what method should be used. If TPOT is used then the entire population is evolved for a single generation, if BO is used, then `pop_size` evaluations are performed on the best pipeline and pipelines with matching structures to it.
-
-If the `out_path` parameter is set, the evaluated pipelines are written to:
-
-`<out_path>/TPOT-BO-ALT.pipes`, 
-
-with the format:
-
-`<pipeline>;<generation>;<source>;<cv>`
-
-and gradient information written to:
-
-`<out_path>/TPOT-BO-ALT.pipes`, 
-
-Following that, it moves onto the next iteration. Finally, the progress is recorded in the file:
-
-`<out_path>/TPOT-BO-ALT.progress`
-
-The generated pipelines are accessible as the class attribute `pipes`. The dictionary for pipeline has a `source` entry to indicate whether it was generated by TPOT (`TPOT-BO-AUTO(TPOT)`) or BO (`TPOT-BO-AUTO(BO)`).
-
+`TPOT-BO-AUTO{d/c}.pipes` - provides full list of pipelines evaluated during the entire search, with each semi-colon separated line line taking the form:
+>`<pipeline string>;<iteration>;<generation>;<source>;<evaluated CV error>`  
 ---
 
 ### `TPOT-BO-H`:
