@@ -81,10 +81,10 @@ class TPOT_Base(object):
             # fit TPOT model
             self.tpot.fit(X_train, y_train)
             t_tpot_end = time.time()
-            if out_path:
-                with open(time_file,'w') as f:
-                    f.write(f"{0};{0}\n")
-                    f.write(f"{1};{t_tpot_end-t_tpot_start}\n")
+            # if out_path:
+                # with open(time_file,'w') as f:
+                #     f.write(f"{0};{0}\n")
+                #     f.write(f"{1};{t_tpot_end-t_tpot_start}\n")
             if out_path and self.allow_restart:
                 with open(fname_pickle, 'wb') as f:
                     # Pickle the 'data' dictionary using the highest protocol available.
