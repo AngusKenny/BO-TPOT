@@ -277,8 +277,10 @@ The table below gives all parameter arguments, their type and default values:
 > **for** $nG_t -1$ iterations **do:**  
 >> **if** $\Delta_T = \Delta_B$ **:**  
 >>> `DoTPOT` &larr; `!DoTPOT`  
+>>
 >> **else:**  
 >>> `DoTPOT` &larr; $\Delta_T > \Delta_B$  
+>>
 >> **if** `DoTPOT` = True **:**  
 >>> $S$ &larr; update with result of fitting $T$ on $D$ and $S$ for 1 generation  
 >> 
