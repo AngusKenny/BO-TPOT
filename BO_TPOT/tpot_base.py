@@ -102,6 +102,8 @@ class TPOT_Base(object):
         
         for p,v in self.tpot.evaluated_individuals_.items():
             # if v['internal_cv_score'] == -np.inf: continue
+            if v['generation'] not in pop_tracker:
+                pop_tracker[v['generation']] = {}
             if v['structure'] not in pop_tracker[v['generation']]:
                 pop_tracker[v['generation']][v['structure']] = 1
             else:
