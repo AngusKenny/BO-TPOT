@@ -273,7 +273,7 @@ The table below gives all parameter arguments, their type and default values:
 > $T$ &larr; `TPOTRegressor` class initialised with $nP$ and GP parameters $\rho$  
 > $S$ &larr; initial evaluated pipeline set from $T$  
 > $\Delta_T,\Delta_B$ &larr; arbitrarily large values such that $\Delta_T > \Delta_B$  
-> `DoTPOT` &larr; True
+> `DoTPOT` &larr; True  
 > **for** $nG_t -1$ iterations **do:**  
 >> **if** $\Delta_T = \Delta_B$ **:**  
 >>> `DoTPOT` &larr; `!DoTPOT`  
