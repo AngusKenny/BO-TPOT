@@ -181,8 +181,8 @@ class TPOT_Base(object):
             # delete pickle and log files if they exist
             if os.path.exists(fname_pickle):
                 os.remove(fname_pickle)
-            self.tpot.log_file=None
             if os.path.exists(log_file):
+                os.close(log_file)
                 os.remove(log_file)
             print(out_path)
             if not os.path.exists(out_path):
