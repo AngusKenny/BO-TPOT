@@ -308,7 +308,7 @@ class TPOT_BO_O(object):
                 # perform BO evaluations as per allocations
                 for i,alloc in enumerate(allocs):
                     # if no allocation, continue
-                    if alloc == 0:
+                    if alloc <= 0:
                         continue
                     
                     struc = self.strucs[self.bo_struc_keys[i]]
