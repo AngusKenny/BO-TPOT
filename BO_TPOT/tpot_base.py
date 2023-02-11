@@ -181,7 +181,7 @@ class TPOT_Base(object):
             if os.path.exists(fname_pickle):
                 os.remove(fname_pickle)
             if os.path.exists(log_file):
-                os.close(self.tpot.log_file_)
+                self.tpot.log_file_.close()
                 os.remove(log_file)
             print(out_path)
             if not os.path.exists(out_path):
