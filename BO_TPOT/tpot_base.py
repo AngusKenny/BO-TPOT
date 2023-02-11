@@ -175,14 +175,15 @@ class TPOT_Base(object):
         self.vprint.v1(f"{u.GREEN} * score:{u.OFF} {best_tpot_cv}")
         self.vprint.v1(f"\nTotal time elapsed: {round(t_end-t_start,2)} sec\n")
         
+        del(self.tpot)
         
         # if out_path exists then write pipes to file
         if out_path:
             # delete pickle and log files if they exist
             if os.path.exists(fname_pickle):
                 os.remove(fname_pickle)
-            # if os.path.exists(log_file):
-            #     os.remove(log_file)
+            if os.path.exists(log_file):
+                os.remove(log_file)
             print(out_path)
             if not os.path.exists(out_path):
                 os.makedirs(out_path)

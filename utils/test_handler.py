@@ -159,9 +159,9 @@ class TestHandler(object):
             f.write(f"{best_tpot_pipe}\n")
             
                     
-        log_file = os.path.join(tpot_path,'TPOT-BASE.log')
-        if os.path.exists(log_file):
-            os.remove(log_file)
+        # log_file = os.path.join(tpot_path,'TPOT-BASE.log')
+        # if os.path.exists(log_file):
+        #     os.remove(log_file)
         
         return tb.pipes
 
