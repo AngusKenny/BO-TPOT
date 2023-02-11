@@ -60,11 +60,11 @@ class TPOT_Base(object):
         log_file = None
         
         if out_path:
-            # log_file = os.path.join(out_path,'TPOT-BASE.log')
+            log_file = os.path.join(out_path,'TPOT-BASE.log')
             # time_file = os.path.join(out_path,'TPOT-BASE.times')       
             fname_pickle = os.path.join(out_path,'TPOT-BASE.pickle')
             fname_tracker = os.path.join(out_path,'TPOT-BASE.tracker')
-            # self.tpot.log_file = log_file
+            self.tpot.log_file = log_file
         
         self.start_gen = 2
         

@@ -20,7 +20,7 @@ from BO_TPOT.tpot_bo_s import TPOT_BO_S
 from BO_TPOT.tpot_bo_o import TPOT_BO_O
 from BO_TPOT.tpot_bo_nd import TPOT_BO_ND
 from BO_TPOT.tpot_bo_h import TPOT_BO_H, TPOT_BO_Hs
-from BO_TPOT.tpot_bo_alt import TPOT_BO_ALT
+from BO_TPOT.tpot_bo_alt2 import TPOT_BO_ALT
 from BO_TPOT.tpot_bo_auto import TPOT_BO_AUTO
 from BO_TPOT.tpot_bo_ex import TPOT_BO_EX
 from config.tpot_config import default_tpot_config_dict
@@ -157,6 +157,11 @@ class TestHandler(object):
             f.write(f"Best full TPOT CV:{best_tpot_cv}\n")
             f.write("Best full TPOT pipeline:\n")
             f.write(f"{best_tpot_pipe}\n")
+            
+                    
+        log_file = os.path.join(tpot_path,'TPOT-BASE.log')
+        if os.path.exists(log_file):
+            os.remove(log_file)
         
         return tb.pipes
 
@@ -345,7 +350,6 @@ class TestHandler(object):
             f.write(f"TPOT STOP GEN:{self.params['STOP_GEN']}\n")
             f.write(f"BAYESIAN OPTIMISATION EVALS:{n_bo_evals}\n")
             f.write(f"DISCRETE_MODE:{tbs.discrete_mode}\n")
-            f.write(f"RESTRICTED:{restricted_hps}\n")
             f.write(f"BO_PARAMS:{tbs.n_params}\n")
             f.write(f"FROZEN:{tbs.n_freeze}\n")
             
@@ -716,14 +720,12 @@ class TestHandler(object):
                 f.write(f"ND_{i}:{v['best_pipe']};{v['n_bo_params']};{v['cv_best']}\n")
 
 
-    def run_TPOT_BO_ALT(self, seed, init_pipes=None):
+    def run_TPOT_BO_ALT(self, seed):
         try:
             alt_path = self.get_path(f'TPOT-BO-ALT{self.disc_flag}',seed)
-            n_tpot_gens = int((self.params['nTOTAL_GENS'] - self.params['STOP_GEN'])/self.params['nALT_ITERS'])
-            n_bo_evals = int(((self.params['nTOTAL_GENS'] - self.params['STOP_GEN']) 
-                        * self.params['POP_SIZE'])/self.params['nALT_ITERS'])
+            n_tpot_gens = int(self.params['STOP_GEN']/self.params['nALT_ITERS'])
             
-            alt_init_pipes = u.truncate_pop(init_pipes, n_tpot_gens-1)
+            # alt_init_pipes = u.truncate_pop(init_pipes, n_tpot_gens-1)
             
             t_alt_start = time.time()
             self.vprint.v1(f"{u.CYAN_U}****** Running TPOT-BO-ALT (seed {seed}) for problem '{self.problem}' ******{u.OFF}\n")
@@ -731,13 +733,12 @@ class TestHandler(object):
             tba = TPOT_BO_ALT(n_iters=self.params['nALT_ITERS'],
                               pop_size=self.params['POP_SIZE'],
                               n_tpot_gens=n_tpot_gens,
-                              n_bo_evals=n_bo_evals,
+                              n_total_gens=self.params['nTOTAL_GENS'],
                               seed=seed,
                               discrete_mode=self.params['DISCRETE_MODE'],
                               optuna_timeout_trials=self.params['OPTUNA_TIMEOUT_TRIALS'],
                               config_dict=self.params['TPOT_CONFIG_DICT'],
                               n_jobs=self.params['nJOBS'],
-                              init_pipes=alt_init_pipes,
                               pipe_eval_timeout=self.params['PIPE_EVAL_TIMEOUT'],
                               vprint=self.vprint)
                                 
@@ -755,8 +756,8 @@ class TestHandler(object):
         
         fname_alt_prog = os.path.join(alt_path,'TPOT-BO-ALT.progress')
         
-        best_tpot_pipe,best_tpot_cv = u.get_best(tba.pipes,source="TPOT-BO-AUTO(TPOT)")
-        best_bo_pipe,best_bo_cv = u.get_best(tba.pipes, source="TPOT-BO-AUTO(BO)")
+        best_tpot_pipe,best_tpot_cv = u.get_best(tba.pipes,source=f"TPOT-BO-AUTO{self.disc_flag}(TPOT)")
+        best_bo_pipe,best_bo_cv = u.get_best(tba.pipes, source=f"TPOT-BO-AUTO{self.disc_flag}(BO)")
         
         with open(fname_alt_prog, 'w') as f:
             f.write("TPOT-BO-ALT\n")
@@ -765,7 +766,7 @@ class TestHandler(object):
             f.write(f"POP SIZE:{tba.pop_size}\n")
             f.write(f"nITERS:{tba.n_iters}\n")
             f.write(f"TPOT GENS PER ITER:{n_tpot_gens}\n")
-            f.write(f"BO EVALS PER ITER:{n_bo_evals}\n")
+            f.write(f"BO EVALS PER ITER:{tba.n_bo_evals}\n")
             f.write(f"DISCRETE_MODE:{tba.discrete_mode}\n")                
             f.write("\n")
             f.write(f"****** ITERATION {tba.n_iters-1} ******\n")
@@ -775,7 +776,8 @@ class TestHandler(object):
             f.write(f"Best BO CV:{best_bo_cv}\n\n")
             f.write(f"Total time elapsed:{round(t_alt_end-t_alt_start,2)}\n")
             f.write("\n")
-        
+            
+            
     def run_TPOT_BO_AUTO(self, seed, init_pipes=None):
         try:
             auto_path = self.get_path(f'TPOT-BO-AUTO{self.disc_flag}',seed)
@@ -848,9 +850,9 @@ class TestHandler(object):
         seed_txt = f"Seed_{seed}"
         
         seed_path = os.path.join(self.prob_path, self.method, seed_txt)
-        tpot_base_path = os.path.join(self.prob_path, 'TPOT-BASE', seed_txt, 'TPOT-BASE.progress')
-        if not os.path.exists(tpot_base_path) and method != 'TPOT-BASE':
-            raise Exception(f"Seed {seed} does not have initial TPOT-BASE data - skipping!")
+        # tpot_base_path = os.path.join(self.prob_path, 'TPOT-BASE', seed_txt, 'TPOT-BASE.progress')
+        # if not os.path.exists(tpot_base_path) and method != 'TPOT-BASE':
+        #     raise Exception(f"Seed {seed} does not have initial TPOT-BASE data - skipping!")
         
         if not os.path.exists(seed_path):
             os.makedirs(seed_path)     
