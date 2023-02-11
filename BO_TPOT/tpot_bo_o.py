@@ -315,6 +315,7 @@ class TPOT_BO_O(object):
                     
                     self.vprint.v2(f"\n{u.CYAN}[Seed {self.seed}] {len(self.pipes)-self.starting_size+n_extra_bo} total evaluations of {self.n_bo_evals+n_extra_bo} performed, {B_r-n_evals} remaining{u.OFF}")
                     self.vprint.v2(f"{u.CYAN}{n_evals} evaluations of {B_g} performed, with {B_g-n_evals} remaning in generation {gen} (Delta = {Deltas[-1]})\nPerforming {alloc} evaluations on structure ({n_allocs} allocs):\n{struc}..{u.OFF}\n")
+                    self.vprint.v2(f"{u.CYAN}generation stagnate count: {stagnate_cnt_gen}{u.OFF}\n")
                                         
                     # run bayesian optimisation with seed_dicts as initial samples
                     handlers[i].optimise(0, X_train, y_train, n_evals=alloc,
@@ -350,7 +351,7 @@ class TPOT_BO_O(object):
                 
                 stagnate_cnt_gen = stagnate_cnt_gen + 1 if len(self.pipes) == old_size_gen else 0
                 if stagnate_cnt_gen >= 50:
-                    print("10 OCBA iterations without change, exiting generation..")
+                    print("50 OCBA iterations without change, exiting generation..")
                     break                
                 
             stagnate_cnt = stagnate_cnt + 1 if len(self.pipes) == old_size else 0
