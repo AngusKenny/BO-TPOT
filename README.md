@@ -56,7 +56,7 @@ During its operation, TPOT can be thought of as searching a hierarchy of two dis
 
 As it is used for tuning hyper-parameters, BO can only operate on this second sub-space and can only manipulate the value of hyper-parameters, not their relation to each other. Similarly, OCBA-based methods rely on statistical information to function, and therefore need multiple samples from the same concept. Because of this, it is useful to have a method of grouping pipelines together by their pipeline structure. 
 
-A unique pipeline is said to have the same structure as another unique pipeline if both have the same set of hyper-parameters, in the same order, but with at least one disagreeing in value. <!-- Check the line before --> As a given operator will have the same hyper-parameters, regardless of its position in the pipeline, a pipeline structure can be represented by its operators alone.
+Let $a$, and $b$ be two pipelines. Pipelines $a$ and $b$ are said to be unique to each other if they disagree on at least one hyper-parameter value, or do not share the same configuration of hyper-parameters. A pipeline structure is a partition of the set of evaluated pipelines into subsets, such that every pair of pipelines within a subset are unique and share the same set of hyper-parameters (not necessarily values), in the same configuration. As a given operator will have the same hyper-parameters, regardless of its position in the pipeline, a pipeline structure can be represented by its operators alone.
 
 The tools in this suite use a tree-bracket representation to denote pipeline structure. For example, given the TPOT pipeline string:
 
