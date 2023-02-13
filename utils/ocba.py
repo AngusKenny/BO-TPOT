@@ -40,7 +40,7 @@ def get_allocations(mu, sigma, Delta, min_allocs=None, max_allocs=None, minimize
     ratio[rem_ids] = np.power((b_mu-s_mu)/(b_mu-mu[rem_ids]),2) * var[rem_ids] / var[s_id]
     
     # compute ratios for best
-    temp = np.sum(np.power(ratio[not_b_ids],2)/var[not_b_ids])
+    temp = np.sum(np.power(ratio[not_b_ids],2)/var[not_b_ids]) if len(not_b_ids) > 0 else 1
     ratio[b_ids] = np.sqrt(var[b_ids] * temp)
         
     # array to track allowed allocations
