@@ -1,6 +1,6 @@
 # Augmented TPOT (aTPOT) Suite
 This set of tools augments the [Tree-based Pipeline Optimisation Tool (TPOT)](http://epistasislab.github.io/tpot/) Python library for automated machine learning. It does so by employing a number of techniques, such as Bayesian optimization (BO) or optimal computing budget allocation (OCBA) in either a post hoc or in hoc fashion. 
-<!---(By employing [Optuna](https://optuna.org/), a hyperparameter optimisation Python library, Bayesian optimisation can be applied to an existing TPOT pipeline to improve its quality of prediction by identifying real-valued hyperparameters of the machine learning components of the pipeline. --->
+By employing [Optuna](https://optuna.org/), a hyperparameter optimisation Python library, Bayesian optimisation can be applied to an existing TPOT pipeline to improve its quality of prediction by identifying real-valued hyperparameters of the machine learning components of the pipeline.
 
 
 ## Dependencies
