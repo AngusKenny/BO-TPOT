@@ -307,12 +307,12 @@ class TPOT_BO_O(object):
                 delta = min(Deltas[-1], B_g-n_evals) #!!
                 
                 # get allocations
-                allocs = o.get_allocations(mu,sigma,sum(old_allocs)+delta,min_allocs=old_allocs)#!!
+                allocs = o.get_allocations(mu,sigma,delta,min_allocs=old_allocs)#!!
                 
                 new_allocs = allocs - old_allocs#!!
                 
-                print(old_allocs)
-                print(allocs)
+                # print(old_allocs)
+                # print(allocs)
                 print(new_allocs)
                 
                 n_allocs = np.sum(new_allocs > 0)#!!
@@ -376,10 +376,10 @@ class TPOT_BO_O(object):
                 early_finish = f" - early finish (gen {gen})"
                 break   
             
-            # if out_path:
-            #     with open(fname_pickle, 'wb') as f:
-            #         # Pickle the 'data' dictionary using the highest protocol available.
-            #         pickle.dump(self.pipes, f, pickle.HIGHEST_PROTOCOL)             
+            if out_path:
+                with open(fname_pickle, 'wb') as f:
+                    # Pickle the 'data' dictionary using the highest protocol available.
+                    pickle.dump(self.pipes, f, pickle.HIGHEST_PROTOCOL)             
         
         t_end = time.time()
         
