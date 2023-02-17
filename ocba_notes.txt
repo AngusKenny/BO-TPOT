@@ -1,3 +1,13 @@
+problem with ocba:
+
+wildly high CV evaluations cause the mean and standard deviation to be thrown off
+
+this is worse with TPOT-BO-O than oTPOT-BASE because by 80 generations we are 
+likely to have more wild CV pipes, with oTPOT-BASE the structure will just get ignored
+
+does not matter so much with BO methods
+
+
 TPOT-BO-O (basic OCBA):
 	- start at gen 80
 	- sort pipeline structures by best CV

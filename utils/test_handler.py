@@ -17,7 +17,7 @@ from BO_TPOT.tpot_base import TPOT_Base
 from BO_TPOT.dtpot_base import dTPOT_Base
 from BO_TPOT.otpot_base import oTPOT_Base
 from BO_TPOT.tpot_bo_s import TPOT_BO_S
-from BO_TPOT.tpot_bo_o import TPOT_BO_O
+from BO_TPOT.tpot_bo_o2 import TPOT_BO_O
 from BO_TPOT.tpot_bo_nd import TPOT_BO_ND
 from BO_TPOT.tpot_bo_h import TPOT_BO_H, TPOT_BO_Hs
 from BO_TPOT.tpot_bo_alt2 import TPOT_BO_ALT

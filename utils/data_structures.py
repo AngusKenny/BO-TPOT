@@ -3,6 +3,8 @@ from config.tpot_config import default_tpot_config_dict
 from pymoo.util.nds.non_dominated_sorting import NonDominatedSorting, find_non_dominated
 import utils.tpot_utils as u
 import numpy as np
+from utils.warning_filters import SimpleFilter
+from sklearn.neighbors import LocalOutlierFactor
 
 class PipeStructure(object):
     def __init__(self, pipe, config_dict=None) -> None:
@@ -11,8 +13,13 @@ class PipeStructure(object):
         self.best = pipe
         self.cv = -1e20
         self.mu = -1e20
+        self.mu_o = -1e20
+        self.median = -1e20
+        self.median_o = -1e20
         self.std = 0.0
+        self.std_o = 0.0
         self.stderr = 0.0
+        self.n_outliers = -1
         self.structure = u.string_to_bracket(pipe)
         self.params = u.string_to_params(pipe)
         self.bo_params = u.string_to_params(pipe,config_dict=config_dict)
@@ -34,15 +41,35 @@ class PipeStructure(object):
     def __contains__(self, key):
         return key in self.pipes
 
-    def update_stats(self):
+    def update_stats(self, check_outliers=False):
         valid_pipes = self.get_valid()
+        v_cvs = np.array([v['internal_cv_score'] for v in valid_pipes.values()]).reshape(-1,1)
         if len(valid_pipes) > 0:
-            self.mu = np.mean([v['internal_cv_score'] for v in valid_pipes.values()])
-            self.std = np.std([v['internal_cv_score'] for v in valid_pipes.values()])
-            self.stderr = self.std/np.sqrt(len(self))
-        return self.mu, self.std, self.stderr
+            self.mu = np.mean(v_cvs)
+            self.std = np.std(v_cvs)
+            self.median = np.median(v_cvs)
+            self.mu_o = self.mu
+            self.std_o = self.std
+            self.median_o = self.median
+            self.n_outliers = -1
+
+        # check for outliers
+        if len(valid_pipes) > 1 and check_outliers:
+            with SimpleFilter('n_neighbors is greater than or equal to the number of samples', action='ignore'):
+                lof = LocalOutlierFactor(contamination='auto')
+                outliers = lof.fit_predict(v_cvs)
+            self.n_outliers = len(outliers[outliers == -1])     
+            if self.n_outliers > 0:
+                # get indices of non outliers
+                good_ids = np.flatnonzero(outliers == 1)
+                good_cvs = v_cvs[good_ids]
+                self.mu_o = np.mean(good_cvs)
+                self.std_o = np.std(good_cvs)
+                self.median_o = np.median(good_cvs)
+        
+        return self.mu, self.std, self.median
     
-    def add(self, pipe, data) -> None:
+    def add(self, pipe, data, check_outliers=False) -> None:
         if pipe not in self.pipes:
             data['structure'] = self.structure
             self.pipes[pipe] = data
@@ -130,9 +157,15 @@ class StructureCollection(object):
             self.cv = data['internal_cv_score']
             self.best = struc_str    
 
-    def update(self, pipe_dict):
+    def update(self, pipe_dict, check_outliers=True):
         [self.add(p,v) for p,v in pipe_dict.items()]
+
+        if check_outliers:
+            self.check_outliers()
     
+    def check_outliers(self):
+        [v.update_stats(check_outliers=True) for v in self.structures.values()]
+
     def has_pipe(self, pipe_str):
         struc_str = u.string_to_bracket(pipe_str)
         
