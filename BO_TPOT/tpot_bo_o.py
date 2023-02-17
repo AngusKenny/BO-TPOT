@@ -310,6 +310,10 @@ class TPOT_BO_O(object):
                 
                 new_allocs = allocs - old_allocs#!!
                 
+                print(old_allocs)
+                print(allocs)
+                print(new_allocs)
+                
                 n_allocs = np.sum(new_allocs > 0)#!!
                 
                 old_size_gen = len(self.pipes)
