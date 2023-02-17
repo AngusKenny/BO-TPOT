@@ -145,13 +145,13 @@ class StructureCollection(object):
     def get_by_index(self, idx):
         return self.structures[list(self.structures.keys())[idx]]
 
-    def add(self, pipe_str, data):
+    def add(self, pipe_str, data, check_outliers=False):
         struc_str = u.string_to_bracket(pipe_str)
         if struc_str not in self.structures:
             self.structures[struc_str] = PipeStructure(pipe_str,self.config_dict)
         
         if pipe_str not in self.structures[struc_str]:
-            self.structures[struc_str].add(pipe_str,data)
+            self.structures[struc_str].add(pipe_str,data,check_outliers=check_outliers)
         
         if data['internal_cv_score'] > self.cv:
             self.cv = data['internal_cv_score']
