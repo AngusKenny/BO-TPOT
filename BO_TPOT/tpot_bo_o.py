@@ -116,8 +116,9 @@ class TPOT_BO_O(object):
         tpots = []
         handlers = []
         
-        fname_pickle_pipes = os.path.join(out_path,f'TPOT-BO-O{self.d_flag}.pickle')
-        fname_allocs = os.path.join(out_path,f'TPOT-BO-O{self.d_flag}.npy')
+        if out_path:
+            fname_pickle_pipes = os.path.join(out_path,f'TPOT-BO-O{self.d_flag}.pickle')
+            fname_allocs = os.path.join(out_path,f'TPOT-BO-O{self.d_flag}_allocs.npy')
         
         allocs = np.zeros(len(self.bo_struc_keys))
         
@@ -300,6 +301,9 @@ class TPOT_BO_O(object):
                 
                 t_start_alloc = time.time()
                 
+                '''
+                made slight change to do cumulative allocations instead of starting from scratch each time
+                '''
                 # get allocations
                 # new_allocs = o.get_allocations(mu,sigma,Deltas[-1])!!
                                 
