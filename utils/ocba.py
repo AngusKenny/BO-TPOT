@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-def get_allocations(mu, sigma, Delta, min_allocs=None, max_allocs=None, minimize = True):
+def get_allocations(mu, sigma, T, min_allocs=None, max_allocs=None, minimize = True):
     # number of concepts/designs/whatever
     n_c = len(mu)
     
@@ -18,7 +18,7 @@ def get_allocations(mu, sigma, Delta, min_allocs=None, max_allocs=None, minimize
     var = np.power(sigma,2)
     
     # total budget including extra delta
-    T = np.sum(min_allocs) + Delta
+    # T = np.sum(min_allocs) + Delta
     
     # sort unique mu values so we can keep allocating later if best is greater than max_allocs
     sorted_mu = np.unique(mu)
