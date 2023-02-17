@@ -116,7 +116,10 @@ class TPOT_BO_O(object):
         tpots = []
         handlers = []
         
-        fname_pickle = os.path.join(out_path,f'TPOT-BO-O{self.d_flag}.pickle')
+        fname_pickle_pipes = os.path.join(out_path,f'TPOT-BO-O{self.d_flag}.pickle')
+        fname_allocs = os.path.join(out_path,f'TPOT-BO-O{self.d_flag}.npy')
+        
+        allocs = np.zeros(len(self.bo_struc_keys))
         
         start_delta = self.pop_size
         
@@ -126,9 +129,10 @@ class TPOT_BO_O(object):
             v['delta'] = self.pop_size
             v['structure'] = u.string_to_bracket(p)
         
-        if out_path and os.path.exists(fname_pickle):
+        if out_path and os.path.exists(fname_pickle_pipes):
+            allocs = np.load(fname_allocs)
             # unpickle previous
-            with open(fname_pickle, 'rb') as f:
+            with open(fname_pickle_pipes, 'rb') as f:
                 self.pipes = pickle.load(f)
             # update structures
             self.strucs.update(self.pipes)
@@ -221,7 +225,8 @@ class TPOT_BO_O(object):
                 old_invalid_cnt = invalid_cnt
                 
         if out_path:
-            with open(fname_pickle, 'wb') as f:
+            np.save(fname_allocs,allocs)
+            with open(fname_pickle_pipes, 'wb') as f:
                 # Pickle the 'data' dictionary using the highest protocol available.
                 pickle.dump(self.pipes, f, pickle.HIGHEST_PROTOCOL)
 
@@ -252,8 +257,6 @@ class TPOT_BO_O(object):
         stagnate_cnt = 0
         
         max_evals = (self.starting_size + self.n_bo_evals)
-        
-        allocs = np.zeros(len(self.bo_struc_keys)) #!!
         
         while len(self.pipes) < max_evals:
             # m_strucs.append(int(np.ceil(m_strucs[-1]/2)))
@@ -298,9 +301,7 @@ class TPOT_BO_O(object):
                 t_start_alloc = time.time()
                 
                 # get allocations
-                # allocs = o.get_allocations(mu,sigma,Deltas[-1])!!
-
-                # n_allocs = np.sum(allocs > 0)!!
+                # new_allocs = o.get_allocations(mu,sigma,Deltas[-1])!!
                                 
                 old_allocs = allocs                #!!
                 
@@ -315,12 +316,11 @@ class TPOT_BO_O(object):
                 # print(allocs)
                 print(new_allocs)
                 
-                n_allocs = np.sum(new_allocs > 0)#!!
+                n_allocs = np.sum(new_allocs > 0)
                 
                 old_size_gen = len(self.pipes)
                 
                 # perform BO evaluations as per allocations
-                # for i,alloc in enumerate(allocs): !!
                 for i,alloc in enumerate(new_allocs):
                     # if no allocation, continue
                     if alloc <= 0:
@@ -377,7 +377,8 @@ class TPOT_BO_O(object):
                 break   
             
             if out_path:
-                with open(fname_pickle, 'wb') as f:
+                with open(fname_pickle_pipes, 'wb') as f:
+                    np.save(fname_allocs,allocs)
                     # Pickle the 'data' dictionary using the highest protocol available.
                     pickle.dump(self.pipes, f, pickle.HIGHEST_PROTOCOL)             
         
@@ -385,8 +386,10 @@ class TPOT_BO_O(object):
         
         # delete pickle and log files if they exist
         if out_path:
-            if os.path.exists(fname_pickle):
-                os.remove(fname_pickle)
+            if os.path.exists(fname_pickle_pipes):
+                os.remove(fname_pickle_pipes)
+            if os.path.exists(fname_allocs):
+                os.remove(fname_allocs)
         
         best_tpot_pipe, best_tpot_cv = u.get_best(self.pipes, source='TPOT-BASE')
         best_bo_pipe, best_bo_cv = u.get_best(self.pipes, source=f'TPOT-BO-O{self.d_flag}')
