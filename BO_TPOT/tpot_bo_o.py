@@ -253,6 +253,8 @@ class TPOT_BO_O(object):
         
         max_evals = (self.starting_size + self.n_bo_evals)
         
+        allocs = np.zeros(len(self.bo_struc_keys)) #!!
+        
         while len(self.pipes) < max_evals:
             # m_strucs.append(int(np.ceil(m_strucs[-1]/2)))
             if Deltas[-1] > 1:
@@ -295,18 +297,26 @@ class TPOT_BO_O(object):
                 t_start_alloc = time.time()
                 
                 # get allocations
-                allocs = o.get_allocations(mu,sigma,Deltas[-1])
+                # allocs = o.get_allocations(mu,sigma,Deltas[-1])!!
 
-                '''
-                allocs = ocba_m.get_allocations(means, ses, m_strucs[-1], Deltas[-1])
-                '''
+                # n_allocs = np.sum(allocs > 0)!!
+                                
+                old_allocs = allocs                #!!
                 
-                n_allocs = np.sum([allocs[i] > 0 for i in range(len(allocs))])
+                delta = min(Deltas[-1], B_g-n_evals) #!!
+                
+                # get allocations
+                allocs = o.get_allocations(mu,sigma,sum(old_allocs)+delta,min_allocs=old_allocs)#!!
+                
+                new_allocs = allocs - old_allocs#!!
+                
+                n_allocs = np.sum(new_allocs > 0)#!!
                 
                 old_size_gen = len(self.pipes)
                 
                 # perform BO evaluations as per allocations
-                for i,alloc in enumerate(allocs):
+                # for i,alloc in enumerate(allocs): !!
+                for i,alloc in enumerate(new_allocs):
                     # if no allocation, continue
                     if alloc <= 0:
                         continue

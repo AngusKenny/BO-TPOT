@@ -464,7 +464,41 @@ def string_to_ops(pipe_str):
     [ops.remove(i) for i in rem_idx]
     
     return ops
-    
+
+def add_param_to_pset(tpot, p_name, p_val,verb=0):
+    '''
+    if new value then add to operator value list and update pset
+    the operator values list gets reset with every call to fit()
+    so we must add it to the operator values list, even if the
+    value already exists in the pset from previous evaluations
+    '''
+    vprint = Vprint(verb)
+    if is_number(p_val):
+        for op in tpot.operators:
+            if op.__name__ in p_name:
+                # find parameter type in parameter list (skip index 0)
+                for p_type in op.parameter_types()[0][1:]:
+                    if p_type.__name__ == p_name:
+                        # if value missing from p_type values list
+                        if p_val not in p_type.values:
+                            # update values list
+                            if type(p_type.values) == np.ndarray:
+                                np.append(p_type.values, p_val)
+                            elif type(p_type.values) == list:
+                                p_type.values.append(p_val)
+                            else:
+                                vprint.v2("Cannot update value list for " 
+                                        + p_type.__name__)
+                            # update pset new value not already used
+                            if (p_type.__name__ + "=" + str(p_val) 
+                                not in tpot._pset.context):
+                                vprint.v2("adding " + p_type.__name__+ "="
+                                        + str(p_val) + " to pset")
+                                tpot._pset.addTerminal(
+                                    p_val, p_type, 
+                                    name=(p_type.__name__ 
+                                            + "=" + str(p_val)))   
+
 
 def get_matching_set(tgt, pipes):
     ''' Using tgt as the target string, get all strings representing

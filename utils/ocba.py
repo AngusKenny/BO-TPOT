@@ -79,7 +79,7 @@ def get_allocations(mu, sigma, Delta, min_allocs=None, max_allocs=None, minimize
         if cont_alloc:
             T_1 = T - sum(tot_allocs[~do_alloc])
     
-    # allocate the rest evenly among best designs with remainder arbitrarily distributed
+    # allocate the rest arbitrarily filling up each sorted mu value in turn
     extra_allocs = int(T - np.nansum(tot_allocs))
     while extra_allocs > 0:
         for m in sorted_mu:
@@ -95,4 +95,4 @@ def get_allocations(mu, sigma, Delta, min_allocs=None, max_allocs=None, minimize
                         if extra_allocs == 0: break
     
     # only return new allocations
-    return (tot_allocs - min_allocs).astype(int)
+    return (tot_allocs).astype(int)
