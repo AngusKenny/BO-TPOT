@@ -313,7 +313,7 @@ class TPOT_BO_O(object):
                 allocs = allocs + new_allocs#!!
                 
                 # print(old_allocs)
-                # print(allocs)
+                print(allocs)
                 print(new_allocs)
                 
                 n_allocs = np.sum(new_allocs > 0)
