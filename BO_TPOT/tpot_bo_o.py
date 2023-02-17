@@ -307,9 +307,9 @@ class TPOT_BO_O(object):
                 delta = min(Deltas[-1], B_g-n_evals) #!!
                 
                 # get allocations
-                allocs = o.get_allocations(mu,sigma,delta,min_allocs=old_allocs)#!!
+                new_allocs = o.get_allocations(mu,sigma,delta,min_allocs=old_allocs)#!!
                 
-                new_allocs = allocs - old_allocs#!!
+                allocs = allocs + new_allocs#!!
                 
                 # print(old_allocs)
                 # print(allocs)
