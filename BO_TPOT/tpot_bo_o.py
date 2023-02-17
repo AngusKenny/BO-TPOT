@@ -291,7 +291,8 @@ class TPOT_BO_O(object):
                 # min_sigma = min(sigma[sigma > EPS]) - EPS if np.sum(sigma) > 0 else EPS
                 # zero_ids = sigma < EPS
                 # sigma[zero_ids] = min_sigma
-                # sigma[sigma > MAX_SIGMA] = MAX_SIGMA
+                sigma[sigma < EPS] = EPS
+                sigma[sigma > MAX_SIGMA] = MAX_SIGMA
                 print(f"{u.CYAN}[{time.asctime()}]{u.OFF} - seed: {self.seed}, generation: {gen}")
                 
                 t_start_alloc = time.time()
@@ -375,10 +376,10 @@ class TPOT_BO_O(object):
                 early_finish = f" - early finish (gen {gen})"
                 break   
             
-            if out_path:
-                with open(fname_pickle, 'wb') as f:
-                    # Pickle the 'data' dictionary using the highest protocol available.
-                    pickle.dump(self.pipes, f, pickle.HIGHEST_PROTOCOL)             
+            # if out_path:
+            #     with open(fname_pickle, 'wb') as f:
+            #         # Pickle the 'data' dictionary using the highest protocol available.
+            #         pickle.dump(self.pipes, f, pickle.HIGHEST_PROTOCOL)             
         
         t_end = time.time()
         
