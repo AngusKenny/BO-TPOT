@@ -128,14 +128,15 @@ class oTPOT_Base(object):
                
         for gen in range(self.start_gen,self.n_gens):
             # get mu sigma and max allocs
-            mu = -1 * np.array([strucs[s].mu for s in strucs.keys()])
+            mu = -1 * np.array([strucs[s].mu_o for s in strucs.keys()])
+            sigma = np.array([strucs[s].std_o for s in strucs.keys()])
             max_allocs = np.array([len(strucs[s]) for s in strucs.keys()])
-            sigma = np.array([strucs[s].std for s in strucs.keys()])
             
             # deal with zero sigma issues
-            min_sigma = min(sigma[sigma > EPS]) - EPS if np.sum(sigma) > 0 else EPS
-            zero_ids = sigma < EPS
-            sigma[zero_ids] = min_sigma
+            # min_sigma = min(sigma[sigma > EPS]) - EPS if np.sum(sigma) > 0 else EPS
+            # zero_ids = sigma < EPS
+            # sigma[zero_ids] = min_sigma
+            sigma[sigma < EPS] = EPS
             sigma[sigma > MAX_SIGMA] = MAX_SIGMA
             print(f"{u.CYAN}[{time.asctime()}]{u.OFF} - generation: {gen}")
             
