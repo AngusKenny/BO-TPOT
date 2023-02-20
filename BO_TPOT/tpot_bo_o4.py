@@ -265,6 +265,7 @@ class TPOT_BO_O(object):
                 tracking.append([0 for _ in self.bo_struc_keys])
                 # m_strucs.append(self.m_strucs)
                 # Deltas.append(int(np.ceil(Deltas[-1]/2)))
+                Deltas.append(Deltas[-1])
                 gen += 1
             B_r = max(max_evals - len(self.pipes),0)
             rem_halvings = int(np.ceil(np.log2(Deltas[-1])) + 1)
