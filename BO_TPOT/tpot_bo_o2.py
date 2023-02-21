@@ -376,6 +376,8 @@ class TPOT_BO_O(object):
         if out_path:
             if os.path.exists(fname_pickle_pipes):
                 os.remove(fname_pickle_pipes)
+            if os.path.exists(fname_pickle_start):
+                os.remove(fname_pickle_start)
             if os.path.exists(fname_allocs):
                 os.remove(fname_allocs)
         
