@@ -131,7 +131,7 @@ class TPOT_BO_O(object):
             v['delta'] = self.pop_size
             v['structure'] = u.string_to_bracket(p)
         
-        if out_path and os.path.exists(fname_pickle_pipes):
+        if out_path and os.path.exists(fname_pickle_pipes) and os.path.exists(fname_allocs):
             allocs = np.load(fname_allocs)
             # unpickle previous
             with open(fname_pickle_pipes, 'rb') as f:
@@ -146,8 +146,7 @@ class TPOT_BO_O(object):
             if self.h_flag != "H":
                 Deltas = [start_delta for _ in range(gen+1)]
             self.vprint.v2(f"{u.RED}Loaded {gen} generations from previous interrupted run.. continuing from Delta = {int(np.ceil(start_delta/2))}..{u.OFF}\n")
-        
-        if out_path and os.path.exists(fname_pickle_start) and not os.path.exists(fname_pickle_pipes):
+        elif out_path and os.path.exists(fname_pickle_start):
             with open(fname_pickle_start, 'rb') as f:
                 self.pipes = pickle.load(f)
             # update structures
