@@ -1,5 +1,5 @@
 # ignore
 __pycache__/
 Results/
-*.zip
 *Results*
+*Result*
