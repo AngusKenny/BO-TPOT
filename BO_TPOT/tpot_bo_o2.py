@@ -54,7 +54,7 @@ class TPOT_BO_O(object):
                  pipe_eval_timeout=5,
                  n_0=10,
                  Delta=50,
-                 m_strucs=5,
+                 halving=True,
                  vprint=u.Vprint(1)):
         
         self.pipes={}
@@ -72,7 +72,7 @@ class TPOT_BO_O(object):
         self.d_flag = 'd' if discrete_mode else 'c'
         self.n_0 = n_0
         self.Delta = Delta
-        self.m_strucs=m_strucs
+        self.h_flag = "H" if halving else ""
         
         # set tpot verbosity to vprint.verbosity + 1 to give more information
         self.tpot_verb = vprint.verbosity + 1 if vprint.verbosity > 0 else 0
@@ -117,12 +117,12 @@ class TPOT_BO_O(object):
         handlers = []
         
         if out_path:
-            fname_pickle_pipes = os.path.join(out_path,f'TPOT-BO-O{self.d_flag}.pickle')
-            fname_allocs = os.path.join(out_path,f'TPOT-BO-O{self.d_flag}_allocs.npy')
+            fname_pickle_pipes = os.path.join(out_path,f'TPOT-BO-O{self.h_flag}{self.d_flag}.pickle')
+            fname_allocs = os.path.join(out_path,f'TPOT-BO-O{self.h_flag}{self.d_flag}_allocs.npy')
         
         allocs = np.zeros(len(self.bo_struc_keys))
         
-        start_delta = self.pop_size
+        start_delta = self.pop_size if self.h_flag == "H" else self.pop_size//2
         
         Deltas = [start_delta]
         
@@ -138,11 +138,13 @@ class TPOT_BO_O(object):
             # update structures
             self.strucs.update(self.pipes)
             # find starting delta
-            start_delta = min([v['delta'] for v in self.pipes.values() if v['source'] != "TPOT-BASE"])
+            start_delta = min([v['delta'] for v in self.pipes.values() if v['source'] != "TPOT-BASE"]) if self.h_flag == "H" else start_delta
             gen = max([v['generation'] for v in self.pipes.values() if v['source'] != "TPOT-BASE"])
             Deltas = list({v['delta'] for v in self.pipes.values()})
             Deltas.sort(reverse=True)
-            self.vprint.v2(f"{u.RED}Loaded {gen} generations from previous interrupted run.. continuing from Delta = {np.ceil(start_delta/2)}..{u.OFF}\n")
+            if self.h_flag != "H":
+                Deltas = [start_delta for _ in range(gen+1)]
+            self.vprint.v2(f"{u.RED}Loaded {gen} generations from previous interrupted run.. continuing from Delta = {int(np.ceil(start_delta/2))}..{u.OFF}\n")
             
         # perform extra evaluations to initialise
         for i,k in enumerate(self.bo_struc_keys):
@@ -211,10 +213,10 @@ class TPOT_BO_O(object):
                     if v['internal_cv_score'] == -np.inf: 
                         invalid_cnt += 1        
                     if 'source' not in v:
-                        v['source'] = f'TPOT-BO-O{self.d_flag}'
+                        v['source'] = f'TPOT-BO-O{self.h_flag}{self.d_flag}'
                         v['structure'] = u.string_to_bracket(p)
                         v['generation'] = gen
-                        v['delta'] = self.pop_size
+                        v['delta'] = start_delta
                         self.strucs.add(p,v,check_outliers=True)
                         self.pipes[p] = v
                         n_extra_bo += 1
@@ -233,7 +235,7 @@ class TPOT_BO_O(object):
 
             if not os.path.exists(out_path):
                 os.makedirs(out_path)
-            fname_h_pipes = os.path.join(out_path,f"TPOT-BO-O{self.d_flag}.pipes")
+            fname_h_pipes = os.path.join(out_path,f"TPOT-BO-O{self.h_flag}{self.d_flag}.pipes")
             # wipe existing pipe files if they exist
             with open(fname_h_pipes,'w') as f:
                 for k,v in self.pipes.items():
@@ -247,28 +249,25 @@ class TPOT_BO_O(object):
             if v['source'] != "TPOT-BASE":
                 tracking[v['generation']][self.bo_struc_keys.index(v['structure'])] += 1
         
-        
         # adjust number of bo evals to include extras
         self.n_bo_evals -= n_extra_bo
-        
-        # initialise m_strucs as 2*k as we halve at the start of each generation
-        # m_strucs = [len(self.bo_struc_keys)]
-        # m_strucs = [self.m_strucs]
         
         stagnate_cnt = 0
         
         max_evals = (self.starting_size + self.n_bo_evals)
         
         while len(self.pipes) < max_evals:
-            # m_strucs.append(int(np.ceil(m_strucs[-1]/2)))
             if Deltas[-1] > 1:
                 tracking.append([0 for _ in self.bo_struc_keys])
-                # m_strucs.append(self.m_strucs)
-                Deltas.append(int(np.ceil(Deltas[-1]/2)))
                 gen += 1
+                Deltas.append(int(np.ceil(Deltas[-1]/2))) if self.h_flag == "H" else Deltas.append(start_delta)
+                
             B_r = max(max_evals - len(self.pipes),0)
             rem_halvings = int(np.ceil(np.log2(Deltas[-1])) + 1)
             B_g = int(((B_r / rem_halvings)//Deltas[-1]) * Deltas[-1]) if Deltas[-1] > 1 else 1
+            
+            if self.h_flag != "H":
+                B_g = min(B_r,start_delta)
             
             if B_g <= 0:
                 break
@@ -278,34 +277,16 @@ class TPOT_BO_O(object):
             stagnate_cnt_gen = 0
             
             while n_evals < B_g:
-                
-                # # allocate self.Delta to top m_strucs
-                # if Deltas[-1] > 1:
-                    # compute statistics
-                '''
-                # means = np.array([self.strucs[k].mu for k in self.bo_struc_keys])
-                # ses = np.array([self.strucs[k].stderr for k in self.bo_struc_keys])
-                '''
-                
                 # get mu sigma and max allocs
                 mu = -1 * np.array([self.strucs[s].mu_o for s in self.bo_struc_keys])
                 sigma = np.array([self.strucs[s].std_o for s in self.bo_struc_keys])
                 
                 # deal with zero sigma issues
-                # min_sigma = min(sigma[sigma > EPS]) - EPS if np.sum(sigma) > 0 else EPS
-                # zero_ids = sigma < EPS
-                # sigma[zero_ids] = min_sigma
                 sigma[sigma < EPS] = EPS
                 sigma[sigma > MAX_SIGMA] = MAX_SIGMA
                 print(f"{u.CYAN}[{time.asctime()}]{u.OFF} - seed: {self.seed}, generation: {gen}")
                 
                 t_start_alloc = time.time()
-                
-                '''
-                made slight change to do cumulative allocations instead of starting from scratch each time
-                '''
-                # get allocations
-                # new_allocs = o.get_allocations(mu,sigma,Deltas[-1])!!
                                 
                 old_allocs = allocs                #!!
                 
@@ -315,10 +296,6 @@ class TPOT_BO_O(object):
                 new_allocs = o.get_allocations(mu,sigma,delta,min_allocs=old_allocs)#!!
                 
                 allocs = allocs + new_allocs#!!
-                
-                # print(old_allocs)
-                # print(allocs)
-                # print(new_allocs)
                 
                 n_allocs = np.sum(new_allocs > 0)
                 
@@ -350,7 +327,7 @@ class TPOT_BO_O(object):
                     for p,v in tpots[i].evaluated_individuals_.items():
                         if 'source' not in v:
                             v['structure'] = u.string_to_bracket(p)
-                            v['source'] = f'TPOT-BO-O{self.d_flag}'
+                            v['source'] = f'TPOT-BO-O{self.h_flag}{self.d_flag}'
                             v['generation'] = gen
                             v['delta'] = Deltas[-1]
                             self.strucs.add(p,v,check_outliers=True)
@@ -364,7 +341,7 @@ class TPOT_BO_O(object):
                         f.close()              
                 
                 if out_path:
-                    fname_o_track = os.path.join(out_path,f"TPOT-BO-O{self.d_flag}.tracking")
+                    fname_o_track = os.path.join(out_path,f"TPOT-BO-O{self.h_flag}{self.d_flag}.tracking")
                     with open(fname_o_track,'w') as f:
                         f.write(u.disp_ocba_tracking(tracking,Deltas,colours=False))
                 
@@ -396,7 +373,7 @@ class TPOT_BO_O(object):
                 os.remove(fname_allocs)
         
         best_tpot_pipe, best_tpot_cv = u.get_best(self.pipes, source='TPOT-BASE')
-        best_bo_pipe, best_bo_cv = u.get_best(self.pipes, source=f'TPOT-BO-O{self.d_flag}')
+        best_bo_pipe, best_bo_cv = u.get_best(self.pipes, source=f'TPOT-BO-O{self.h_flag}{self.d_flag}')
         
         self.vprint.v1(f"\n{u.YELLOW}* best pipe found by tpot:{u.OFF}")
         self.vprint.v1(f"{best_tpot_pipe}")

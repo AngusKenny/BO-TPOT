@@ -35,13 +35,13 @@ params = {
     'ALLOW_RESTART' : True,
     'VERBOSITY' : 4,               
     'DATA_DIR' : 'Data',
-    'RESULTS_DIR' : 'Results_test2',
+    'RESULTS_DIR' : 'Results_no_halving',
     # if not generating TPOT data, RUNS can be a list of runs
-    'SEEDS' : [42],
+    'SEEDS' : [57,58,59,60,61,62],
     'PROBLEMS' : [
-                  'quake',
+                #   'quake',
 		# 'socmob',
-                # 'abalone',
+                'abalone',
                 #   'house_16h',
                 #  'brazilian_houses',
     #             'diamonds',
@@ -49,9 +49,10 @@ params = {
     #             'black_friday'
                  ],
     'TPOT_CONFIG_DICT' : default_tpot_config_dict,
-    'nJOBS' : 4,
+    'nJOBS' : 8,
     # toggle between discrete and continuous parameter spaces
-    'DISCRETE_MODE' : False,
+    'DISCRETE_MODE' : True,
+    'BO-O_HALVING': False,
     # maximum time allowed for a single pipeline evaluation (mins)
     'PIPE_EVAL_TIMEOUT' : 5,
     #
@@ -90,6 +91,9 @@ for problem in test_handler.prob_list:
             if tpot_data is None:
                 test_handler.vprint.verr("dTPOT data not generated, skipping run..\n\n")
                 continue
+        # run alternating TPOT + BO
+        elif params['RUN_TPOT-BO-ALT']:
+            test_handler.run_TPOT_BO_ALT(seed)
         else:
             pop_size, tpot_data = test_handler.load_TPOT_data(seed)
             # test_handler.params['POP_SIZE'] = pop_size
@@ -98,10 +102,6 @@ for problem in test_handler.prob_list:
         # run BO optimiser
         if params['RUN_TPOT-BO-S']:
             test_handler.run_TPOT_BO_S(tpot_data, seed)
-        
-        # run alternating TPOT + BO
-        if params['RUN_TPOT-BO-ALT']:
-            test_handler.run_TPOT_BO_ALT(tpot_data, seed)
             
         # run alternating TPOT + BO
         if params['RUN_TPOT-BO-AUTO']:

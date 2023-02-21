@@ -17,7 +17,7 @@ from BO_TPOT.tpot_base import TPOT_Base
 from BO_TPOT.dtpot_base import dTPOT_Base
 from BO_TPOT.otpot_base import oTPOT_Base
 from BO_TPOT.tpot_bo_s import TPOT_BO_S
-from BO_TPOT.tpot_bo_o4 import TPOT_BO_O
+from BO_TPOT.tpot_bo_o2 import TPOT_BO_O
 from BO_TPOT.tpot_bo_nd import TPOT_BO_ND
 from BO_TPOT.tpot_bo_h import TPOT_BO_H, TPOT_BO_Hs
 from BO_TPOT.tpot_bo_alt2 import TPOT_BO_ALT
@@ -587,13 +587,14 @@ class TestHandler(object):
     
     def run_TPOT_BO_O(self, init_pipes,seed):
         try:
+            h_flag = "H" if self.params['BO-O_HALVING'] else ""
             init_tbo_pipes = u.truncate_pop(copy.deepcopy(init_pipes), self.params['STOP_GEN'])        
-            tbo_path = self.get_path(f'TPOT-BO-O{self.disc_flag}',seed)
+            tbo_path = self.get_path(f'TPOT-BO-O{h_flag}{self.disc_flag}',seed)
             
             n_bo_evals = ((self.params['nTOTAL_GENS'] - self.params['STOP_GEN']) 
                             * self.params['POP_SIZE'])
             t_tbo_start = time.time()
-            self.vprint.v1(f"{u.CYAN_U}****** Running TPOT-BO-O{self.disc_flag} (seed {seed}) for problem '{self.problem}' ******{u.OFF}\n")
+            self.vprint.v1(f"{u.CYAN_U}****** Running TPOT-BO-O{h_flag}{self.disc_flag} (seed {seed}) for problem '{self.problem}' ******{u.OFF}\n")
             # run BO on generated TPOT data
             tbo = TPOT_BO_O(init_tbo_pipes,
                             seed=seed,
@@ -603,6 +604,7 @@ class TestHandler(object):
                             optuna_timeout_trials=self.params['OPTUNA_TIMEOUT_TRIALS'],
                             config_dict=self.params['TPOT_CONFIG_DICT'],
                             pipe_eval_timeout=self.params['PIPE_EVAL_TIMEOUT'],
+                            halving=self.params['BO-O_HALVING'],
                             vprint=self.vprint)
             
             res_txt = tbo.optimize(self.X_train, self.y_train, out_path=tbo_path)
@@ -610,15 +612,15 @@ class TestHandler(object):
             t_tbo_end = time.time()
             
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Seed {seed} {self.problem} (TPOT-BO-O{self.disc_flag}): {res_txt} ({round(t_tbo_end-t_tbo_start,2)}s)\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Seed {seed} {self.problem} (TPOT-BO-O{h_flag}{self.disc_flag}): {res_txt} ({round(t_tbo_end-t_tbo_start,2)}s)\n")
         except:
             trace = traceback.format_exc()
             self.vprint.verr(f"FAILED:\n{trace}")
             with open(self.fname_prog, 'a') as f:
-                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Seed {seed} {self.problem} (TPOT-BO-O{self.disc_flag}): Failed..\n{trace}\n\n")
+                f.write(f"({time.strftime('%d %b, %H:%M', time.localtime())}) - {self.problem} - Seed {seed} {self.problem} (TPOT-BO-O{h_flag}{self.disc_flag}): Failed..\n{trace}\n\n")
             return
                 
-        fname_bo_prog = os.path.join(tbo_path,f'TPOT-BO-O{self.disc_flag}.progress')
+        fname_bo_prog = os.path.join(tbo_path,f'TPOT-BO-O{h_flag}{self.disc_flag}.progress')
         
         best_bo_pipe,best_bo_cv = u.get_best(tbo.pipes)
         best_init_pipe, best_init_cv = u.get_best(init_tbo_pipes)
@@ -626,7 +628,7 @@ class TestHandler(object):
         # write final results to prog file
         with open(fname_bo_prog, 'w') as f:
             # update progress file for validation
-            f.write(f"TPOT-BO-O - {res_txt}\n")
+            f.write(f"TPOT-BO-O{h_flag}{self.disc_flag} - {res_txt}\n")
             f.write(f"TIME:{time.asctime()}\n")
             f.write(f"SEED:{tbo.seed}\n")
             f.write(f"TOTAL TPOT GENS:{self.params['nTOTAL_GENS']}\n")
