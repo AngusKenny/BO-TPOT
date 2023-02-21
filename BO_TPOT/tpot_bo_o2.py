@@ -117,6 +117,7 @@ class TPOT_BO_O(object):
         handlers = []
         
         if out_path:
+            fname_pickle_start = os.path.join(out_path,f'TPOT-BO-O{self.h_flag}{self.d_flag}_start.pickle')
             fname_pickle_pipes = os.path.join(out_path,f'TPOT-BO-O{self.h_flag}{self.d_flag}.pickle')
             fname_allocs = os.path.join(out_path,f'TPOT-BO-O{self.h_flag}{self.d_flag}_allocs.npy')
         
@@ -145,6 +146,12 @@ class TPOT_BO_O(object):
             if self.h_flag != "H":
                 Deltas = [start_delta for _ in range(gen+1)]
             self.vprint.v2(f"{u.RED}Loaded {gen} generations from previous interrupted run.. continuing from Delta = {int(np.ceil(start_delta/2))}..{u.OFF}\n")
+        
+        if out_path and os.path.exists(fname_pickle_start) and not os.path.exists(fname_pickle_pipes):
+            with open(fname_pickle_start, 'rb') as f:
+                self.pipes = pickle.load(f)
+            # update structures
+            self.strucs.update(self.pipes)
             
         # perform extra evaluations to initialise
         for i,k in enumerate(self.bo_struc_keys):
@@ -194,7 +201,7 @@ class TPOT_BO_O(object):
             
             old_invalid_cnt = len(self.strucs[k]) - len(self.strucs[k].get_valid())
             
-            while len(self.strucs[k].get_valid()) < self.n_0 and stagnate_cnt < 1000:
+            while len(self.strucs[k].get_valid()) < self.n_0 and stagnate_cnt < 10:
                 old_size = len(tpots[i].evaluated_individuals_)
                 extra_bo = max(self.n_0 - len(self.strucs[k].get_valid()),0)
                 # run bayesian optimisation with seed_dicts as initial samples
