@@ -232,6 +232,11 @@ class TPOT_BO_O(object):
                     self.vprint.v2(f"{u.RED}{invalid_cnt - old_invalid_cnt} invalid pipelines evaluated, continuing with same structure..\n{u.OFF}")
                 
                 old_invalid_cnt = invalid_cnt
+            
+            if out_path:
+                with open(fname_pickle_start, 'wb') as f:
+                    # Pickle the 'data' dictionary using the highest protocol available.
+                    pickle.dump(self.pipes, f, pickle.HIGHEST_PROTOCOL)
                 
         if out_path:
             np.save(fname_allocs,allocs)
