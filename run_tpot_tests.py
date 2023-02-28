@@ -50,7 +50,7 @@ params = {
     # TPOT data generation parameters
     #
     # 'START_SEED' : 42, # only used for initial TPOT-BASE runs
-    'POP_SIZE' : 20,
+    'POP_SIZE' : 100,
     'nTOTAL_GENS' : 100,
     'STOP_GEN' : 80,
     #
