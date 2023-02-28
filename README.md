@@ -291,7 +291,7 @@ If the `out_path` parameter is set when calling the `optimize` method, 2 files a
 
 ## Running BO-TPOT
 
-As mentioned above, it is possible to run the `TPOT-BASE`, `TPOT-BO-S`, `TPOT-BO-ALT` and `TPOT-BO-AUTO` processes individually, by instantiating their classes and calling their respective `optimize` methods with the appropriate training data, but the simplest way is to execute the script in the file `run_tpot_tests.py`. At the start of this script is a parameters dictionary `params` which the user can populate and is given to a `TestHandler` object which sets up and runs all the required tests, in accordance with the specified parameters, automatically.
+As mentioned above, it is possible to run the `TPOT-BASE`, `TPOT-BO-S`, `TPOT-BO-ALT` and `TPOT-BO-AUTO` processes individually, by instantiating their classes and calling their respective `optimize` methods with the appropriate training data, but the simplest way is to execute the script in the file `run_BO-TPOT_tests.py`. At the start of this script is a parameters dictionary `params` which the user can populate and is given to a `TestHandler` object which sets up and runs all the required tests, in accordance with the specified parameters, automatically.
 
 The table below gives the parameters in this dictionary and their type, followed by a description of their functions:
 
