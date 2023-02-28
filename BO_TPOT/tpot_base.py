@@ -24,10 +24,8 @@ class TPOT_Base(object):
                  config_dict=default_tpot_config_dict,
                  n_jobs=-1,
                  pipe_eval_timeout=5,
-                 allow_restart=True,
                  vprint=u.Vprint(1)):
         
-        self.allow_restart = allow_restart
         self.pipes = {}
         self.n_gens=n_gens
         self.pop_size=pop_size
@@ -60,19 +58,19 @@ class TPOT_Base(object):
         log_file = None
         
         if out_path:
-            log_file = os.path.join(out_path,'TPOT-BASE.log')
-            # time_file = os.path.join(out_path,'TPOT-BASE.times')       
+            log_file = os.path.join(out_path,'TPOT-BASE.log')   
             fname_pickle = os.path.join(out_path,'TPOT-BASE.pickle')
             fname_tracker = os.path.join(out_path,'TPOT-BASE.tracker')
             self.tpot.log_file = log_file
         
         self.start_gen = 2
         
-        if out_path and self.allow_restart and os.path.exists(fname_pickle):
+        # if pickle file exists then load from previous
+        if out_path and os.path.exists(fname_pickle):
             with open(fname_pickle, 'rb') as f:
                 self.tpot.evaluated_individuals_ = pickle.load(f)
             self.start_gen = max([v['generation'] for v in self.tpot.evaluated_individuals_.values()]) + 1
-            print(f"{u.RED}Loaded {self.start_gen-1} generations from previous interrupted run.. continuing..{u.OFF}")
+            self.vprint.v1(f"{u.RED}Loaded {self.start_gen-1} generations from previous interrupted run.. continuing..{u.OFF}")
         else:
             self.vprint.v2(f"{u.CYAN}fitting tpot model with {self.tpot.generations}" 
                + " generations (-1 to account for initial evaluations)" 
@@ -81,20 +79,15 @@ class TPOT_Base(object):
             # fit TPOT model
             self.tpot.fit(X_train, y_train)
             t_tpot_end = time.time()
-            # if out_path:
-                # with open(time_file,'w') as f:
-                #     f.write(f"{0};{0}\n")
-                #     f.write(f"{1};{t_tpot_end-t_tpot_start}\n")
-            if out_path and self.allow_restart:
+            
+            if out_path:
                 with open(fname_pickle, 'wb') as f:
                     # Pickle the 'data' dictionary using the highest protocol available.
                     pickle.dump(self.tpot.evaluated_individuals_, f, pickle.HIGHEST_PROTOCOL)
         
         # instantiate structure collection object
         strucs = StructureCollection(config_dict=self.config_dict)
-        
-        print(f"len strucs before update: {len(strucs)}")
-        
+                
         # import structures from tpot dictionary
         strucs.update(self.tpot.evaluated_individuals_)
                 
@@ -114,12 +107,7 @@ class TPOT_Base(object):
                 for g in pop_tracker:
                     for s in pop_tracker[g]:
                         f.write(f"{g};{s};{pop_tracker[g][s]};{strucs[s].cv}\n")
-            # with open(time_file,'w') as f:
-            #     f.write(f"{0};{0}\n")
-            #     f.write(f"{1};{t_tpot_end-t_tpot_start}\n")    
-        
-        print(f"len strucs after update: {len(strucs)}")
-        
+                
         # copy evaluated individuals dictionary
         self.pipes = copy.deepcopy(self.tpot.evaluated_individuals_)
 
@@ -130,7 +118,7 @@ class TPOT_Base(object):
             for i,p in enumerate(self.tpot._pop):
                 struc = u.string_to_bracket(str(p))
                 if struc not in pop_tracker[gen]:
-                    pop_tracker[gen][struc] = 0
+                    pop_tracker[gen][struc] = 1
                 else:
                     pop_tracker[gen][struc] = pop_tracker[gen][struc] + 1
                 
@@ -139,18 +127,14 @@ class TPOT_Base(object):
                     for s in pop_tracker[gen]:
                         f.write(f"{gen};{s};{pop_tracker[gen][s]};{strucs[s].cv}\n")
                         
-            print(f"\n{u.CYAN}[{time.asctime()}]{u.OFF} - {u.YELLOW}Fitting TPOT model for gen {gen}, seed {self.seed}{u.OFF}")
+            self.vprint.v1(f"\n{u.CYAN}[{time.asctime()}]{u.OFF} - {u.YELLOW}Fitting TPOT model for gen {gen}, seed {self.seed}\n{u.GREEN}see {log_file} for progress{u.OFF}")
             
             t_tpot_start = time.time()
             # fit TPOT model
             self.tpot.fit(X_train, y_train)
             t_tpot_end = time.time()
             
-            # if out_path:
-            #     with open(time_file,'a') as f:
-            #         f.write(f"{gen};{t_tpot_end-t_tpot_start}\n")
-            
-            print(f"{u.RED}TPOT took {t_tpot_end-t_tpot_start} seconds{u.OFF}")
+            self.vprint.v2(f"{u.RED}TPOT took {t_tpot_end-t_tpot_start} seconds{u.OFF}")
             
             for k,v in self.tpot.evaluated_individuals_.items():
                 if k not in self.pipes:
@@ -161,7 +145,7 @@ class TPOT_Base(object):
             # update structures
             strucs.update(self.tpot.evaluated_individuals_)
             
-            if out_path and self.allow_restart:
+            if out_path:
                 with open(fname_pickle, 'wb') as f:
                     # Pickle the 'data' dictionary using the highest protocol available.
                     pickle.dump(self.tpot.evaluated_individuals_, f, pickle.HIGHEST_PROTOCOL)

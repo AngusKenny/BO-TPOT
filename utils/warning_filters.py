@@ -1,4 +1,5 @@
 import warnings
+import logging
 
 # Suppress warnings related to n_neighbors parameter
 class SimpleFilter:
@@ -16,3 +17,8 @@ class SimpleFilter:
     def _showwarning(self, message, category, filename, lineno, file=None, line=None):
         if self.filter_text in str(message):
             self.action(message)
+            
+class WarningFilter(logging.Filter):
+    def filter(self, record):
+        return record.levelno != logging.WARNING
+    
