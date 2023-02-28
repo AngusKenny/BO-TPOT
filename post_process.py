@@ -100,7 +100,7 @@ for problem in prob_list:
         data[problem][seed] = {}
     
         for method in params['METHODS']:
-            base_method = method.strip('dcs2')
+            base_method = method.strip('dc')
 
             method_path = os.path.join(prob_path,method)
 
@@ -137,18 +137,8 @@ for problem in prob_list:
                             t_pipes = u.get_progress_pop(f_pipes,stop_gen=params['STOP_GEN'])
                             min_cv = np.min(np.array([-v['internal_cv_score'] for v in t_pipes.values()]))
                             data[problem][seed][f"TPOT-BASE{params['STOP_GEN']}"] = min_cv
-                            
-                if method == 'oTPOT-BASE':
-                    for line in f:
-                        if 'Best full oTPOT CV' in line:
-                            data[problem][seed]['oTPOT-BASE'] = -float(line.split(":")[-1])
-                            
-                if method == 'oTPOT-BASE2':
-                    for line in f:
-                        if 'Best full oTPOT CV' in line:
-                            data[problem][seed]['oTPOT-BASE2'] = -float(line.split(":")[-1])
                         
-                if base_method == 'TPOT-BO-S' or base_method == 'TPOT-BO-O' or base_method == 'TPOT-BO-OH' or (base_method == 'TPOT-BO-H' and method != 'TPOT-BO-Hs'):
+                if base_method == 'TPOT-BO-S':
                     read_data = False
                     n_evals = 0
                     for line in f:
@@ -158,13 +148,6 @@ for problem in prob_list:
                             read_data = True
                         if 'Best CV' in line and read_data:
                             data[problem][seed][method] = -float(line.split(":")[-1])
-                            
-                if method == 'TPOT-BO-Hs':
-                    for line in f:
-                        if 'AFTER' in line and 'TPOT-BO-Hs' in line:
-                            next(f)
-                            cv_line = next(f)
-                            data[problem][seed][method] = -float(cv_line.split(":")[-1])
                             
                 if base_method == 'TPOT-BO-ALT':
                     read_data = False
