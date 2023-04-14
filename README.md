@@ -4,7 +4,7 @@ This set of tools augments the [Tree-based Pipeline Optimisation Tool (TPOT)](ht
 ## Citing this work
 If you use any of the code in this repository for your research, please city the paper:
 
-Kenny, A., Ray, T., Limmer, S., Singh, H.K., Rodemann, T., and Olhofer, M., , “Hybridizing TPOT with bayesian optimization,” in Proceedings of the Genetic and Evolutionary Computation Conference,(Lisbon Portugal), Conditionally accepted 04/2023
+Kenny, A., Ray, T., Limmer, S., Singh, H.K., Rodemann, T., and Olhofer, M., , “Hybridizing TPOT with bayesian optimization,” in Proceedings of the Genetic and Evolutionary Computation Conference (GECCO), Lisbon, Portugal. (Conditionally accepted 04/2023)
 
 ## Dependencies
 [TPOT](http://epistasislab.github.io/tpot/), [PyTorch](http://pytorch.org), [Optuna](https://optuna.org/) - and various packages from [Anaconda Distribution](http://anaconda.org).
