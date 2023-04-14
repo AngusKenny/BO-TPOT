@@ -2,7 +2,7 @@
 This set of tools augments the [Tree-based Pipeline Optimisation Tool (TPOT)](http://epistasislab.github.io/tpot/) Python library for automated machine learning. It does so through Bayesian optimization (BO), in either a post hoc or in hoc fashion. By employing [Optuna](https://optuna.org/), a hyperparameter optimisation Python library, BO can be applied to an existing TPOT pipeline to improve its quality of prediction by identifying real-valued hyperparameters of the machine learning components of the pipeline.
 
 ## Citing
-This repository covers all methods developed for the "Hybridizing TPOT with Bayesian Optimization" paper, by Kenny et al., to appear in the proceedings of GECCO 2023, Lisbon.
+This repository covers all methods developed for the "Hybridizing TPOT with Bayesian Optimization" paper, by Kenny et al., to appear in the conference proceedings of GECCO 2023, Lisbon.
 
 ## Dependencies
 [TPOT](http://epistasislab.github.io/tpot/), [PyTorch](http://pytorch.org), [Optuna](https://optuna.org/) - and various packages from [Anaconda Distribution](http://anaconda.org).
